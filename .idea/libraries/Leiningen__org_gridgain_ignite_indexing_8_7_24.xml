@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: org.gridgain/ignite-indexing:8.7.24">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/gridgain/ignite-indexing/8.7.24/ignite-indexing-8.7.24.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

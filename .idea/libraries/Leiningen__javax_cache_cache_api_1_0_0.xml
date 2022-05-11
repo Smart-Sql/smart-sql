@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: javax.cache/cache-api:1.0.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

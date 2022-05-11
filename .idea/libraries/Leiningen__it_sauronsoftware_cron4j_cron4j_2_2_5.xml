@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: it.sauronsoftware.cron4j/cron4j:2.2.5">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/it/sauronsoftware/cron4j/cron4j/2.2.5/cron4j-2.2.5.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

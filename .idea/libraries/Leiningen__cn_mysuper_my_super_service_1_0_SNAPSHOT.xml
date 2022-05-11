@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: cn.mysuper/my-super-service:1.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/cn/mysuper/my-super-service/1.0-SNAPSHOT/my-super-service-1.0-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

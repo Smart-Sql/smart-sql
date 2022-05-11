@@ -1,0 +1,251 @@
+(ns org.gridgain.plus.init.plus-init-sql)
+
+; 1、超级用户名、密码直接写死 xml 文件中
+; 2、初始化元表
+(def my-grid-tables "
+    /**
+    记录各个节点 rpc 的信息
+    应该剔除 editport 这个接口
+    */
+    CREATE TABLE IF NOT EXISTS rpc_info (
+        PRIMARY KEY (node_name),
+        node_name varchar,
+        ip varchar,
+        clsport int,
+        serviceport int
+    ) WITH \"template=MyMeta_template,cache_name=rpc_info,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    method_name 是唯一的
+    cls_name: namespace.class_name
+    java_method_name: java 的方法
+    DROP TABLE IF EXISTS my_func;
+    */
+    CREATE TABLE IF NOT EXISTS my_func (
+                    method_name VARCHAR(30),
+                    java_method_name VARCHAR(30),
+                    cls_name VARCHAR,
+                    return_type VARCHAR(20),
+                    descrip VARCHAR,
+                    PRIMARY KEY (method_name)
+    ) WITH \"template=MyMeta_template,cache_name=my_func,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    CREATE INDEX IF NOT EXISTS my_func_method_name_idx ON my_func (method_name);
+
+    /**
+    DROP TABLE IF EXISTS my_func_ps;
+    */
+    CREATE TABLE IF NOT EXISTS my_func_ps (
+                    method_name VARCHAR(30),
+                    ps_index INTEGER,
+                    ps_type VARCHAR(20),
+                    PRIMARY KEY (method_name, ps_index)
+    ) WITH \"template=MyMeta_template,affinityKey=method_name,cache_name=my_func_ps,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    存储元表，因为元表一般是从 oracle 中导出来的，所以就命名为 my_meta_tables
+    DROP TABLE IF EXISTS my_meta_tables;
+    */
+    CREATE TABLE IF NOT EXISTS my_meta_tables (
+                    id BIGINT,
+                    table_name VARCHAR(50),
+                    descrip VARCHAR,
+                    code VARCHAR,
+                    PRIMARY KEY (id)
+    ) WITH \"template=MyMeta_template,cache_name=my_meta_tables,VALUE_TYPE=cn.plus.model.ddl.MyTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    DROP TABLE IF EXISTS table_item;
+    */
+    CREATE TABLE IF NOT EXISTS table_item (
+                    id BIGINT,
+                    column_name VARCHAR(50),
+                    column_len INT DEFAULT 50,
+                    column_type VARCHAR(50),
+                    not_null BOOLEAN DEFAULT true,
+                    pkid BOOLEAN DEFAULT false,
+                    comment VARCHAR(50),
+                    auto_increment BOOLEAN DEFAULT false,
+                    table_id BIGINT,
+                    PRIMARY KEY (id, table_id)
+    ) WITH \"template=MyMeta_template,cache_name=table_item,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableItem,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    DROP TABLE IF EXISTS table_index;
+    */
+    CREATE TABLE IF NOT EXISTS table_index (
+                    id BIGINT,
+                    index_name VARCHAR(50),
+                    index_item VARCHAR(50),
+                    sort_order VARCHAR(4),
+                    spatial BOOLEAN DEFAULT false,
+                    index_no INT,
+                    table_id BIGINT,
+                    PRIMARY KEY (id, table_id)
+    ) WITH \"template=MyMeta_template,cache_name=table_index,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableIndex,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    剔除原版本，状态，是否激活
+    让 scenes_name 成为 key 值，同时新建一个 my_scenes_log 来记录整个 my_scenes 的增加，
+    这样就可以结合 my_log 将任意时间节点的数据和场景恢复出来，并且能够运行。
+    输入参数 ps_code: [{'ps_index': 0, 'ps_type': 'String'}, {'ps_index': 2, 'ps_type': 'String'}]
+    场景的名字可以有重复但是
+    */
+    DROP TABLE IF EXISTS my_scenes;
+    CREATE TABLE IF NOT EXISTS my_scenes (
+                      group_id BIGINT,
+                      scenes_name VARCHAR(40),
+                      scenes_code VARCHAR,
+                      ps_code VARCHAR,
+                      descrip VARCHAR,
+                      is_batch BOOLEAN DEFAULT false,
+                      PRIMARY KEY (scenes_name)
+                      ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.db.MyScenesCache,cache_name=my_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    CREATE INDEX IF NOT EXISTS scenes_group_id_idx ON my_scenes (scenes_name, group_id);
+
+    /**
+    记录场景操作的表
+    */
+    DROP TABLE IF EXISTS my_scenes_log;
+    CREATE TABLE IF NOT EXISTS my_scenes_log (
+                      id BIGINT,
+                      mycacheex VARBINARY,
+                      create_date TIMESTAMP,
+                      PRIMARY KEY (id)
+                      ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.my_scenes_log,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=my_log,cache_group=my_data\";
+
+    DROP INDEX IF EXISTS my_scenes_log_create_date_idx;
+    CREATE INDEX IF NOT EXISTS my_scenes_log_create_date_idx ON my_scenes_log (create_date DESC);
+
+    /*
+    视图：
+
+    func_name: 表示查询出来后在处理，例如：脱敏
+    目前只有 select 操作可以对具体的列添加方法
+    DROP TABLE IF EXISTS my_select_views;
+    DROP TABLE IF EXISTS my_update_views;
+    DROP TABLE IF EXISTS my_insert_views;
+    DROP TABLE IF EXISTS my_delete_views;
+    */
+    CREATE TABLE IF NOT EXISTS my_select_views (
+                    id BIGINT,
+                    view_name VARCHAR(40),
+                    table_name VARCHAR(40),
+                    data_set_id BIGINT DEFAULT 0,
+                    code VARCHAR,
+                    PRIMARY KEY (id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_select_views,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+
+    CREATE TABLE IF NOT EXISTS my_update_views (
+                    id BIGINT,
+                    view_name VARCHAR(40),
+                    table_name VARCHAR(40),
+                    data_set_id BIGINT DEFAULT 0,
+                    code VARCHAR,
+                    PRIMARY KEY (id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_update_views,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+
+    CREATE TABLE IF NOT EXISTS my_insert_views (
+                    id BIGINT,
+                    view_name VARCHAR(40),
+                    table_name VARCHAR(40),
+                    data_set_id BIGINT DEFAULT 0,
+                    code VARCHAR,
+                    PRIMARY KEY (id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_insert_views,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+
+    CREATE TABLE IF NOT EXISTS my_delete_views (
+                    id BIGINT,
+                    view_name VARCHAR(40),
+                    table_name VARCHAR(40),
+                    data_set_id BIGINT DEFAULT 0,
+                    code VARCHAR,
+                    PRIMARY KEY (id)
+                ) WITH \"template=MyMeta_template,cache_name=my_delete_views,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    数据集
+    DROP TABLE IF EXISTS my_dataset;
+    DROP TABLE IF EXISTS my_dataset_table;
+    */
+    CREATE TABLE IF NOT EXISTS my_dataset (
+                    id BIGINT,
+                    dataset_name VARCHAR,
+                    PRIMARY KEY (id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    CREATE TABLE IF NOT EXISTS my_dataset_table (
+                    id BIGINT,
+                    table_name VARCHAR,
+                    dataset_id BIGINT,
+                    PRIMARY KEY (id, dataset_id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_dataset_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    记录操作的表
+    DROP TABLE IF EXISTS my_log;
+    DROP INDEX IF EXISTS my_log_idx;
+    */
+    CREATE TABLE IF NOT EXISTS my_log (
+                    id BIGINT,
+                    table_name VARCHAR,
+                    mycacheex VARBINARY,
+                    create_date TIMESTAMP,
+                    PRIMARY KEY (id)
+                    ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.MyLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=my_log,cache_group=my_data\";
+
+
+    CREATE INDEX IF NOT EXISTS my_log_idx ON my_log (table_name, create_date);
+
+    /**
+    用户表 my_user
+    这个用户表是基础用户表，可以扩展
+    DROP TABLE IF EXISTS my_user;
+    */
+    CREATE TABLE IF NOT EXISTS my_user (
+                    id BIGINT,
+                    user_name VARCHAR(40),
+                    pass_word VARCHAR(40),
+                    group_id BIGINT,
+                    PRIMARY KEY (id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_user,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+    /**
+    用户组中添加 数据集 id
+    group_type: 流程优化 或者是 业务支持
+    例如：data_set_id = 0; 表示实时数据集，group_type = '流程优化' 那么、它可以修改、实时数据集中的 DDL，
+    当实时数据集 DDL 修改时，同时被修改的还有，与之相关的所有的，非实时数据子集中的 DDL
+    DROP TABLE IF EXISTS my_users_group;
+    */
+    CREATE TABLE IF NOT EXISTS my_users_group (
+                    id BIGINT,
+                    -- 用户组名称
+                    group_name VARCHAR(40),
+                    -- 数据集
+                    data_set_id BIGINT DEFAULT 0,
+                    -- 用户组类型
+                    group_type VARCHAR(8) DEFAULT '业务支持',
+                    PRIMARY KEY (id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_users_group,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    /**
+    1：增
+    2：删
+    3：改
+    4：查
+    5: 场景
+    6：方法
+    DROP TABLE IF EXISTS my_group_view;
+    */
+    CREATE TABLE IF NOT EXISTS my_group_view (
+                    id BIGINT,
+                    my_group_id BIGINT,
+                    view_id BIGINT,
+                    view_type VARCHAR(2),
+                    PRIMARY KEY (id, my_group_id)
+                    ) WITH \"template=MyMeta_template,affinityKey=my_group_id,cache_name=my_group_view,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+
+")

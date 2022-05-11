@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: org.springframework/spring-context:4.3.25.RELEASE">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/springframework/spring-context/4.3.25.RELEASE/spring-context-4.3.25.RELEASE.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
