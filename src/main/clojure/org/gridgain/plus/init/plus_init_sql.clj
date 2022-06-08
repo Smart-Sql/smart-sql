@@ -154,7 +154,7 @@
     13、记录场景操作的表：my_scenes_log
     DROP TABLE IF EXISTS my_scenes_log;
     DROP INDEX IF EXISTS my_scenes_log_create_date_idx;
-
+    */
     CREATE TABLE IF NOT EXISTS my_scenes_log (
                     id BIGINT,
                     mycacheex VARBINARY,
@@ -164,7 +164,6 @@
 
 
     CREATE INDEX IF NOT EXISTS my_scenes_log_create_date_idx ON my_scenes_log (create_date DESC);
-    */
 
     /**
     14、将本用户组场景的使用权限，赋给其它用户组的表：
@@ -275,6 +274,7 @@
     CREATE TABLE IF NOT EXISTS my_cron (
                       cron_name VARCHAR(40),
                       cron VARCHAR,
+                      ps VARBINARY,
                       descrip VARCHAR,
                       PRIMARY KEY (cron_name)
                       ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.MyCron,cache_name=my_cron,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";

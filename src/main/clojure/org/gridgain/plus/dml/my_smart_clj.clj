@@ -1,20 +1,18 @@
 (ns org.gridgain.plus.dml.my-smart-clj
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
         [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
-        [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
     (:import (org.apache.ignite Ignite)
              (org.gridgain.smart MyVar MyLetLayer)
              (com.google.common.base Strings)
+             (com.google.gson Gson GsonBuilder)
              (cn.plus.model MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
-             (cn.plus.model.db MyScenesCache MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
              (org.log MyCljLogger)
@@ -32,38 +30,14 @@
         ))
 
 (declare ast-to-clj body-to-clj token-to-clj token-lst-clj for-seq for-seq-func
-         express-to-clj query_sql trans do-express)
+         express-to-clj trans do-express)
 
 (defn do-express [f-express r-express]
     (if (and (some? f-express) (some? r-express) (contains? f-express :expression) (contains? #{"for" "match"} (-> f-express :expression)))
         true false))
 
-(defn query_sql [ignite group_id sql & args]
-    (my-smart-db/query_sql ignite group_id sql args))
-
 (defn trans [ignite group_id sql & args]
     (my-smart-db/trans ignite group_id sql args))
-
-(defn myInsert [ignite group_id m]
-    (my-smart-db/my-insert ignite group_id m))
-
-(defn myInsertTran [ignite group_id m]
-    (my-smart-db/my-insert-tran ignite group_id m))
-
-(defn myUpdate [ignite group_id m]
-    (my-smart-db/my-update ignite group_id m))
-
-(defn myUpdateTran [ignite group_id m]
-    (my-smart-db/my-update-tran ignite group_id m))
-
-(defn myDelete [ignite group_id m]
-    (my-smart-db/my-delete ignite group_id m))
-
-(defn myDeleteTran [ignite group_id m]
-    (my-smart-db/my-delete-tran ignite group_id m))
-
-(defn myDrop [ignite group_id m]
-    (my-smart-db/my-drop ignite group_id m))
 
 (defn contains-context? [my-context token-name]
     (cond (contains? (-> my-context :input-params) token-name) true
@@ -102,18 +76,18 @@
                                                                          true
                                                                          (recur r))
                                                  (my-lexical/is-seq? (-> token f)) (if (true? (is-exist-lst-token? item_name (-> token f)))
-                                                                                                                          true
-                                                                                                                          (recur r))
+                                                                                       true
+                                                                                       (recur r))
                                                  :else
                                                  (recur r)
                                                  )
                                            false))
                       (and (my-lexical/is-seq? token) (not (empty? token))) (if (true? (is-exist-lst-token? item_name token))
-                                                                          true
-                                                                          false)
+                                                                                true
+                                                                                false)
                       :else
                       false
-                    ))]
+                      ))]
         (is-exist-token? item_name token)))
 
 (defn token-to-clj [ignite group_id m my-context]
@@ -149,17 +123,17 @@
              )
          (conj (letLayer-to-clj letLayer) my-context))))
 
-(defn for-seq [ignite group_id f my-context]
+(defn for-seq-0 [ignite group_id f my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (-> f :args :seq :item_name) my-it (get-my-it my-context)]
         (let [my-context-1 (assoc my-context :let-params (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil}) :up-stm "for")]
             (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) my-context-1) loop-r (gensym "loop-r")]
-                (format "(cond (instance? Iterator %s) (loop [%s %s]\n
+                (format "(cond (my-lexical/my-is-iter? %s) (loop [%s (my-lexical/get-my-iter %s)]\n
                                                        (if (.hasNext %s)\n
                                                            (let [%s (.next %s)]\n
                                                                %s\n
                                                                (recur %s)\n
                                                                )))\n
-                        (my-lexical/is-seq? %s) (loop [[%s & %s] %s]\n
+                        (my-lexical/my-is-seq? %s) (loop [[%s & %s] (my-lexical/get-my-seq %s)]\n
                                          (if (some? %s)\n
                                              (do\n
                                                   %s\n
@@ -179,22 +153,58 @@
                 ))
         ))
 
+(defn for-seq [ignite group_id f my-context]
+    (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (-> f :args :seq :item_name) my-it (get-my-it my-context)]
+        (let [my-context-1 (assoc my-context :let-params (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil}) :up-stm "for")]
+            (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) my-context-1)]
+                (format "(cond (my-lexical/my-is-iter? %s) (try\n (loop [%s (my-lexical/get-my-iter %s)]\n
+                                                                (if (.hasNext %s)\n
+                                                                     (let [%s (.next %s)]\n
+                                                                             %s\n
+                                                                          (recur %s))))
+                                                            (catch Exception e\n
+                                                                 (if-not (= (.getMessage e) \"my-break\")\n
+                                                                 (throw e))))
+
+                        (my-lexical/my-is-seq? %s) (try\n   (doseq [%s (my-lexical/get-my-seq %s)]
+                                                             %s\n
+                                                         )
+                                                      (catch Exception e\n
+                                                            (if-not (= (.getMessage e) \"my-break\")
+                                                               (throw e))))
+                        :else\n
+                        (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
+                        )"
+                        seq-name my-it seq-name
+                        my-it
+                        tmp-val-name my-it
+                        for-inner-clj
+                        my-it
+                        seq-name tmp-val-name seq-name
+                        for-inner-clj
+                        )
+                ))
+        ))
+
 (defn for-seq-func [ignite group_id f my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (get-my-let my-context) my-it (get-my-it my-context) func-clj (token-to-clj ignite group_id (-> f :args :seq) my-context)]
         (let [my-context-1 (assoc my-context :let-params (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil}) :up-stm "for")]
             (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) my-context-1) loop-r (gensym "loop-r")]
                 (format "(let [%s %s]\n
-                          (cond (instance? Iterator %s) (loop [%s %s]\n
-                                                              (if (.hasNext %s)\n
-                                                                  (let [%s (.next %s)]\n
-                                                                       %s\n
-                                                                       (recur %s)\n
-                                                                       )))\n
-                                (my-lexical/is-seq? %s) (loop [[%s & %s] %s]\n
-                                                  (if (some? %s)\n
-                                                      (do\n
-                                                           %s\n
-                                                      (recur %s))))\n
+                          (cond (my-lexical/my-is-iter? %s) (try\n (loop [%s (my-lexical/get-my-iter %s)]\n
+                                                                 (if (.hasNext %s)\n
+                                                                     (let [%s (.next %s)]\n
+                                                                         %s\n
+                                                                     (recur %s)\n
+                                                                 )))\n
+                                                             (catch Exception e\n
+                                                                 (if-not (= (.getMessage e) \"my-break\")\n
+                                                                     (throw e))))
+                                (my-lexical/my-is-seq? %s) (try\n (doseq [%s (my-lexical/get-my-seq %s)] \n
+                                                                 %s)\n
+                                                             (catch Exception e\n
+                                                                 (if-not (= (.getMessage e) \"my-break\")\n
+                                                             (throw e))))
                                 :else\n
                                 (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                                 ))"
@@ -204,10 +214,9 @@
                         tmp-val-name my-it
                         for-inner-clj
                         my-it
-                        seq-name tmp-val-name loop-r seq-name
-                        tmp-val-name
+                        seq-name tmp-val-name seq-name
                         for-inner-clj
-                        loop-r)))
+                        )))
         ))
 
 ;(defn match-to-clj
@@ -289,9 +298,9 @@
                (contains? f-express :express) (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id (-> f-express :express) my-context)))
                (contains? f-express :let-name) (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id [f-express] my-context)]
                                                    (let [express-line (express-to-clj ignite group_id r-express let-my-context)]
-                                                       (format "%s %s %s" let-first express-line let-tail)))
+                                                       (recur ignite group_id nil my-context (conj lst (format "%s %s %s" let-first express-line let-tail)))))
                (contains? f-express :break-vs) (if (contains? my-context :up-stm)
-                                                   (recur ignite group_id r-express my-context (conj lst "(recur nil)"))
+                                                   (recur ignite group_id r-express my-context (conj lst "(throw (Exception. \"my-break\"))"))
                                                    (throw (Exception. "break 语句只能用于 for 语句块中！"))
                                                    )
                :else
@@ -317,7 +326,15 @@
                    (if (true? (do-express f r))
                        (format "(do\n    %s)" express-line)
                        express-line))
-             ))))
+               ))))
+
+(defn get-input [args-lst body-lst]
+    (loop [[f & r] body-lst lst []]
+        (if (some? f)
+            (if (and (contains? f :let-name) (contains? (-> f :let-vs) :item_name) (contains? (set args-lst) (-> f :let-vs :item_name)))
+                (recur r (conj lst (-> f :let-name)))
+                (recur r lst))
+            lst)))
 
 ; my-context 记录上下文
 ; :input-params 输入参数
@@ -328,14 +345,23 @@
 ; my-context: {:input-params #{} :let-params {} :last-item nil :up-my-context nil}
 (defn ast-to-clj [ignite group_id ast up-my-context]
     (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context up-my-context}]
-        (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) args-lst))]
-            (if (nil? up-my-context)
-                (if-not (empty? args-lst)
-                    (format "(defn %s [^Ignite ignite ^Long group_id %s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name)))
-                    (format "(defn %s [^Ignite ignite ^Long group_id]\n    %s)" func-name (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name))))
-                (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
-            )
-        ))
+        (let [my-args-lst (get-input args-lst body-lst)]
+            (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) my-args-lst))]
+                (if (nil? up-my-context)
+                    (if-not (empty? args-lst)
+                        (format "(defn %s [^Ignite ignite ^Long group_id %s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name)))
+                        (format "(defn %s [^Ignite ignite ^Long group_id]\n    %s)" func-name (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name))))
+                    (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
+                ))))
+
+(defn my-ast-to-clj [ignite group_id ast up-my-context]
+    (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context up-my-context}]
+        (let [my-args-lst (get-input args-lst body-lst)]
+            (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) my-args-lst))]
+                (if (nil? up-my-context)
+                    (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name))
+                    (body-to-clj ignite group_id body-lst func-context))
+                ))))
 
 (defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast smart-sql)) nil)]
@@ -343,5 +369,74 @@
             code
             (str/replace code #"^\(\s*" "(defn "))
         ))
+
+(defn my-smart-to-clj [^Ignite ignite ^Long group_id smart-lst]
+    (let [ast (first (my-smart-sql/my-get-ast-lst smart-lst))]
+        (let [code (ast-to-clj ignite group_id ast nil)]
+            (if (re-find #"^\(defn\s*" code)
+                [code (-> ast :func-name)]
+                [(str/replace code #"^\(\s*" "(defn ") (-> ast :func-name)])
+            )))
+
+; smart-lst: (my-lexical/to-back smart-sql)
+(defn my-smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq smart-lst]
+    (let [code (ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
+        (if (re-find #"^\(defn\s*" code)
+            code
+            (str/replace code #"^\(\s*" "(defn "))
+        ))
+
+(defn gson [m]
+    (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+        (.toJson gs m)))
+
+(defn re-ast [my-prefix ast]
+    (cond (my-lexical/is-seq? ast) (map (partial re-ast my-prefix) ast)
+          (map? ast) (cond (and (contains? ast :item_name) (false? (-> ast :const))) (assoc ast :item_name (format "%s-cnc-%s" my-prefix (-> ast :item_name)))
+                           (contains? ast :func-name) {:func-name (format "%s-cnc-%s" my-prefix (-> ast :func-name)) :lst_ps (re-ast my-prefix (-> ast :lst_ps))}
+                           (contains? ast :let-name) {:let-name (format "%s-cnc-%s" my-prefix (-> ast :let-name)) :let-vs (re-ast my-prefix (-> ast :let-vs))}
+                           :else
+                           (loop [[f & r] (keys ast) rs ast]
+                               (if (some? f)
+                                   (let [vs (get ast f)]
+                                       (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-ast my-prefix vs)))
+                                             (map? vs) (recur r (assoc rs f (re-ast my-prefix vs)))
+                                             :else
+                                             (recur r rs)
+                                             ))
+                                   rs))
+                           )
+          ))
+
+(defn re-fn [^clojure.lang.LazySeq lst]
+    (letfn [(get-fn-body [lst]
+                (loop [[f & r] (my-smart-sql/get-smart-segment lst) func-stack [] lst-rs []]
+                    (if (some? f)
+                        (cond (contains? #{"for" "match" "let"} (first f)) (if (empty? func-stack)
+                                                                               (recur r [] (conj lst-rs f))
+                                                                               (let [func-line (concat ["innerFunction" "{"] (apply concat func-stack) ["}"])]
+                                                                                   (recur r [] (conj lst-rs func-line f))))
+                              (my-lexical/is-eq? (first f) "function") (recur r (conj func-stack f) lst-rs)
+                              :else
+                              (recur r func-stack (conj lst-rs f))
+                              )
+                        (if (empty? func-stack)
+                            lst-rs
+                            (conj lst-rs (concat ["innerFunction" "{"] (apply concat func-stack) ["}"]))))))
+            (get-fn [lst]
+                (concat ["function" "cnc-cf-fn" "(" ")" "{"] (apply concat (get-fn-body lst)) ["}"]))]
+        (get-fn lst)))
+
+(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
+    (let [smart-lst (re-fn lst)]
+        (if-let [my-smart-code (my-ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
+            (apply (eval (read-string (format "(fn [^Ignite ignite ^Long group_id] %s)" my-smart-code))) [ignite group_id])))
+    ;(let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
+    ;    (let [my-smart-code (str/replace smart-code #"^\(defn\s+cnc-cf-fn\s+" "(fn ")]
+    ;        (apply (eval (read-string my-smart-code)) [ignite group_id]))
+    ;    )
+    )
+
+
 
 

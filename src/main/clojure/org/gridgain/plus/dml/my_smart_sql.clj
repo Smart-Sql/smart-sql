@@ -2,21 +2,10 @@
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
-        [org.gridgain.plus.dml.my-insert :as my-insert]
-        [org.gridgain.plus.dml.my-update :as my-update]
-        [org.gridgain.plus.dml.my-delete :as my-delete]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
-    (:import (org.apache.ignite Ignite)
-             (org.gridgain.smart MyVar MyLetLayer)
-             (com.google.common.base Strings)
-             (cn.plus.model MyKeyValue MyLogCache SqlType)
-             (org.gridgain.dml.util MyCacheExUtil)
-             (cn.plus.model.db MyScenesCache MyScenesCachePk)
-             (org.apache.ignite.cache.query SqlFieldsQuery)
-             (java.math BigDecimal)
-             (java.util List ArrayList Hashtable Date Iterator)
+    (:import (java.util List ArrayList Hashtable Date Iterator)
              )
     (:gen-class
         ; 生成 class 的类名
@@ -24,9 +13,8 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        ;:methods [^:static [get_plus_sql [org.apache.ignite.Ignite Long String] String]
-        ;          ^:static [getSqlToAst [org.apache.ignite.Ignite String String] clojure.lang.LazySeq]
-        ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
+        :methods [^:static [getSmartSegment [String] java.util.List]
+                  ^:static [reSmartSegmentLst [java.util.List] java.util.List]]
         ))
 
 (declare body-segment get-ast-lst get-ast get-re-pair get-pairs get-pairs-tokens
@@ -34,6 +22,103 @@
 
 (defn add-let-name [my-context let-name]
     (assoc my-context :let-params (conj (-> my-context :let-params) let-name)))
+
+(defn get-smart-segment
+    ([lst] (get-smart-segment lst [] nil nil [] []))
+    ([[f & r] stack func-for-match mid-small stack-lst lst]
+     (if (some? f)
+         (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) func-for-match "small" (conj stack-lst f) lst))
+               (= f "[") (if (or (= mid-small "small") (= mid-small "big"))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) func-for-match "mid" (conj stack-lst f) lst))
+               (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) func-for-match "big" (conj stack-lst f) lst))
+               (= f ")") (cond (and (= (count stack) 1) (= mid-small "small")) (recur r [] func-for-match nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "small")) (recur r (pop stack) func-for-match "small" (conj stack-lst f) lst)
+                               (not (= mid-small "small")) (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                               )
+               (= f "]") (cond (and (= (count stack) 1) (= mid-small "mid")) (recur r [] func-for-match nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "mid")) (recur r (pop stack) func-for-match "mid" (conj stack-lst f) lst)
+                               (not (= mid-small "mid")) (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                               )
+               (= f "}") (cond (and (= (count stack) 1) (= mid-small "big")) (if-not (nil? func-for-match)
+                                                                                 (recur r [] nil nil [] (conj lst (conj stack-lst f)))
+                                                                                 (recur r [] func-for-match nil (conj stack-lst f) lst))
+                               (and (> (count stack) 1) (= mid-small "big")) (recur r (pop stack) func-for-match "big" (conj stack-lst f) lst)
+                               (not (= mid-small "big")) (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                               )
+               (= f ";") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
+                             (recur r [] func-for-match nil [] (conj lst (conj stack-lst f)))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               (= f "function") (if (and (nil? mid-small) (empty? stack) (empty? stack-lst) (nil? func-for-match))
+                                    (recur r [] "function" nil (conj stack-lst f) lst)
+                                    (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               (= f "for") (if (and (nil? mid-small) (empty? stack) (empty? stack-lst) (nil? func-for-match))
+                               (recur r [] "for" nil (conj stack-lst f) lst)
+                               (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               (= f "match") (if (and (nil? mid-small) (empty? stack) (empty? stack-lst) (nil? func-for-match))
+                                 (recur r [] "match" nil (conj stack-lst f) lst)
+                                 (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               :else
+               (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst stack-lst)
+             lst))))
+
+(defn re-super-smart-segment [segment-lst]
+    (loop [[f & r] segment-lst stack [] lst []]
+        (if (some? f)
+            (cond (and (empty? stack) (contains? #{"create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst f))
+                  (and (= (count stack) 1) (contains? #{"create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst (first stack) f))
+                  (and (> (count stack) 1) (contains? #{"create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst stack f))
+                  :else
+                  (recur r (conj stack f) lst)
+                  )
+            (cond (empty? stack) lst
+                  (= (count stack) 1) (conj lst (first stack))
+                  (> (count stack) 1) (conj lst stack)
+                  ))))
+
+(defn re-smart-segment [segment-lst]
+    (loop [[f & r] segment-lst stack [] lst []]
+        (if (some? f)
+            (cond (and (empty? stack) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst f))
+                  (and (= (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst (first stack) f))
+                  (and (> (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst stack f))
+                  :else
+                  (recur r (conj stack f) lst)
+                  )
+            (cond (empty? stack) lst
+                  (= (count stack) 1) (conj lst (first stack))
+                  (> (count stack) 1) (conj lst stack)
+                  ))))
+
+(defn -reSmartSegmentLst [^List segment-lst]
+    (loop [[f & r] segment-lst stack [] lst (ArrayList.)]
+        (if (some? f)
+            (cond (and (empty? stack) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add f)))
+                  (and (= (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (first stack)) (.add f)))
+                  (and (> (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (my-lexical/to_arryList stack)) (.add f)))
+                  :else
+                  (recur r (conj stack f) lst)
+                  )
+            (cond (empty? stack) lst
+                  (= (count stack) 1) (doto lst (.add (first stack)))
+                  (> (count stack) 1) (doto lst (.add stack))
+                  ))))
+
+(defn get-my-smart-segment [^String sql]
+    (loop [[f & r] (get-smart-segment (my-lexical/to-back sql)) ar (ArrayList.)]
+        (if (some? f)
+            (recur r (doto ar (.add (my-lexical/to_arryList f))))
+            ar)))
+
+(defn -getSmartSegment [^String sql]
+    (get-my-smart-segment sql))
 
 (defn get-pair-item-ex
     ([lst] (get-pair-item-ex lst [] nil [] []))
@@ -297,6 +382,7 @@
                         (cond (and (= (first f) "[") (= (last f) "]")) (recur r (conj lst-rs {:seq-obj (get-item-tokens (my-lexical/get-contain-lst f))}))
                               (and (= (first f) "{") (= (last f) "}")) (let [lst-dic (get-items-dic (my-lexical/get-contain-lst f))]
                                                                            (recur r (conj lst-rs {:map-obj (kv-to-token lst-dic)})))
+                              (and (= (first f) "-") (not (empty? (rest f)))) (recur r (conj lst-rs (my-select-plus/sql-to-ast (concat ["0"] f))))
                               :else
                               (recur r (conj lst-rs (my-select-plus/sql-to-ast f))))
                         (if (= (count lst-rs) 1)
@@ -319,14 +405,14 @@
                              (cond (contains? my-last-item :pair) (cond (map? (-> my-last-item :pair-vs)) (let [new-peek (assoc my-last-item :pair-vs [(-> my-last-item :pair-vs) f])]
                                                                                                               (recur r (conj (pop lst) new-peek)))
                                                                         (my-lexical/is-seq? (-> my-last-item :pair-vs)) (let [new-peek (assoc my-last-item :pair-vs (conj (-> my-last-item :pair-vs) f))]
-                                                                                                                                                        (recur r (conj (pop lst) new-peek)))
+                                                                                                                            (recur r (conj (pop lst) new-peek)))
                                                                         :else
                                                                         (throw (Exception. "match 语句块语法错误！"))
                                                                         )
                                    (contains? my-last-item :else-vs) (cond (map? (-> my-last-item :else-vs)) (let [new-peek (assoc my-last-item :else-vs [(-> my-last-item :else-vs) f])]
                                                                                                                  (recur r (conj (pop lst) new-peek)))
                                                                            (my-lexical/is-seq? (-> my-last-item :else-vs)) (let [new-peek (assoc my-last-item :else-vs (conj (-> my-last-item :else-vs) f))]
-                                                                                                                                                           (recur r (conj (pop lst) new-peek)))
+                                                                                                                               (recur r (conj (pop lst) new-peek)))
                                                                            :else
                                                                            (throw (Exception. "match 语句块语法错误！"))
                                                                            )
@@ -416,7 +502,9 @@
                :else
                (recur r (conj stack-lst f) lst)
                )
-         lst)))
+         (if (empty? stack-lst)
+             lst
+             (conj lst (lst-to-token stack-lst))))))
 
 (defn get-ast-lst [lst]
     (let [{func-name :func-name  args-lst :args-lst body-lst :body-lst} (get-func-name lst)]
@@ -428,19 +516,30 @@
                     [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}])
                 ))))
 
+(defn re-body-lst [args-lst body-lst]
+    (loop [[f & r] args-lst new-args-lst [] new-body-lst []]
+        (if (some? f)
+            (let [ps (str (gensym (format "c_%s_f" f)))]
+                (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name f, :let-vs {:table_alias "", :item_name ps, :item_type "", :java_item_type nil, :const false}})))
+            [new-args-lst (concat new-body-lst body-lst)])))
+
+(defn re-ast
+    ([lst] (re-ast lst []))
+    ([[f & r] lst]
+     (if (some? f)
+         (let [[new-args-lst new-body-lst] (re-body-lst (-> f :args-lst) (-> f :body-lst))]
+             (recur r (conj lst (assoc f :args-lst new-args-lst :body-lst new-body-lst))))
+         lst)))
+
 (defn get-ast [^String sql]
     (if-let [lst (my-lexical/to-back sql)]
-        (get-ast-lst lst)
+        ;(get-ast-lst lst)
+        (re-ast (get-ast-lst lst))
         ))
 
-;(defn get-ast [^String sql]
-;    (if-let [lst (my-lexical/to-back sql)]
-;        (loop [[f & r] (get-ast-lst lst) lst-rs []]
-;            (if (some? f)
-;                (let [arg-dic (get-args-dic (-> f :args-lst))]
-;                    (recur r (conj lst-rs (assoc f :args-lst (vals arg-dic) :body-lst (my-convert-token arg-dic (-> f :body-lst))))))
-;                lst-rs))
-;        ))
+(defn my-get-ast-lst [^clojure.lang.LazySeq lst]
+    (re-ast (get-ast-lst lst)))
+
 
 
 

@@ -146,6 +146,27 @@
                                                                 (.setArgs (to-array [table_name schema_name])))))
           ))
 
+; 1、获取表的 PK 定义
+(defn get_pk_def [^Ignite ignite ^String schema_name ^String table_name]
+    (when-let [rows (get-rows ignite schema_name table_name)]
+        (loop [[f & r] rows lst [] lst_pk [] dic {}]
+            (if (some? f)
+                (if (= (.get f 1) true) (recur r lst (conj lst_pk (.get f 0)) (assoc dic (.get f 0) (.get f 2)))
+                                        (recur r (conj lst (.get f 0)) lst_pk (assoc dic (.get f 0) (.get f 2))))
+                {:lst lst :lst_pk lst_pk :dic dic}))))
+
+(defn get_pk_def_map [^Ignite ignite ^String schema_name ^String table_name]
+    (when-let [{lst :lst lst_pk :lst_pk dic :dic} (get_pk_def ignite schema_name table_name)]
+        (if (> (count lst_pk) 1)
+            (loop [[f & r] lst_pk sb (StringBuilder.)]
+                (if (some? f)
+                    (if (some? r)
+                        (recur r (doto sb (.append (format "%s_pk" f)) (.append ",")))
+                        (recur r (doto sb (.append (format "%s_pk" f)))))
+                    {:line (.toString sb) :lst lst :lst_pk lst_pk :dic dic}))
+            {:line (first lst_pk) :lst lst :lst_pk lst_pk :dic dic}
+            )
+        ))
 
 (defn query-lst [dic lst-items is-pk]
     (loop [[f & r] lst-items rs []]
@@ -174,10 +195,6 @@
     (loop [[f & r] query-lst rs []]
         (if (some? f)
             (recur r (conj rs (-> f :column_name)))
-            ;(if (true? (-> f :is-pk))
-            ;    (recur r (conj rs (format "%s_pk" (-> f :column_name))))
-            ;    (recur r (conj rs (-> f :column_name)))
-            ;    )
             (str/join "," rs))))
 
 (defn my-pk-def-map [^Ignite ignite ^String schema_name ^String table_name update-obj]

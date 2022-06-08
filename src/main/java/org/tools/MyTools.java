@@ -1,6 +1,9 @@
 package org.tools;
 
-import clojure.lang.*;
+import clojure.lang.APersistentMap;
+import clojure.lang.APersistentSet;
+import clojure.lang.PersistentList;
+import clojure.lang.PersistentVector;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -16,6 +19,11 @@ public class MyTools {
             .enableComplexMapKeySerialization()
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .create();
+
+    public static Object removeIndex (List lst, int index)
+    {
+        return lst.remove(index);
+    }
 
     /**
      * 如果 line 是字典类型

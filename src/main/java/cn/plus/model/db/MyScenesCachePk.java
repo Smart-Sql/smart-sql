@@ -2,31 +2,27 @@ package cn.plus.model.db;
 
 import java.io.Serializable;
 
-/**
- * 用 schema 和 scenes_name 来唯一确定一个方法
- * */
 public class MyScenesCachePk implements Serializable {
     private static final long serialVersionUID = -8120427570272400470L;
 
-    //private Long group_id;
-    private String schema_name;
+    private Long group_id;
     private String scenes_name;
 
-    public MyScenesCachePk(final String schema_name, final String scenes_name)
+    public MyScenesCachePk(final Long group_id, final String scenes_name)
     {
-        this.schema_name = schema_name;
+        this.group_id = group_id;
         this.scenes_name = scenes_name;
     }
 
     public MyScenesCachePk()
     {}
 
-    public String getSchema_name() {
-        return schema_name;
+    public Long getGroup_id() {
+        return group_id;
     }
 
-    public void setSchema_name(String schema_name) {
-        this.schema_name = schema_name;
+    public void setGroup_id(Long group_id) {
+        this.group_id = group_id;
     }
 
     public String getScenes_name() {
@@ -35,14 +31,6 @@ public class MyScenesCachePk implements Serializable {
 
     public void setScenes_name(String scenes_name) {
         this.scenes_name = scenes_name;
-    }
-
-    @Override
-    public String toString() {
-        return "MyScenesCachePk{" +
-                "schema_name='" + schema_name + '\'' +
-                ", scenes_name='" + scenes_name + '\'' +
-                '}';
     }
 }
 

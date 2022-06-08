@@ -65,7 +65,7 @@
 ; 获取 public
 (defn get_public_cache [^Ignite ignite]
     (.getOrCreateCache ignite (doto (CacheConfiguration. "public_meta")
-                                                 (.setSqlSchema "PUBLIC")))
+                                  (.setSqlSchema "PUBLIC")))
     )
 
 ; 创建所有的元表和索引

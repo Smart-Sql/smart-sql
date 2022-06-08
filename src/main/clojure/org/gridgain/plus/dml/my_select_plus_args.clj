@@ -8,8 +8,6 @@
         [clojure.walk :as w])
     (:import (org.apache.ignite Ignite)
              (com.google.common.base Strings)
-             (org.tools MyConvertUtil MyDbUtil KvSql)
-             (cn.plus.model.db MyScenesCache)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
@@ -63,8 +61,10 @@
                                         (if-not (nil? r)
                                             (throw (Exception. "两个表以上要给表取别名"))
                                             (recur r (assoc dic "" table_ast))))
-                                    ))
-                            dic)))
+                                    )
+                                (recur r dic))
+                            (if (= dic {})
+                                nil dic))))
                 )
             (replace-alias [table_alias m]
                 (cond (my-lexical/is-seq? m) (map (partial replace-alias table_alias) m)
@@ -117,9 +117,11 @@
                  (if (and (not (nil? (-> m :where-items))) (not (empty? (-> m :where-items))))
                      (loop [[f & r] (keys authority-ast) lst-rs []]
                          (if (some? f)
-                             (recur r (concat lst-rs [{:parenthesis (-> (get authority-ast f) :where-items)} {:and_or_symbol "and"}]))
+                             (if-not (nil? (-> (get authority-ast f) :where-items))
+                                 (recur r (concat lst-rs [{:parenthesis (-> (get authority-ast f) :where-items)} {:and_or_symbol "and"}]))
+                                 (recur r lst-rs))
                              (concat lst lst-rs [{:parenthesis (-> m :where-items)}])))
-                     m)))
+                     (-> m :where-items))))
             (re-all-sql-obj [ignite group_id ast]
                 (cond (my-lexical/is-seq? ast) (map (partial re-all-sql-obj ignite group_id) ast)
                       (map? ast) (if (contains? ast :sql_obj)
@@ -230,12 +232,12 @@
                         {:sql lst-sql :args lst-args})))
             (lst-token-to-line
                 ([ignite group_id dic-args lst_token] (cond (string? lst_token) lst_token
-                                                   (map? lst_token) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args lst_token)]
-                                                                        {:sql (my-select-plus/my-array-to-sql sql) :args args})
-                                                   :else
+                                                            (map? lst_token) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args lst_token)]
+                                                                                 {:sql (my-select-plus/my-array-to-sql sql) :args args})
+                                                            :else
                                                             (let [{sql :sql args :args} (lst-token-to-line ignite group_id dic-args lst_token [] [])]
                                                                 {:sql (my-select-plus/my-array-to-sql sql) :args args})
-                                                   ))
+                                                            ))
                 ([ignite group_id dic-args [f & rs] lst lst-args]
                  (if (some? f)
                      (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args f)]
@@ -279,7 +281,7 @@
                         {:sql (str/join ["on " (str/join " " sql)]) :args args})
                     ))
             (func-to-line [ignite group_id dic-args m]
-                (if (and (contains? m :alias) (not (nil? (-> m :alias))))
+                (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
                     (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
                         (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args}
@@ -308,8 +310,8 @@
                     (cond
                         (and (not (Strings/isNullOrEmpty table_alias)) (not (nil? alias)) (not (Strings/isNullOrEmpty alias))) {:sql (str/join [table_alias "." item_name " as " alias]) :args nil}
                         (and (not (Strings/isNullOrEmpty table_alias)) (Strings/isNullOrEmpty alias)) {:sql (str/join [table_alias "." item_name]) :args nil}
-                        (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? dic-args item_name)
-                                                                                                    {:sql "?" :args [(get dic-args item_name)]}
+                        (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? (-> dic-args :dic) item_name)
+                                                                                                    {:sql "?" :args [(get (-> dic-args :dic) item_name)]}
                                                                                                     {:sql item_name :args nil}
                                                                                                     )
                         )))
@@ -355,6 +357,9 @@
 (defn my-ast-to-sql [ignite group_id dic-args ast]
     (let [my-ast (re-select-ast ignite group_id ast)]
         (ast_to_sql ignite group_id dic-args my-ast)))
+
+(defn my-ast-to-sql-no-authority [ignite group_id dic-args ast]
+    (ast_to_sql ignite group_id dic-args ast))
 
 
 

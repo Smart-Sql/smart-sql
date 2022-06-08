@@ -20,7 +20,7 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        ;:methods [^:static [my_call_scenes [org.apache.ignite.Ignite Long clojure.lang.PersistentArrayMap java.util.ArrayList] Object]]
+        :methods [^:static [sqlToAst [java.util.ArrayList] Object]]
         ))
 
 ; 函数的参数
@@ -627,6 +627,10 @@
                              my-ast))
           (my-lexical/is-seq? ast) (my-lexical/to_arryList (map to-lst ast))
           ))
+
+(defn -sqlToAst [^java.util.List lst]
+    (let [ast (sql-to-ast lst)]
+        (to-lst ast)))
 
 ; 转换成查询字符串
 (def sql_symbol #{"(" ")" "/" "*" "-" "+" "=" ">" "<" ">=" "<=" "<>" ","})

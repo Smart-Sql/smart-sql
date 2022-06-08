@@ -12,7 +12,7 @@
              (org.gridgain.smart MyVar)
              (org.tools MyPlusUtil)
              (org.gridgain.dml.util MyCacheExUtil)
-             (cn.plus.model.db MyScenesCache MyScenesCachePk)
+             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
@@ -24,13 +24,12 @@
         :main false
         ; 生成 java 静态的方法
         :methods [^:static [invokeScenes [org.apache.ignite.Ignite Long String java.util.List] Object]
-                  ^:static [invokeFunc [org.apache.ignite.Ignite Long String java.util.List] Object]]
+                  ^:static [invokeScenesLink [org.apache.ignite.Ignite Long String java.util.List] Object]]
         ))
 
 ; 调用 func
 (defn my-invoke-func [^Ignite ignite ^String method-name & ps]
     (MyPlusUtil/invokeFunc ignite method-name ps))
-
 
 ; 调用 scenes
 (defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name & ps]
@@ -42,12 +41,17 @@
                     (my-lexical/get-value (apply (eval (read-string (.getSql_code m))) ignite group_id ps))
                     (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))))))
 
+; 调用 scenes
+(defn my-invoke-scenes-link [^Ignite ignite ^Long group_id ^String method-name & ps]
+    (let [my-method-name (str/lower-case method-name)]
+        (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))))
+
 ; 首先调用方法，如果不存在，在从 cache 中读取数据在执行
 (defn -invokeScenes [^Ignite ignite ^Long group_id ^String method-name ^List ps]
     (my-invoke-scenes ignite group_id method-name ps))
 
-(defn -invokeFunc [^Ignite ignite ^Long group_id ^String method-name ^List ps]
-    (my-invoke-scenes ignite group_id method-name ps))
+(defn -invokeScenesLink [^Ignite ignite ^Long group_id ^String method-name ^List ps]
+    (my-invoke-scenes-link ignite group_id method-name ps))
 
 
 

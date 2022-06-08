@@ -121,7 +121,7 @@
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id ^String dataset_name]
     (let [{sql :sql lst_cachex :lst_cachex} (alter-table-obj ignite dataset_name sql_line)]
         (if-not (nil? lst_cachex)
-            (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (if (true? (..isMultiUserGroup (.configuration ignite)))
                 (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                     {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex (doto lst_cachex (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (MyLog. ddl_id "ddl_log" (MyCacheExUtil/objToBytes sql)) (SqlType/INSERT))))})
                 {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex})

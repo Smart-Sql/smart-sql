@@ -33,10 +33,14 @@ public class MyCacheExUtil implements Serializable {
     public static void transLogCache(final Ignite ignite, final List lstLogCache)
     {
         List<MyCacheEx> lstCache = (List<MyCacheEx>) lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
-        long log_id = ignite.atomicSequence("my_log", 0, true).incrementAndGet();
-        List<MyCacheEx> lst = (List<MyCacheEx>) lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
-        lstCache.addAll(lst);
-        transMyCache(ignite, lstCache);
+        if (ignite.configuration().isMyLogEnabled()) {
+            long log_id = ignite.atomicSequence("my_log", 0, true).incrementAndGet();
+            List<MyCacheEx> lst = (List<MyCacheEx>) lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
+            lstCache.addAll(lst);
+        }
+        if (lstCache != null && lstCache.size() > 0) {
+            transMyCache(ignite, lstCache);
+        }
     }
 
     public static void transCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
@@ -64,31 +68,48 @@ public class MyCacheExUtil implements Serializable {
     private static void transMyCache(final Ignite ignite, final List<MyCacheEx> lstCache) {
         //List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
 
-        IgniteTransactions transactions = ignite.transactions();
-        Transaction tx = null;
-        try {
-            tx = transactions.txStart();
-            lstCache.stream().forEach(m -> {
-                switch (m.getSqlType()) {
-                    case UPDATE:
-                        m.getCache().replace(m.getKey(), m.getValue());
-                        break;
-                    case INSERT:
-                        m.getCache().put(m.getKey(), m.getValue());
-                        break;
-                    case DELETE:
-                        m.getCache().remove(m.getKey());
-                        break;
-                }
-            });
-            tx.commit();
-        } catch (Exception ex) {
-            if (tx != null) {
-                tx.rollback();
+        if (lstCache.size() == 1)
+        {
+            MyCacheEx m = lstCache.get(0);
+            switch (m.getSqlType()) {
+                case UPDATE:
+                    m.getCache().replace(m.getKey(), m.getValue());
+                    break;
+                case INSERT:
+                    m.getCache().put(m.getKey(), m.getValue());
+                    break;
+                case DELETE:
+                    m.getCache().remove(m.getKey());
+                    break;
             }
-        } finally {
-            if (tx != null) {
-                tx.close();
+        }
+        else {
+            IgniteTransactions transactions = ignite.transactions();
+            Transaction tx = null;
+            try {
+                tx = transactions.txStart();
+                lstCache.stream().forEach(m -> {
+                    switch (m.getSqlType()) {
+                        case UPDATE:
+                            m.getCache().replace(m.getKey(), m.getValue());
+                            break;
+                        case INSERT:
+                            m.getCache().put(m.getKey(), m.getValue());
+                            break;
+                        case DELETE:
+                            m.getCache().remove(m.getKey());
+                            break;
+                    }
+                });
+                tx.commit();
+            } catch (Exception ex) {
+                if (tx != null) {
+                    tx.rollback();
+                }
+            } finally {
+                if (tx != null) {
+                    tx.close();
+                }
             }
         }
     }
