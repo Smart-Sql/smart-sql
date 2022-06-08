@@ -11,10 +11,14 @@
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (cn.plus.model.db MyScenesCache)
+             (org.gridgain.myservice MyNoSqlFunService)
+             (org.gridgain.jdbc MyJdbc)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
+             (org.tools MyTools MyFunction)
              (java.math BigDecimal))
     (:gen-class
+        :implements [org.gridgain.superservice.INoSqlFun]
         ; 生成 class 的类名
         :name org.gridgain.plus.dml.MyLexical
         ; 是否生成 class 的 main 方法
@@ -22,9 +26,13 @@
         ; 生成 java 静态的方法
         :methods [^:static [my_url_tokens [String] cn.mysuper.model.MyUrlToken]
                   ^:static [isJdbcThin [String] Boolean]
-                  ^:static [hasConnPermission [String] Boolean]]
+                  ^:static [hasConnPermission [String] Boolean]
+                  ^:static [getStrValue [String] String]
+                  ^:static [lineToList [String] java.util.List]]
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
+
+(declare get-schema)
 
 ; 输入场景（方法的名字）实际参，输出 dic
 ; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是
@@ -41,6 +49,26 @@
         )
     )
 
+; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是  my-lexical/get_scenes_dic
+; dic_paras = {user_name {:value "吴大富" :type String} pass_word {:value "123" :type String}}
+; name 字符串
+(defn get_dic_vs [^clojure.lang.PersistentArrayMap dic_paras ^String name]
+    (if (and (= (first name) \:) (contains? dic_paras (str/join (rest name))))
+        (letfn [(str_item_value [item_value]
+                    (if (or (and (= (first item_value) \') (= (last item_value) \')) (and (= (first item_value) \") (= (last item_value) \")))
+                        (str/join (reverse (rest (reverse (rest item_value)))))))]
+            (let [{value :value type :type} (get dic_paras (str/join (rest name)))]
+                (cond (= Integer type) (MyConvertUtil/ConvertToInt value)
+                      (= String type) (str_item_value value)
+                      (= Boolean type) (MyConvertUtil/ConvertToBoolean value)
+                      (= Long type) (MyConvertUtil/ConvertToLong value)
+                      (= Timestamp type) (MyConvertUtil/ConvertToTimestamp value)
+                      (= BigDecimal type) (MyConvertUtil/ConvertToDecimal value)
+                      (= "byte[]" type) (MyConvertUtil/ConvertToByte value)
+                      (= Object type) value
+                      )))
+        name))
+
 (defn get-value [m]
     (if (instance? MyVar m)
         (.getVar m)
@@ -55,11 +83,32 @@
 
 (def my_group_schema_name (memoize get_group_schema_name))
 
+(defn get_obj_schema_name [^Ignite ignite ^Long group_id my-obj]
+    (if-let [vs-obj (get-value my-obj)]
+        (if (contains? vs-obj "table_name")
+            (let [{schema_name :schema_name table_name :table_name} (get-schema (get vs-obj "table_name"))]
+                (if (= schema_name "")
+                    {:schema_name (first (my_group_schema_name ignite group_id)) :table_name table_name}
+                    {:schema_name schema_name :table_name table_name})))))
+
 ; 剔除单括号或双括号
 (defn get_str_value [^String line]
-               (if (some? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$|^\'\'$|^\"\"$" line))
-                   (str/join (reverse (rest (reverse (rest line)))))
-                   line))
+    (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (reverse (rest (reverse (rest line)))))
+          (re-find #"^\'\'$" line) ""
+          :else line
+          ))
+
+(defn my-str-value [^String line]
+    (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (concat [\"] (drop-last 1 (rest line)) [\"]))
+          (re-find #"^\'\'$" line) ""
+          :else line
+          ))
+
+(defn -getStrValue [^String line]
+    (cond (and (= (first line) \') (= (last line) \')) (str/join (drop-last 1 (rest line)))
+          (and (= (first line) \") (= (first line) \")) (str/join (drop-last 1 (rest line)))
+          :else line
+          ))
 
 ; 去掉 lst 的头和尾，取中间的链表
 (defn get-contain-lst
@@ -85,7 +134,7 @@
 
 ; 通过表名获取数据集的名称，返回 List
 ;(defn get_all_ds [^Ignite ignite ^String table_name]
-;    (if (true? (.isDataSetEnabled (.configuration ignite)))
+;    (if (true? (.isMyLogEnabled (.configuration ignite)))
 ;        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "SELECT DISTINCT m.dataset_name FROM my_dataset AS m INNER JOIN my_dataset_table AS mt ON m.id = mt.dataset_id WHERE m.is_real = ? and mt.table_name = ?") (to-array [false table_name]))))))
 
 ; 输入列表将列表中的元素，双引号换成单引号
@@ -120,7 +169,7 @@
 
 ; 是否是序列
 (defn is-seq? [m]
-    (or (vector? m) (seq? m) (list? m)))
+    (or (vector? m) (seq? m) (list? m) (instance? java.util.List m)))
 
 ; 执行事务
 ; lst_cache: [MyCacheEx]
@@ -154,12 +203,36 @@
          (recur r (doto lst (.add f)))
          lst)))
 
+(defn my-is-iter? [m]
+    (cond (instance? Iterator m) true
+          (and (instance? MyVar m) (instance? Iterator (.getVar m))) true
+          :else false))
+
+(defn get-my-iter [m]
+    (cond (instance? Iterator m) m
+          (and (instance? MyVar m) (instance? Iterator (.getVar m))) (.getVar m)
+          ))
+
+(defn my-is-seq? [m]
+    (cond (is-seq? m) true
+          (and (instance? MyVar m) (is-seq? (.getVar m))) true
+          :else false))
+
+(defn get-my-seq [m]
+    (cond (is-seq? m) m
+          (and (instance? MyVar m) (is-seq? (.getVar m))) (.getVar m)
+          ))
+
 ; smart 操作集合的函数
 (defn list-add [^ArrayList lst ^Object obj]
     (.add lst obj))
 
 (defn list-set [^ArrayList lst ^Integer index ^Object obj]
     (.set lst index obj))
+
+(defn list-remove [dic-lst ^Integer index]
+    (cond (instance? java.util.List dic-lst) (MyTools/removeIndex dic-lst index)
+          (instance? java.util.Hashtable dic-lst) (.remove dic-lst index)))
 
 (defn list-take [^ArrayList lst ^Integer index]
     (if (> (count lst) index)
@@ -184,6 +257,276 @@
 (defn list-pop [^ArrayList lst]
     (.subList lst 0 (- (count lst) 1)))
 
+(defn my-concat [a & rs]
+    (letfn [(my-concat-str [a & rs]
+                (str/join (apply conj [a] rs)))
+            ]
+        (cond (string? a) (if (nil? rs)
+                              (my-concat-str a)
+                              (apply my-concat-str a rs))
+              (is-seq? a) (if (nil? rs)
+                              a
+                              (apply concat a rs))
+              :else
+              (if (nil? rs)
+                  (my-concat-str a)
+                  (apply my-concat-str a rs))
+              )))
+
+(defn to-char [m & ps]
+    (cond (integer? m) (MyFunction/to_char_int m)
+          (or (instance? long m) (instance? Long m)) (MyFunction/to_char_long m)
+          (double? m) (MyFunction/to_char_double m)
+          (instance? Date m) (MyFunction/to_char_date m (first ps))
+          ))
+
+(defn my-sign [m]
+    (cond (integer? m) (MyFunction/sign_int m)
+          (or (instance? long m) (instance? Long m)) (MyFunction/sign_long m)
+          (double? m) (MyFunction/sign_double m)
+          (string? m) (MyFunction/sign_str m)
+          ))
+
+(defn decode [m]
+    (if (is-seq? m)
+        (MyFunction/decode (to_arryList m))
+        (throw (Exception. "decode 的输入参数只能的序列！"))))
+
+(defn trunc_double [^Double ps num]
+    (letfn [(get-front-back [^Double ps]
+                (loop [[f & r] (str ps) dot nil front [] back []]
+                    (if (some? f)
+                        (cond (and (nil? dot) (not (= f \.))) (recur r dot (conj front f) back)
+                              (and (nil? dot) (= f \.)) (recur r \. front back)
+                              (and (not (nil? dot)) (not (= f \.))) (recur r dot front (conj back f))
+                              :else
+                              (throw (Exception. "Double 输入格式错误！"))
+                              )
+                        [front back])))]
+        (let [[front back] (get-front-back ps)]
+            (cond (and (>= num 0) (<= num (count back))) (MyConvertUtil/ConvertToDouble (str/join (concat front [\.] (drop-last num back))))
+                  (and (> num 0) (> num (count back))) ps
+                  (and (< num 0) (< (+ (count front) num) 0)) (Double/valueOf 0)
+                  (and (< num 0) (> (+ (count front) num) 0)) (let [my-count (Math/abs num)]
+                                                                  (loop [index 0 lst []]
+                                                                      (if (< index my-count)
+                                                                          (recur (+ index 1) (conj lst \0))
+                                                                          (MyConvertUtil/ConvertToDouble (str/join (concat (drop-last my-count front) lst))))))
+                  :else
+                  (throw (Exception. (format "输入参数错误！%s" ps)))
+                  )))
+    )
+
+(defn trunc [m & ps]
+    (cond (and (double? m) (not (nil? ps)) (number? (first ps))) (trunc_double m (first ps))
+          (and (instance? Date m) (not (nil? ps)) (string? (first ps))) (MyFunction/trunc_date m (first ps))
+          (and (instance? Date m) (nil? ps)) (MyFunction/trunc_single_date m)
+          ))
+
+(defn substr [str start count]
+    (MyFunction/substr str (MyConvertUtil/ConvertToInt start) (MyConvertUtil/ConvertToInt count)))
+
+(defn least [lst]
+    (MyFunction/least (to_arryList lst)))
+
+(defn greatest [lst]
+    (MyFunction/greatest (to_arryList lst)))
+
+(defn my-mod [v1 v2]
+    (MyFunction/mod (MyConvertUtil/ConvertToInt v1) (MyConvertUtil/ConvertToInt v2)))
+
+(defn my-round [^Double v0 num]
+    (MyFunction/round v0 (MyConvertUtil/ConvertToInt num)))
+
+(defn my-substrb [str begin length]
+    (MyFunction/substrb str (MyConvertUtil/ConvertToInt begin) (MyConvertUtil/ConvertToInt count)))
+
+(defn my-chr [my-ascii]
+    (MyFunction/chr (MyConvertUtil/ConvertToInt my-ascii)))
+
+(defn my-instrb [src dest begin time]
+    (MyFunction/instrb src dest (MyConvertUtil/ConvertToInt begin) (MyConvertUtil/ConvertToInt time)))
+
+(defn my-ltrim [str & my-key]
+    (if (nil? my-key)
+        (MyFunction/ltrim str)
+        (MyFunction/ltrim str (first my-key))))
+
+(defn my-rtrim [str & my-key]
+    (if (nil? my-key)
+        (MyFunction/rtrim str)
+        (MyFunction/rtrim str (first my-key))))
+
+(defn my-avg [lst]
+    (MyFunction/avg (to_arryList lst)))
+
+(defn my-acos [m]
+    (MyFunction/acos (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-asin [m]
+    (MyFunction/asin (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-atan [m]
+    (MyFunction/atan (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-ceiling [m]
+    (MyFunction/ceiling (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-cos [m]
+    (MyFunction/cos (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-cosh [m]
+    (MyFunction/cosh (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-cot [m]
+    (MyFunction/cot (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-degrees [m]
+    (MyFunction/degrees (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-exp [m]
+    (MyFunction/exp (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-floor [m]
+    (MyFunction/floor (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-ln [m]
+    (MyFunction/ln (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-log [m n]
+    (MyFunction/log (MyConvertUtil/ConvertToDouble m) (MyConvertUtil/ConvertToDouble n)))
+
+(defn my-log10 [m]
+    (MyFunction/log10 (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-radians [m]
+    (MyFunction/radians (MyConvertUtil/ConvertToLong m)))
+
+(defn my-roundMagic [m]
+    (MyFunction/roundMagic (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-char [m]
+    (MyFunction/my_char (MyConvertUtil/ConvertToInt m)))
+
+(defn my-length [m]
+    (MyFunction/length (MyConvertUtil/ConvertToString m)))
+
+(defn my-ucase [m]
+    (MyFunction/ucase (MyConvertUtil/ConvertToString m)))
+
+(defn my-day-name [m]
+    (MyFunction/day_name (MyConvertUtil/ConvertToTimestamp m)))
+
+(defn my-year [m]
+    (MyFunction/year (MyConvertUtil/ConvertToTimestamp m)))
+
+(defn my-to-number [m]
+    (MyFunction/to_number (MyConvertUtil/ConvertToString m)))
+
+(defn my-add-months [ps num]
+    (MyFunction/add_months (MyConvertUtil/ConvertToTimestamp ps) (MyConvertUtil/ConvertToInt num)))
+
+(defn no-sql-insert-tran [ignite group_id m]
+    (.myInsertTran (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-update-tran [ignite group_id m]
+    (.myUpdateTran (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-delete-tran [ignite group_id m]
+    (.myDeleteTran (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-drop [ignite group_id m]
+    (.myDrop (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-insert [ignite group_id m]
+    (.myInsert (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-update [ignite group_id m]
+    (.myUpdate (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-delete [ignite group_id m]
+    (.myDelete (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn smart-func [func-name]
+    (cond (is-eq? func-name "add") "my-lexical/list-add"
+          (is-eq? func-name "set") "my-lexical/list-set"
+          (is-eq? func-name "take") "my-lexical/list-take"
+          (is-eq? func-name "drop") "my-lexical/list-drop"
+          ;(is-eq? func-name "noSqlInsert") "my-lexical/no-sql-insert"
+          (is-eq? func-name "nth") "nth"
+          (is-eq? func-name "count") "count"
+          (is-eq? func-name "concat") "my-lexical/my-concat"
+          (is-eq? func-name "put") ".put"
+          (is-eq? func-name "get") "my-lexical/map-list-get"
+          (is-eq? func-name "remove") "my-lexical/list-remove"
+          (is-eq? func-name "pop") "my-lexical/list-peek"
+          (is-eq? func-name "peek") "my-lexical/list-peek"
+          (is-eq? func-name "takeLast") "my-lexical/list-take-last"
+          (is-eq? func-name "dropLast") "my-lexical/list-drop-last"
+          (is-eq? func-name "empty?") "empty?"
+          (is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
+          (is-eq? func-name "abs") "MyFunction/abs"
+          (is-eq? func-name "acos") "my-lexical/my-acos"
+          (is-eq? func-name "asin") "my-lexical/my-asin"
+          (is-eq? func-name "atan") "my-lexical/my-atan"
+          (is-eq? func-name "ceiling") "my-lexical/my-ceiling"
+          (is-eq? func-name "cos") "my-lexical/my-cos"
+          (is-eq? func-name "cosh") "my-lexical/my-cosh"
+          (is-eq? func-name "cot") "my-lexical/my-cot"
+          (is-eq? func-name "degrees") "my-lexical/my-degrees"
+          (is-eq? func-name "exp") "my-lexical/my-exp"
+          (is-eq? func-name "floor") "my-lexical/my-floor"
+          (is-eq? func-name "ln") "my-lexical/my-ln"
+          (is-eq? func-name "log") "my-lexical/my-log"
+          (is-eq? func-name "log10") "my-lexical/my-log10"
+          (is-eq? func-name "pi") "MyFunction/pi"
+          (is-eq? func-name "radians") "my-lexical/my-radians"
+          (is-eq? func-name "roundMagic") "my-lexical/my-roundMagic"
+          (is-eq? func-name "sign") "my-lexical/my-sign"
+          (is-eq? func-name "zero") "MyFunction/zero"
+          (is-eq? func-name "length") "my-lexical/my-length"
+          (is-eq? func-name "char") "my-lexical/my-char"
+          (is-eq? func-name "ucase") "my-lexical/my-ucase"
+          (is-eq? func-name "day_name") "my-lexical/my-day-name"
+          (is-eq? func-name "year") "my-lexical/my-year"
+          (is-eq? func-name "to_number") "my-lexical/my-to-number"
+          (is-eq? func-name "to_char") "my-lexical/to-char"
+          (is-eq? func-name "add_months") "my-lexical/my-add-months"
+          (is-eq? func-name "lpad") "MyFunction/lpad"
+          (is-eq? func-name "rpad") "MyFunction/rpad"
+          (is-eq? func-name "to_date") "MyFunction/to_date"
+          (is-eq? func-name "last_day") "MyFunction/last_day"
+          (is-eq? func-name "decode") "my-lexical/decode"
+          (is-eq? func-name "trunc") "my-lexical/trunc"
+          (is-eq? func-name "substr") "my-lexical/substr"
+          (is-eq? func-name "ascii") "MyFunction/ascii"
+          (is-eq? func-name "least") "my-lexical/least"
+          (is-eq? func-name "greatest") "my-lexical/greatest"
+          (is-eq? func-name "months_between") "MyFunction/months_between"
+          (is-eq? func-name "instr") "MyFunction/instr"
+          (is-eq? func-name "replace") "MyFunction/replace"
+          (is-eq? func-name "ceil") "MyFunction/ceil"
+          (is-eq? func-name "floor") "MyFunction/floor"
+          (is-eq? func-name "mod") "my-lexical/my-mod"
+          (is-eq? func-name "round") "my-lexical/my-round"
+          (is-eq? func-name "lower") "MyFunction/lower"
+          (is-eq? func-name "upper") "MyFunction/upper"
+          (is-eq? func-name "substrb") "my-lexical/my-substrb"
+          (is-eq? func-name "lengthb") "MyFunction/lengthb"
+          (is-eq? func-name "chr") "my-lexical/my-chr"
+          (is-eq? func-name "instrb") "my-lexical/my-instrb"
+          (is-eq? func-name "ltrim") "my-lexical/my-ltrim"
+          (is-eq? func-name "rtrim") "my-lexical/my-rtrim"
+          (is-eq? func-name "trim") "MyFunction/trim"
+          (is-eq? func-name "translate") "MyFunction/translate"
+          (is-eq? func-name "avg") "MyFunction/my-avg"
+          :else
+          (str/lower-case func-name)
+          ))
+
+;(defn my-concat [[f & r]]
+;    (cond (string? (first f)) (MyFunction/concat lst)))
+
 (defn not-empty? [lst]
     (not (empty? lst)))
 
@@ -202,21 +545,36 @@
         (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
         (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
 
+(defn get-code-insert [ignite schema_name table_name my_group_id sql-token]
+    (if (= (is-eq? schema_name "public"))
+        (first (.getAll (.query (.cache ignite "my_insert_views") (.setArgs (SqlFieldsQuery. "select m.code from my_insert_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
+        (first (.getAll (.query (.cache ignite "my_insert_views") (.setArgs (SqlFieldsQuery. "select m.code from my_insert_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
+
+(defn get-code-update [ignite schema_name table_name my_group_id sql-token]
+    (if (= (is-eq? schema_name "public"))
+        (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
+        (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
+
+(defn get-code-delete [ignite schema_name table_name my_group_id sql-token]
+    (if (= (is-eq? schema_name "public"))
+        (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
+        (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
+
 ; 获取 select 的权限 code
 (defn get-select-code [ignite schema_name table_name my_group_id]
     (get-code ignite schema_name table_name my_group_id "查"))
 
 ; 获取 insert 的权限 code
 (defn get-insert-code [ignite schema_name table_name my_group_id]
-    (get-code ignite schema_name table_name my_group_id "增"))
+    (get-code-insert ignite schema_name table_name my_group_id "增"))
 
 ; 获取 delete 的权限 code
 (defn get-delete-code [ignite schema_name table_name my_group_id]
-    (get-code ignite schema_name table_name my_group_id "删"))
+    (get-code-delete ignite schema_name table_name my_group_id "删"))
 
 ; 获取 update 的权限 code
 (defn get-update-code [ignite schema_name table_name my_group_id]
-    (get-code ignite schema_name table_name my_group_id "改"))
+    (get-code-update ignite schema_name table_name my_group_id "改"))
 
 (defn get-schema
     ([lst] (if-let [m (get-schema lst [] [])]
@@ -237,6 +595,50 @@
          (if (empty? stack)
              lst
              (conj lst (str/join stack))))))
+
+; 获取 ast 中 item
+(defn my-ast-items [ast]
+    (letfn [(has-item-in [[f & r] item]
+                (if (some? f)
+                    (if (is-eq? (-> f :item_name) (-> item :item_name))
+                        true
+                        (recur r item))
+                    false))
+            (get-only-item
+                ([lst] (get-only-item lst []))
+                ([[f & r] lst-only]
+                 (if (some? f)
+                     (if (has-item-in lst-only f)
+                         (recur r lst-only)
+                         (recur r (conj lst-only f)))
+                     lst-only)))
+            (get-ast-map-items [ast-map]
+                (cond (and (contains? ast-map :item_name) (false? (-> ast-map :const))) ast-map
+                      :else
+                      (loop [[f & r] (keys ast-map) rs []]
+                          (if (some? f)
+                              (if-let [f-m (get-ast-items (get ast-map f))]
+                                  (if (is-seq? f-m)
+                                      (recur r (apply conj rs f-m))
+                                      (recur r (conj rs f-m)))
+                                  (recur r rs))
+                              rs))
+                      ))
+            (get-ast-lst-items
+                ([lst] (get-ast-lst-items lst []))
+                ([[f & r] lst]
+                 (if (some? f)
+                     (if-let [f-m (get-ast-items f)]
+                         (if (is-seq? f-m)
+                             (recur r (apply conj lst f-m))
+                             (recur r (conj lst f-m)))
+                         (recur r lst))
+                     lst)))
+            (get-ast-items [ast]
+                (cond (map? ast) (get-ast-map-items ast)
+                      (is-seq? ast) (get-ast-lst-items ast)
+                      ))]
+        (get-only-item (get-ast-items ast))))
 
 (defn to-smart-sql-type [f-type]
     (cond (re-find #"^(?i)FLOAT$" f-type) "double"
@@ -294,9 +696,10 @@
 
 (defn get_jave_vs [column_type column_value]
     (letfn [(get_str_value [^String line]
-                (if-not (nil? (re-find #"^\'[\S\s]+\'$" line))
-                    (str/join (reverse (rest (reverse (rest line)))))
-                    line))]
+                (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (reverse (rest (reverse (rest line)))))
+                      (re-find #"^\'\'$" line) ""
+                      :else line
+                      ))]
         (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) (MyConvertUtil/ConvertToInt column_value)
               (re-find #"^(?i)float$" column_type) (MyConvertUtil/ConvertToDouble column_value)
               (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble column_value)
@@ -412,7 +815,8 @@
     ([^String line] (to-back line [] [] [] [] []))
     ([[f & rs] stack-str stack-zhushi-1 stack-zhushi-2 lst lst_result]
      (if (some? f)
-         (cond (and (= f \;) (= (count stack-str) 0) (= (count stack-zhushi-1) 0) (= (count stack-zhushi-2) 0)) (if (> (count lst) 0) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [(str/join lst) ";"])) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [";"])))
+         (cond (and (= f \.) (= (count stack-str) 0) (= (count stack-zhushi-1) 0) (= (count stack-zhushi-2) 0)) (if (> (count lst) 0) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [(str/join lst) "."])) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result ["."])))
+               (and (= f \;) (= (count stack-str) 0) (= (count stack-zhushi-1) 0) (= (count stack-zhushi-2) 0)) (if (> (count lst) 0) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [(str/join lst) ";"])) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [";"])))
                (and (= f \:) (= (count stack-str) 0) (= (count stack-zhushi-1) 0) (= (count stack-zhushi-2) 0)) (if (> (count lst) 0) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [(str/join lst) ":"])) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [":"])))
                (and (= f \[) (= (count stack-str) 0) (= (count stack-zhushi-1) 0) (= (count stack-zhushi-2) 0)) (if (> (count lst) 0) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [(str/join lst) "["])) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result ["["])))
                (and (= f \]) (= (count stack-str) 0) (= (count stack-zhushi-1) 0) (= (count stack-zhushi-2) 0)) (if (> (count lst) 0) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result [(str/join lst) "]"])) (recur rs stack-str stack-zhushi-1 stack-zhushi-2 [] (concat lst_result ["]"])))
@@ -458,6 +862,9 @@
          (if (> (count lst) 0) (concat lst_result [(str/join lst)]) lst_result)
          )))
 
+(defn -lineToList [^String line]
+    (to_arryList (to-back line)))
+
 ; 按逗号切分 query
 ; stack 记录 （）
 ; lst 记录 query-item
@@ -487,10 +894,10 @@
     ([[f & rs] stack lst]
      (if (some? f)
          (cond (and (= f ",") (= (count stack) 0)) (if (> (count lst) 0)
-                                                      (let [table_items_obj (tables-items-line rs stack [])]
-                                                          (if (nil? table_items_obj)
-                                                              {:table-items (concat [(to-lazy lst) ","] [rs]) :rs-lst nil :my-type nil}
-                                                              {:table-items (concat [(to-lazy lst) ","] (get table_items_obj :table-items)) :rs-lst (get table_items_obj :rs-lst) :my-type (get table_items_obj :my-type)})))
+                                                       (let [table_items_obj (tables-items-line rs stack [])]
+                                                           (if (nil? table_items_obj)
+                                                               {:table-items (concat [(to-lazy lst) ","] [rs]) :rs-lst nil :my-type nil}
+                                                               {:table-items (concat [(to-lazy lst) ","] (get table_items_obj :table-items)) :rs-lst (get table_items_obj :rs-lst) :my-type (get table_items_obj :my-type)})))
 
                (and (is-eq? f "where") (= (count stack) 0)) (if (> (count lst) 0)
                                                                 {:table-items [(to-lazy lst)] :rs-lst rs :my-type "where"}
@@ -689,7 +1096,7 @@
                                                         {:query-items query-items :table-items table-items :where-items nil :group-by group-by :having having :order-by (get m :order-by) :limit (get m :limit)}
                                                         {:query-items query-items :table-items table-items :where-items nil :group-by group-by :having nil :order-by (get m :order-by) :limit (get m :limit)})))
                         (= my-type "limit") {:query-items query-items :table-items table-items :where-items nil :group-by nil :having nil :order-by nil :limit rs-lst-tables}
-                          ))))))
+                        ))))))
 
 ;(defn get-segments-list [lst]
 ;    (if (some? lst)

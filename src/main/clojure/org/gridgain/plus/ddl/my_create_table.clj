@@ -2,9 +2,6 @@
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select]
-        [org.gridgain.plus.dml.my-insert :as my-insert]
-        [org.gridgain.plus.dml.my-update :as my-update]
-        [org.gridgain.plus.context.my-context :as my-context]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)

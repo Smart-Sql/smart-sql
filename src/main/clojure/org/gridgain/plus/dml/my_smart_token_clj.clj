@@ -1,7 +1,6 @@
 (ns org.gridgain.plus.dml.my-smart-token-clj
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -10,7 +9,8 @@
              (com.google.common.base Strings)
              (cn.plus.model MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
-             (cn.plus.model.db MyScenesCache MyScenesCachePk)
+             (org.gridgain.myservice MyLoadSmartSqlService)
+             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
@@ -27,7 +27,7 @@
         ))
 
 (declare is-symbol-priority run-express calculate is-func? is-scenes? func-to-clj item-to-clj token-lst-to-clj
-         token-to-clj map-token-to-clj parenthesis-to-clj seq-obj-to-clj map-obj-to-clj smart-func-to-clj)
+         token-to-clj map-token-to-clj parenthesis-to-clj seq-obj-to-clj map-obj-to-clj smart-func-to-clj func-link-to-clj get-lst-ps-vs)
 
 ; 添加 let 定义到 my-context
 (defn add-let-to-context [let-name let-vs my-context]
@@ -72,7 +72,7 @@
                   (contains? (-> my-context :let-params) (-> second_item :item_name))
                   (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
                   :else
-                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
+                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
                   ))
         (-> (first stack_number) :item_name)
         ;(first stack_number)
@@ -103,8 +103,12 @@
                                                    )
                (contains? f :parenthesis) (let [m (calculate ignite group_id (reverse (-> f :parenthesis)) my-context)]
                                               (recur ignite group_id r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol my-context))
+               (contains? f :operation) (let [m (calculate ignite group_id (reverse (-> f :operation)) my-context)]
+                                            (recur ignite group_id r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol my-context))
                (contains? f :item_name) (recur ignite group_id r (conj stack_number f) stack_symbol my-context)
                (contains? f :func-name) (let [m (func-to-clj ignite group_id f my-context)]
+                                            (recur ignite group_id r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol my-context))
+               (contains? f :func-link) (let [m (func-link-to-clj ignite group_id (-> f :func-link) my-context)]
                                             (recur ignite group_id r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol my-context))
                :else
                (recur ignite group_id r (conj stack_number f) stack_symbol my-context)
@@ -131,32 +135,11 @@
           true
           ))
 
-(defn smart-func [func-name]
-    (cond (my-lexical/is-eq? func-name "add") "my-lexical/list-add"
-          (my-lexical/is-eq? func-name "set") "my-lexical/list-set"
-          (my-lexical/is-eq? func-name "take") "my-lexical/list-take"
-          (my-lexical/is-eq? func-name "drop") "my-lexical/list-drop"
-          (my-lexical/is-eq? func-name "nth") "nth"
-          (my-lexical/is-eq? func-name "count") "count"
-          (my-lexical/is-eq? func-name "concat") "concat"
-          (my-lexical/is-eq? func-name "put") ".put"
-          (my-lexical/is-eq? func-name "get") "my-lexical/map-list-get"
-          (my-lexical/is-eq? func-name "remove") "dissoc"
-          (my-lexical/is-eq? func-name "pop") "my-lexical/list-peek"
-          (my-lexical/is-eq? func-name "peek") "my-lexical/list-peek"
-          (my-lexical/is-eq? func-name "takeLast") "my-lexical/list-take-last"
-          (my-lexical/is-eq? func-name "dropLast") "my-lexical/list-drop-last"
-          (my-lexical/is-eq? func-name "empty?") "empty?"
-          (my-lexical/is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
-          :else
-          (str/lower-case func-name)
-          ))
-
 (defn smart-func-lst
     ([^Ignite ignite group_id m my-context] (smart-func-lst ignite group_id m my-context [] []))
     ([^Ignite ignite group_id m my-context head-lst tail-lst]
      (let [{my-func-name :func-name lst_ps :lst_ps ds-name :ds-name} m]
-         (let [func-name (smart-func my-func-name)]
+         (let [func-name (my-lexical/smart-func my-func-name)]
              (if-not (nil? (-> m :ds-lst))
                  (recur ignite group_id (-> m :ds-lst) my-context (conj head-lst (format "%s " func-name)) (conj tail-lst (token-to-clj ignite group_id lst_ps my-context)))
                  (if-not (= ds-name "")
@@ -181,41 +164,62 @@
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
-        (cond (my-lexical/is-eq? func-name "trans") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
-              (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
-              (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
-              (my-lexical/is-eq? "log" func-name) (format "(log %s)" (token-to-clj ignite group_id lst_ps my-context))
-              (my-lexical/is-eq? "println" func-name) (format "(println %s)" (token-to-clj ignite group_id lst_ps my-context))
+        (cond (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "my_view") (format "(smart-func/smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add_job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "remove_job") (format "(smart-func/remove-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? "println" func-name) (format "(println %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
                                             (if (> (count lst_ps) 0)
-                                                (format "(%s (my-lexical/get-value %s) %s)" (smart-func method-name) let-name (token-to-clj ignite group_id lst_ps my-context))
-                                                (format "(%s (my-lexical/get-value %s))" (smart-func method-name) let-name))
-                                            ;(if-let [let-obj (get-let-context let-name my-context)]
-                                            ;    (if (and (true? (has-func? let-obj method-name)) (= let-name ""))
-                                            ;        (if (> (count lst_ps) 0)
-                                            ;            (format "(%s %s %s)" method-name let-name (token-to-clj ignite group_id lst_ps my-context))
-                                            ;            (format "(%s %s)" method-name let-name)))
-                                            ;    )
+                                                (format "(%s (my-lexical/get-value %s) %s)" (my-lexical/smart-func method-name) let-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+                                                (format "(%s (my-lexical/get-value %s))" (my-lexical/smart-func method-name) let-name))
                                             )
               ; 系统函数
-              (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
+              (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
               ; inner function
-              (get-inner-function-context (str/lower-case func-name) my-context) (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
-              (my-lexical/is-eq? func-name "query_sql") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
-              (and (contains? my-context :top-func) (= func-name (-> my-context :top-func))) (format "(%s ignite group_id %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
-              (= func-name "empty?") (format "(empty? %s)" (token-to-clj ignite group_id lst_ps my-context))
-              (= func-name "notEmpty?") (format "(my-lexical/not-empty? %s)" (token-to-clj ignite group_id lst_ps my-context))
+              (get-inner-function-context func-name my-context) (format "(%s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "query_sql") (cond (= (count lst_ps) 1) (format "(my-smart-db/query_sql ignite group_id %s nil)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+                                                              (> (count lst_ps) 1) (format "(my-smart-db/query_sql ignite group_id %s [%s])" (get-lst-ps-vs ignite group_id (first lst_ps) my-context) (get-lst-ps-vs ignite group_id (rest lst_ps) my-context))
+                                                              )
+              (and (contains? my-context :top-func) (= func-name (-> my-context :top-func))) (format "(%s ignite group_id %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "empty?") (format "(empty? %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "notEmpty?") (format "(my-lexical/not-empty? %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlInsertTran") (format "(my-lexical/no-sql-insert-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlUpdateTran") (format "(my-lexical/no-sql-update-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlDeleteTran") (format "(my-lexical/no-sql-delete-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlDrop") (format "(my-lexical/no-sql-drop ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlInsert") (format "(my-lexical/no-sql-insert ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlUpdate") (format "(my-lexical/no-sql-update ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlDelete") (format "(my-lexical/no-sql-delete ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
               :else
-              ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
-              (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
+              ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (format "(%s %s)" (my-lexical/smart-func func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
               ;(println "Inner func")
               )))
+
+(defn get-lst-ps-vs
+    ([ignite group_id lst my-context] (get-lst-ps-vs ignite group_id lst my-context []))
+    ([ignite group_id [f & r] my-context lst]
+     (if (some? f)
+         (if-not (contains? f :comma_symbol)
+             (let [m-line (token-to-clj ignite group_id f my-context)]
+                 (if (and (contains? f :item_name) (false? (-> f :const)) (not (re-find #"^\(my-lexical/get-value\s" m-line)))
+                     (recur ignite group_id r my-context (conj lst (format "(my-lexical/get-value %s)" m-line)))
+                     (recur ignite group_id r my-context (conj lst m-line))))
+             (recur ignite group_id r my-context lst))
+         (str/trim (str/join " " lst)))))
 
 (defn item-to-clj [m my-context]
     (let [my-let (get-let-context (-> m :item_name) my-context)]
         (if (some? my-let)
             (format "(my-lexical/get-value %s)" (-> m :item_name))
-            (-> m :item_name))))
+            (if (my-lexical/is-eq? (-> m :item_name) "null")
+                "nil"
+                (-> m :item_name)))))
 
 ;(defn judge [ignite group_id lst my-context]
 ;    (cond (= (count lst) 3) (format "(%s %s %s)" (str/lower-case (-> (second lst) :and_or_symbol)) (token-to-clj ignite group_id (first lst) my-context) (token-to-clj ignite group_id (last lst) my-context))
@@ -239,7 +243,7 @@
                                                                                                      (if (some? f)
                                                                                                          (recur r (conj lst (token-to-clj ignite group_id f my-context)))
                                                                                                          (str/join " " lst)))
-          (and (> (count (filter #(and (map? %) (contains? % :comparison_symbol)) (-> m :parenthesis))) 0) (= (count (-> m :parenthesis)) 3)) (format "(%s %s %s)" (-> (second (-> m :parenthesis)) :comparison_symbol) (token-to-clj ignite group_id (first (-> m :parenthesis)) my-context) (token-to-clj ignite group_id (last (-> m :parenthesis)) my-context))
+          (and (> (count (filter #(and (map? %) (contains? % :comparison_symbol)) (-> m :parenthesis))) 0) (= (count (-> m :parenthesis)) 3)) (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> (second (-> m :parenthesis)) :comparison_symbol) (token-to-clj ignite group_id (first (-> m :parenthesis)) my-context) (token-to-clj ignite group_id (last (-> m :parenthesis)) my-context))
           (and (>= (count (-> m :parenthesis)) 3) (contains? (second (-> m :parenthesis)) :and_or_symbol)) (judge ignite group_id (-> m :parenthesis) my-context)
           :else
           (calculate ignite group_id (reverse (-> m :parenthesis)) my-context)))
@@ -275,8 +279,11 @@
 
 (defn map-token-to-clj [ignite group_id m my-context]
     (if (some? m)
-        (cond (and (contains? m :func-name) (contains? m :lst_ps) (not (contains? m :ds-name))) (func-to-clj ignite group_id m my-context)
-              (and (contains? m :func-name) (contains? m :lst_ps) (contains? m :ds-name)) (smart-func-to-clj ignite group_id m my-context)
+        (cond (contains? m :func-name) (func-to-clj ignite group_id m my-context)
+              ;(and (contains? m :func-name) (contains? m :lst_ps)) (func-to-clj ignite group_id m my-context)
+              ;(and (contains? m :func-name) (contains? m :lst_ps) (contains? m :ds-name)) (smart-func-to-clj ignite group_id m my-context)
+              ;(contains? m :func-link) (func-link-to-clj ignite group_id (reverse (-> m :func-link)) my-context)
+              (contains? m :func-link) (func-link-to-clj ignite group_id (-> m :func-link) my-context)
               (contains? m :and_or_symbol) (get m :and_or_symbol)
               (contains? m :operation) (calculate ignite group_id (reverse (-> m :operation)) my-context)
               (contains? m :comparison_symbol) (get m :comparison_symbol)
@@ -300,6 +307,55 @@
                 )
             (format "(doto (Hashtable.)\n    %s)" (.toString sb)))))
 
+;(defn func-link-to-clj [ignite group_id [f & r] my-context]
+;    (cond (and (some? f) (or (nil? r) (empty? r))) (token-clj ignite group_id f my-context)
+;          (and (some? f) (some? r)) (let [up-items (func-link-to-clj ignite group_id r my-context)]
+;                                        (if-not (Strings/isNullOrEmpty up-items)
+;                                            (let [m (assoc f :lst_ps (conj (-> f :lst_ps) {:table_alias "", :item_name up-items, :item_type "", :java_item_type nil, :const false}))]
+;                                                (func-to-clj ignite group_id m my-context))
+;                                            ))
+;          )
+;    )
+
+(defn func-link-to-clj [ignite group_id [f & r] my-context]
+    (cond (and (some? f) (or (nil? r) (empty? r))) (token-clj ignite group_id f my-context)
+          (and (some? f) (some? r)) (let [first-item (token-clj ignite group_id f my-context) next-item (first r)]
+                                        (let [m (assoc next-item :lst_ps (concat [{:table_alias "", :item_name first-item, :item_type "", :java_item_type nil, :const false}] (-> next-item :lst_ps)))]
+                                            (func-link-to-clj ignite group_id (concat [m] (rest r)) my-context)))
+          ))
+
+(declare func-link-to-ps-clj func-link-to-ps-map-clj func-link-to-ps-seq-clj)
+
+(defn func-link-to-ps-clj [ignite group_id m]
+    (cond (map? m) (func-link-to-ps-map-clj ignite group_id m)
+          (my-lexical/is-seq? m) (func-link-to-ps-seq-clj ignite group_id m)))
+
+(defn func-link-to-ps-map-clj [ignite group_id m]
+    (if (and (contains? m :item_name) (false? (-> m :const)))
+        [(-> m :item_name)]
+        (loop [[f & r] (keys m) lst-rs []]
+            (if (some? f)
+                (let [f-m (func-link-to-ps-clj ignite group_id f)]
+                    (if (and (not (empty? f-m)) (not (nil? f-m)))
+                        (recur r (concat lst-rs f-m))
+                        (recur r lst-rs)))
+                lst-rs))))
+
+(defn func-link-to-ps-seq-clj [ignite group_id m]
+    (loop [[f & r] m lst-rs []]
+        (if (some? f)
+            (let [f-m (func-link-to-ps-clj ignite group_id f)]
+                (if (and (not (empty? f-m)) (not (nil? f-m)))
+                    (recur r (concat lst-rs f-m))
+                    (recur r lst-rs)))
+            lst-rs)))
+
+; 生成联级方法调用的匿名函数
+; 1、 获取所有的参数，形成一个参数列表
+(defn func-link-clj [ignite group_id m]
+    (let [lst-ps (func-link-to-ps-clj ignite group_id m) func-body (func-link-to-clj ignite group_id m nil)]
+        [(format "(fn [ignite group_id %s]\n     %s)" (str/join " " lst-ps) func-body) lst-ps]))
+
 ;(defn map-obj-to-clj [ignite group_id m my-context]
 ;    (loop [[f & r] m lst-rs []]
 ;        (if (some? f)
@@ -307,3 +363,39 @@
 ;                (recur r (concat lst-rs [(format "\"%s\"" (-> f :key :item_name)) (token-to-clj ignite group_id (-> f :value) my-context)]))
 ;                (recur r (concat lst-rs [(token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)])))
 ;            (format "{%s}" (str/join " " lst-rs)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

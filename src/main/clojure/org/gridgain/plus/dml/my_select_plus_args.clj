@@ -1,7 +1,6 @@
 (ns org.gridgain.plus.dml.my-select-plus-args
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.context.my-context :as my-context]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.tools.my-cache :as my-cache]
         [clojure.core.reducers :as r]

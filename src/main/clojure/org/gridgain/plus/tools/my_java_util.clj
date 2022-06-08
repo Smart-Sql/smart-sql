@@ -19,7 +19,27 @@
         ;:methods [[toArray [Object] java.util.ArrayList]]
         ))
 
+(declare my-to-arrayList to-my-val)
+
+(defn my-to-arrayList
+    ([lst] (my-to-arrayList lst (ArrayList.)))
+    ([[f & r] ^ArrayList lst]
+     (if (some? f)
+         (recur r (doto lst (.add (to-my-val f))))
+         lst)))
+
+(defn my-to-dic [m]
+    (loop [[f & r] (keys m) ht (Hashtable.)]
+        (if (some? f)
+            (recur r (doto ht (.put (to-my-val f) (to-my-val (get m f)))))
+            ht)))
+
+(defn to-my-val [m]
+    (cond (my-lexical/is-seq? m) (my-to-arrayList m)
+          (map? m) (my-to-dic m)
+          :else m
+          ))
+
+
 (defn -toArray [this lst]
-    (if (my-lexical/is-seq? lst)
-        (my-lexical/to_arryList lst)
-        lst))
+    (to-my-val lst))

@@ -6,15 +6,7 @@
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
-             (org.tools MyConvertUtil KvSql MyDbUtil)
-             (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType MyLog)
-             (org.gridgain.dml.util MyCacheExUtil)
-             (cn.plus.model.db MyScenesCache)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
-             (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
-             (java.util ArrayList List Date Iterator)
-             (java.sql Timestamp)
-             (java.math BigDecimal)
              )
     (:gen-class
         ; 生成 class 的类名
@@ -26,10 +18,24 @@
         ;:methods [^:static [my_update_run_log [org.apache.ignite.Ignite Long String] java.util.ArrayList]]
         ))
 
+(defn update-table
+    ([lst] (update-table lst nil [] []))
+    ([[f & r] my-set stack lst]
+     (if (some? f)
+         (cond (and (nil? my-set) (not (my-lexical/is-eq? f "set"))) (recur r my-set (conj stack f) lst)
+               (and (nil? my-set) (my-lexical/is-eq? f "set")) (recur r "set" stack lst)
+               (not (nil? my-set)) (recur r my-set stack (conj lst f))
+               )
+         (cond (and (= (count stack) 3) (= (second stack) ".")) {:schema_name (str/lower-case (first stack)) :table_name (str/lower-case (last stack)) :rs_lst lst}
+               (= (count stack) 1) {:schema_name "" :table_name (str/lower-case (first stack)) :rs_lst lst}
+               :else
+               (throw (Exception. "update 语句错误，要么是dataSetName.tableName 或者是 tableName"))
+               ))))
+
 ; 获取名字
-(defn get_table_name [[f & r]]
-    (if (and (some? f) (my-lexical/is-eq? f "update") (my-lexical/is-eq? (second r) "set"))
-        {:table_name (first r) :rs_lst (rest (rest r))}))
+(defn get_table_name [lst]
+    (if (and (not (empty? lst)) (my-lexical/is-eq? (first lst) "update"))
+        (update-table (rest lst))))
 
 (defn get_items
     ([rs_lst] (get_items rs_lst []))
@@ -63,44 +69,37 @@
          lst)))
 
 (defn get_json [lst]
-    (if-let [{table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
+    (if-let [{schema_name :schema_name table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
         (if-let [{items_line :items_line where_line :where_line} (get_items rs_lst)]
             (if-let [items (get_item_lst items_line)]
-                ;{:table_name table_name :items (item_jsons items) :where_line where_line}
-                (assoc (my-lexical/get-schema (str/lower-case table_name)) :items (item_jsons items) :where_line where_line)
+                {:schema_name schema_name :table_name table_name :items (item_jsons items) :where_line where_line}
+                ;(assoc (my-lexical/get-schema (str/lower-case table_name)) :items (item_jsons items) :where_line where_line)
                 )
             (throw (Exception. "更新数据的语句错误！")))
         (throw (Exception. "更新数据的语句错误！"))))
 
-(defn get_json_lst [^clojure.lang.PersistentVector lst]
-    (if-not (empty? lst)
-        (if-let [{table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
-            (if-let [{items_line :items_line where_line :where_line} (get_items rs_lst)]
-                (if-let [items (get_item_lst items_line)]
-                    {:table_name table_name :items (item_jsons items) :where_line where_line})
-                (throw (Exception. "更新数据的语句错误！")))
-            (throw (Exception. "更新数据的语句错误！")))
-        (throw (Exception. "更新数据的语句不能为空！"))))
+(defn my-where-line [where-line-lst args-dic]
+    (loop [[f & r] where-line-lst where-lst [] args []]
+        (if (some? f)
+            (if (contains? args-dic f)
+                (recur r (conj where-lst "?") (conj args (get args-dic f)))
+                (recur r (conj where-lst f) args))
+            [where-lst args])))
 
-; 获取 update view obj
-(defn get_view_obj [lst]
-    (when-let [{table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
-        (when-let [{items_line :items_line where_line :where_line} (get_items rs_lst)]
-            {:table_name table_name :items (filter #(not= % ",") (map #(str/lower-case %) items_line)) :where_line (my-lexical/double-to-signal where_line)})))
+(defn my-view-db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+    (if-let [code (my-lexical/get-update-code ignite schema_name table_name group_id)]
+        (let [rs-lst (-> (update-table (rest (my-lexical/to-back code))) :rs_lst)]
+            (let [{items_line :items_line where_line :where_line} (get_items rs-lst)]
+                (loop [[f & r] (my-select/my-get-items items_line) lst-rs #{}]
+                    (if (some? f)
+                        (if (= (count f) 1)
+                            (recur r (conj lst-rs (str/lower-case (first f))))
+                            (recur r lst-rs))
+                        {:items lst-rs :where_line where_line}))))))
 
-; UPDATE categories set categoryname, description where categoryname = '白酒'
-(defn get_view_db [^Ignite ignite ^Long group_id ^String table_name]
-    (when-let [lst_rs (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m join my_group_view as v on m.id = v.view_id where m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [table_name group_id "改"])))))]
-        (if (> (count lst_rs) 0) (get_view_obj (my-lexical/to-back (nth lst_rs 0))))))
-
-(defn my-contains [[f & r] item_name]
-    (if (my-lexical/is-eq? f item_name)
-        true
-        (recur r item_name)))
-
-(defn has_authority_item [[f & r] v_items]
+(defn my-has-authority-item [[f & r] v_items]
     (if (some? f)
-        (if (my-contains v_items (str/lower-case (-> f :item_name)))
+        (if (contains? v_items (str/lower-case (-> f :item_name)))
             (recur r v_items)
             (throw (Exception. (format "%s列没有修改的权限！" (-> f :item_name)))))))
 
@@ -111,31 +110,32 @@
           (and (some? where_line) (some? v_where_line)) (concat ["("] where_line [") and ("] v_where_line [")"])
           ))
 
-; 判断权限
-(defn get-authority [^Ignite ignite ^Long group_id lst-sql]
+(defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
     (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
-        (if-let [{v_items :items v_where_line :where_line} (get_view_db ignite group_id table_name)]
-            (if (nil? (has_authority_item items v_items))
-                {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where_line v_where_line)}
-                {:schema_name schema_name :table_name table_name :items items :where_line where_line})
-            {:schema_name schema_name :table_name table_name :items items :where_line where_line}
-            )))
+        (let [[where-lst args] (my-where-line where_line args-dic)]
+            (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
+                (if (nil? (my-has-authority-item items v_items))
+                    {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where-lst v_where_line) :args args}
+                    {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
+                {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+                ))
+        ))
 
-(defn get-authority-lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
-    (when-let [{table_name :table_name items :items where_line :where_line} (get_json_lst sql_lst)]
-        (if-let [{v_items :items v_where_line :where_line} (get_view_db ignite group_id table_name)]
-            (if (nil? (has_authority_item items v_items))
-                {:table_name table_name :items items :where_line (merge_where where_line v_where_line)}
-                {:table_name table_name :items items :where_line where_line})
-            {:table_name table_name :items items :where_line where_line}
-            )))
+(defn my-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
+        (let [[where-lst args] (my-where-line where_line args-dic)]
+            {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
+        ))
 
-; 直接在实时中执行
-; 过程如下：
-; 1、获取表的 PK 定义
-; 2、生成 select sql 通过 PK 查询 cache
-; 3，修改 cache 的值并生成 MyLogCache
-; 4、对 cache 和 MyLogCache 执行事务
+(defn my-items
+    ([lst] (loop [[f & r] (my-items lst []) rs []]
+               (if (some? f)
+                   (recur r (conj rs (str/lower-case (-> f :item_name))))
+                   rs)))
+    ([[f & r] lst]
+     (if (some? f)
+         (recur r (concat lst (my-lexical/my-ast-items (-> f :item_obj))))
+         lst)))
 
 (defn get-rows [^Ignite ignite ^String schema_name ^String table_name]
     (cond (my-lexical/is-eq? schema_name "public") (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m INNER JOIN my_meta_tables AS o ON m.table_id = o.id WHERE o.table_name = ?")
@@ -146,6 +146,15 @@
                                                                 (.setArgs (to-array [table_name schema_name])))))
           ))
 
+
+(defn query-lst [dic lst-items is-pk]
+    (loop [[f & r] lst-items rs []]
+        (if (some? f)
+            (if (contains? dic f)
+                (recur r (conj rs {:column_name f :column_type (get dic f) :is-pk is-pk}))
+                (recur r rs))
+            rs)))
+
 ; 1、获取表的 PK 定义
 (defn get_pk_def [^Ignite ignite ^String schema_name ^String table_name]
     (when-let [rows (get-rows ignite schema_name table_name)]
@@ -155,72 +164,52 @@
                                         (recur r (conj lst (.get f 0)) lst_pk (assoc dic (.get f 0) (.get f 2))))
                 {:lst lst :lst_pk lst_pk :dic dic}))))
 
-(defn get_pk_def_map [^Ignite ignite ^String schema_name ^String table_name]
-    (when-let [{lst :lst lst_pk :lst_pk dic :dic} (get_pk_def ignite schema_name table_name)]
-        (if (> (count lst_pk) 1)
-            (loop [[f & r] lst_pk sb (StringBuilder.)]
-                (if (some? f)
-                    (if (some? r)
-                        (recur r (doto sb (.append (format "%s_pk" f)) (.append ",")))
-                        (recur r (doto sb (.append (format "%s_pk" f)))))
-                    {:line (.toString sb) :lst lst :lst_pk lst_pk :dic dic}))
-            {:line (first lst_pk) :lst lst :lst_pk lst_pk :dic dic}
-            )
-        ))
+(defn my-query-lst [my-obj lst-items]
+    (loop [[f & r] (concat (query-lst (-> my-obj :dic) (-> my-obj :lst_pk) true) (query-lst (-> my-obj :dic) lst-items false)) index 0 rs []]
+        (if (some? f)
+            (recur r (+ index 1) (conj rs (assoc f :index index)))
+            rs)))
 
-; 2、生成 select sql 通过 PK 查询 cache
-(defn get_update_query_sql [^Ignite ignite obj]
-    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
-        (letfn [(get_items_type [[f & r] dic lst]
-                    (if (some? f)
-                        (if (contains? dic (str/lower-case (-> f :item_name)))
-                            (recur r dic (conj lst (assoc f :type (get dic (str/lower-case (-> f :item_name))))))
-                            (recur r dic lst))
-                        lst))
-                (get_pk_lst [[f & r] dic lst]
-                    (if (some? f)
-                        (if (contains? dic f)
-                            (recur r dic (conj lst {:item_name f :item_type (get dic f)}))
-                            (recur r dic lst))
-                        lst))]
-            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :sql (format "select %s from %s.%s where %s" pk_line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :items (get_items_type (-> obj :items) dic []) :pk_lst (get_pk_lst lst_pk dic []) :lst lst :dic dic})
-        ))
+(defn my-query-line [query-lst]
+    (loop [[f & r] query-lst rs []]
+        (if (some? f)
+            (recur r (conj rs (-> f :column_name)))
+            ;(if (true? (-> f :is-pk))
+            ;    (recur r (conj rs (format "%s_pk" (-> f :column_name))))
+            ;    (recur r (conj rs (-> f :column_name)))
+            ;    )
+            (str/join "," rs))))
 
-; update 转换为对象
-(defn get_update_obj [^Ignite ignite ^Long group_id lst-sql]
-    (if-let [m (get-authority ignite group_id lst-sql)]
-        (if-let [us (get_update_query_sql ignite m)]
+(defn my-pk-def-map [^Ignite ignite ^String schema_name ^String table_name update-obj]
+    (let [my-obj (get_pk_def ignite schema_name table_name) lst-items (my-items (-> update-obj :items))]
+        (let [query-lst (my-query-lst my-obj lst-items)]
+            {:query-line (my-query-line query-lst) :query-lst query-lst :dic (-> my-obj :dic)})))
+
+(defn my_update_query_sql [^Ignite ignite obj]
+    (letfn [(get_items_type
+                ([items dic] (get_items_type items dic []))
+                ([[f & r] dic lst]
+                 (if (some? f)
+                     (if (contains? dic (str/lower-case (-> f :item_name)))
+                         (recur r dic (conj lst (assoc f :type (get dic (str/lower-case (-> f :item_name))))))
+                         (recur r dic lst))
+                     lst)))]
+        (let [{query-line :query-line query-lst :query-lst dic :dic} (my-pk-def-map ignite (-> obj :schema_name) (-> obj :table_name) obj)]
+            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst query-lst :sql (format "select %s from %s.%s where %s" query-line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) dic [])})))
+
+(defn my_update_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (my-authority ignite group_id lst-sql args-dic)]
+        (if-let [us (my_update_query_sql ignite m)]
             us
             (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))
 
-(defn update_run_super_admin [^Ignite ignite lst-sql]
-    (if-let [{table_name :table_name} (get_table_name (my-lexical/to-back lst-sql))]
-        (if (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name))
-            (.getAll (.query (.cache ignite (str/lower-case table_name)) (SqlFieldsQuery. (str/join " " lst-sql))))
-            (throw (Exception. "超级管理员不能修改具体的业务数据！")))
+(defn my_update_obj-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
+        (if-let [us (my_update_query_sql ignite m)]
+            us
+            (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))
-
-(defn update_run_log [^Ignite ignite ^Long group_id lst-sql]
-    )
-
-(defn update_run_no_log [^Ignite ignite ^Long group_id ^String sql]
-    )
-
-
-; 1、判断用户组在实时数据集，还是非实时数据
-; 如果是非实时数据集,
-; 获取表名后，查一下，表名是否在 对应的 my_dataset_table 中，如果在就不能添加，否则直接执行 insert sql
-; 2、如果是在实时数据集是否需要 log
-(defn update_run [^Ignite ignite ^Long group_id lst-sql sql]
-    (if (= group_id 0)
-        ; 超级用户
-        (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
-            (my-lexical/trans ignite (update_run_log ignite group_id lst-sql))
-            (my-lexical/trans ignite (update_run_no_log ignite group_id lst-sql)))
-        )
-    )
 
 
 

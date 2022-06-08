@@ -1,7 +1,8 @@
 (ns org.gridgain.plus.dml.my-select-plus
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.context.my-context :as my-context]
+        [org.gridgain.plus.tools.my-cache :as my-cache]
+        [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -19,10 +20,7 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [my_call_scenes [org.apache.ignite.Ignite Long clojure.lang.PersistentArrayMap java.util.ArrayList] Object]]
-        ;:methods [^:static [get_plus_sql [org.apache.ignite.Ignite Long String] String]
-        ;          ^:static [getSqlToAst [org.apache.ignite.Ignite String String] clojure.lang.LazySeq]
-        ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
+        ;:methods [^:static [my_call_scenes [org.apache.ignite.Ignite Long clojure.lang.PersistentArrayMap java.util.ArrayList] Object]]
         ))
 
 ; 函数的参数
@@ -41,9 +39,9 @@
 
 (declare sql-to-ast get-my-sql-to-ast my-get-items)
 (defn get-my-sql-to-ast [m]
-                   (try
-                       (sql-to-ast m)
-                       (catch Exception e)))
+    (try
+        (sql-to-ast m)
+        (catch Exception e)))
 
 (defn my-get-items
     ([lst] (my-get-items lst [] nil [] []))
@@ -72,6 +70,41 @@
                                )
                (= f ",") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
                              (recur r [] nil [] (conj lst stack-lst))
+                             (recur r stack mid-small (conj stack-lst f) lst))
+               :else
+               (recur r stack mid-small (conj stack-lst f) lst)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst stack-lst)
+             lst))))
+
+(defn my-func-link
+    ([lst] (my-func-link lst [] nil [] []))
+    ([[f & r] stack mid-small stack-lst lst]
+     (if (some? f)
+         (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "small" (conj stack-lst f) lst))
+               (= f "[") (if (or (= mid-small "small") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "mid" (conj stack-lst f) lst))
+               (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "big" (conj stack-lst f) lst))
+               (= f ")") (cond (and (= (count stack) 1) (= mid-small "small")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "small")) (recur r (pop stack) "small" (conj stack-lst f) lst)
+                               (not (= mid-small "small")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "]") (cond (and (= (count stack) 1) (= mid-small "mid")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "mid")) (recur r (pop stack) "mid" (conj stack-lst f) lst)
+                               (not (= mid-small "mid")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "}") (cond (and (= (count stack) 1) (= mid-small "big")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "big")) (recur r (pop stack) "big" (conj stack-lst f) lst)
+                               (not (= mid-small "big")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f ".") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
+                             (recur r [] nil [] (conj lst stack-lst "."))
                              (recur r stack mid-small (conj stack-lst f) lst))
                :else
                (recur r stack mid-small (conj stack-lst f) lst)
@@ -182,6 +215,10 @@
                       (and (= (first lst) "{") (= (last lst) "}")) (get-item-tokens lst) ;{:map-obj (get-item-tokens lst)}
                       :else
                       (get-token lst)))
+            (smart-item-tokens [lst]
+                (cond (and (= (first lst) "[") (= (last lst) "]")) (get-item-tokens lst)
+                      (and (= (first lst) "{") (= (last lst) "}")) (get-item-tokens lst)
+                      ))
             ; 判断是 () 的表达式
             (is-operate-fn?
                 ([lst] (if (and (= (first lst) "(") (= (last lst) ")")) (let [m (is-operate-fn? lst [] [] [])]
@@ -295,14 +332,16 @@
                                 (if (and (some? m) (= (count m) 2))
                                     {:item_name (nth m 1) :table_alias (nth m 0) :const false})))]
                     (if (and (some? line) (= (empty? line) false))
-                        (cond
-                            ; 如果是 m.name 这种形式
-                            (some? (re-find #"^(?i)\w+\.\w+$" line)) (if (some? (re-find #"^(?i)\d+\.\d+$|^(?i)\d+\.\d+[DFL]$" line))
-                                                                         (element-item line)
-                                                                         (get-item-alias line))
-                            :else
-                            (element-item line)
-                            ))))
+                        (element-item line)
+                        ;(cond
+                        ;    ; 如果是 m.name 这种形式
+                        ;    (some? (re-find #"^(?i)\w+\.\w+$" line)) (if (some? (re-find #"^(?i)\d+\.\d+$|^(?i)\d+\.\d+[DFL]$" line))
+                        ;                                                 (element-item line)
+                        ;                                                 (get-item-alias line))
+                        ;    :else
+                        ;    (element-item line)
+                        ;    )
+                        )))
             ; 处理四则运算
             ; 例如：a + b * (c - d)
             (operation [lst]
@@ -388,6 +427,24 @@
                                  (recur r (assoc func-obj :ds-name schema_name :func-name func-name))
                                  (recur r (assoc my-obj :ds-lst (assoc func-obj :ds-name schema_name :func-name func-name))))))
                      my-obj)))
+
+            (link-func [lst]
+                (let [func-lst (my-func-link lst)]
+                    (if (>= (count func-lst) 2)
+                        (letfn [(is-link-func? [lst]
+                                    (loop [[f & r] (filter odd? (range (count lst))) flag []]
+                                        (if (some? f)
+                                            (recur r (conj flag (nth lst f)))
+                                            (if (empty? (filter #(not (= % ".")) flag))
+                                                true false))))]
+                            (if (is-link-func? func-lst)
+                                (loop [[f & r] func-lst rs []]
+                                    (if (some? f)
+                                        (if (string? f)
+                                            (recur r rs)
+                                            (recur r (conj rs (get-token f)))
+                                            )
+                                        {:func-link rs})))))))
             ; 获取 token ast
             (get-token
                 [lst]
@@ -396,27 +453,32 @@
                         (get-token-line lst)
                         (if (and (= (count lst) 1) (string? (first lst)))
                             (get-token-line (first lst))
-                            (let [where-line-m (get-where-line lst)]
-                                (if (is-true? where-line-m)
-                                    (map get-token where-line-m)
-                                    (let [where-item-line-m (get-where-item-line lst)]
-                                        (if (is-true? where-item-line-m)
-                                            (map get-token where-item-line-m)
-                                            (if-let [fn-m (func-fn lst)]
-                                                fn-m
-                                                (if-let [oprate-m (operation lst)]
-                                                    oprate-m
-                                                    (if-let [p-m (parenthesis lst)]
-                                                        p-m
-                                                        (let [not-exists-m (parenthesis (rest (rest lst)))]
-                                                            (if (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? not-exists-m))
-                                                                {:exists "not exists" :select_sql not-exists-m}
-                                                                (let [exists-m (parenthesis (rest lst))]
-                                                                    (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
-                                                                        {:exists "exists" :select_sql exists-m}
-                                                                        (if-let [ds-m (ds-func (ds-fun-lst lst))]
-                                                                            ds-m))))))))
-                                            ))))
+                            (if (and (= (count lst) 3) (= (second lst) "."))
+                                (if (and (re-find #"^(?i)\d+$" (first lst)) (re-find #"^(?i)\d+$" (last lst)))
+                                    {:table_alias "" :item_name (str (first lst) "." (last lst)) :item_type "" :java_item_type BigDecimal :const true}
+                                    {:item_name (last lst) :table_alias (first lst) :const false})
+                                (let [where-line-m (get-where-line lst)]
+                                    (if (is-true? where-line-m)
+                                        (map get-token where-line-m)
+                                        (let [where-item-line-m (get-where-item-line lst)]
+                                            (if (is-true? where-item-line-m)
+                                                (map get-token where-item-line-m)
+                                                (if-let [fn-m (func-fn lst)]
+                                                    fn-m
+                                                    (if-let [oprate-m (operation lst)]
+                                                        oprate-m
+                                                        (if-let [p-m (parenthesis lst)]
+                                                            p-m
+                                                            (let [not-exists-m (parenthesis (rest (rest lst)))]
+                                                                (if (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? not-exists-m))
+                                                                    {:exists "not exists" :select_sql not-exists-m}
+                                                                    (let [exists-m (parenthesis (rest lst))]
+                                                                        (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
+                                                                            {:exists "exists" :select_sql exists-m}
+                                                                            (if-let [ds-m (link-func lst)]
+                                                                                ds-m
+                                                                                (smart-item-tokens lst)))))))))
+                                                )))))
                             )
                         ;(cond (and (= (count lst) 1) (string? (first lst))) (get-token-line (first lst))
                         ;      (is-true? get-where-line-m lst) (map get-token (get-where-line-m lst))
@@ -467,14 +529,17 @@
                             (if (some? f)
                                 (cond (contains? f :tables)
                                       (let [{tables :tables} f]
-                                          (cond (= (count tables) 1)(concat [(assoc (my-lexical/get-schema (first tables)) :table_alias "")] (table-join rs))
-                                                (= (count tables) 2) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 1))] (table-join rs))
-                                                (and (= (count tables) 3) (my-lexical/is-eq? (nth tables 1) "as")) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 2))] (table-join rs))
+                                          (cond (= (count tables) 1)(concat [{:schema_name "" :table_name (first tables) :table_alias ""}] (table-join rs))
+                                                (= (count tables) 2) (concat [{:schema_name "" :table_name (first tables) :table_alias (last tables)}] (table-join rs))
+                                                (and (= (count tables) 3) (my-lexical/is-eq? (nth tables 1) "as")) (concat [{:schema_name "" :table_name (first tables) :table_alias (last tables)}] (table-join rs))
+                                                (and (= (count tables) 3) (= (nth tables 1) ".")) (concat [{:schema_name (first tables) :table_name (last tables) :table_alias ""}] (table-join rs))
+                                                (and (= (count tables) 4) (= (nth tables 1) ".")) (concat [{:schema_name (first tables) :table_name (nth tables 2) :table_alias (last tables)}] (table-join rs))
+                                                (and (= (count tables) 5) (= (nth tables 1) ".") (my-lexical/is-eq? (nth tables 3) "as")) (concat [{:schema_name (first tables) :table_name (nth tables 2) :table_alias (last tables)}] (table-join rs))
                                                 :else
                                                 (throw (Exception. "sql 语句错误！from 关键词之后"))
                                                 ))
                                       (contains? f :join) (concat [{:join (-> f :join)}] (table-join rs))
-                                      (contains? f :on) (cons {:on (map get-token (get f :on))} (table-join rs))
+                                      (contains? f :on) (cons {:on (get-token (get f :on))} (table-join rs))
                                       )))
                         ; 处理 table-items
                         (get-table
@@ -491,26 +556,30 @@
                                        (get-table rs stack (conj lst f))
                                        )
                                  (if (> (count lst) 0) [{:tables (reverse lst)}]))))
+                        (to-table-item [lst]
+                            (cond (= (count lst) 1) {:schema_name "" :table_name (first lst) :table_alias ""}
+                                  (= (count lst) 2) {:schema_name "" :table_name (first lst) :table_alias (last lst)}
+                                  (= (count lst) 3) (cond (my-lexical/is-eq? (second lst) "as") {:schema_name "" :table_name (first lst) :table_alias (last lst)}
+                                                          (= (second lst) ".") {:schema_name (first lst) :table_name (last lst) :table_alias ""})
+                                  (and (= (count lst) 4) (= (second lst) ".")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst)}
+                                  (and (= (count lst) 5) (my-lexical/is-eq? (nth lst 3) "as")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst)}
+                                  :else
+                                  (get-query-items lst)
+                                  ))
                         ; 处理逗号类型的
                         (table-comma
                             [lst]
                             (if (and (string? lst) (my-lexical/is-eq? lst ","))
                                 (get-token-line lst)
-                                (cond (= (count lst) 1) (assoc (my-lexical/get-schema (first lst)) :table_alias nil) ;{:table_name (first lst) :table_alias ""}
-                                      (= (count lst) 2) (assoc (my-lexical/get-schema (first lst)) :table_alias (second lst)) ;{:table_name (nth lst 0) :table_alias (nth lst 1)}
-                                      (and (= (count lst) 3) (my-lexical/is-eq? (nth lst 1) "as")) (assoc (my-lexical/get-schema (first lst)) :table_alias (last lst)) ;{:table_name (nth lst 0) :table_alias (nth lst 2)}
-                                      :else
-                                      (when-let [m (get-query-items (concat [lst]))]
-                                          (first m))
-                                      )))
+                                (to-table-item lst)))
                         ]
                     (if (= (count table-items) 1)
-                        (let [m (nth table-items 0)]
-                            (cond (string? m) (concat [(assoc (my-lexical/get-schema m) :table_alias nil)])
+                        (let [m (first table-items)]
+                            (cond (string? m) (concat [{:schema_name "", :table_name m, :table_alias ""}])
                                   (and (my-lexical/is-seq? m) (is-select? m)) {:parenthesis (get-my-sql-to-ast (get-select-line m))}
                                   :else
-                                  (if (my-lexical/is-contains? (nth table-items 0) "join")
-                                      (table-join (get-table (nth table-items 0)))
+                                  (if (my-lexical/is-contains? (first table-items) "join")
+                                      (table-join (get-table (first table-items)))
                                       (map table-comma table-items))))
                         (map table-comma table-items)))
                 )
@@ -535,240 +604,73 @@
                     {:query-items (get-query-items (my-lexical/to-lazy query-items)) :table-items (get-table-items (my-lexical/to-lazy table-items)) :where-items (get-token where-items) :group-by (get-token group-by) :having (get-token having) :order-by (get-order-by order-by) :limit (get-limit limit)}))
             (to-ast [lst]
                 (if (string? lst) {:keyword lst}
-                                           {:sql_obj (sql-to-ast-single lst)}))]
+                                  {:sql_obj (sql-to-ast-single lst)}))]
         (if-not (my-lexical/is-eq? (first sql-lst) "select")
             (get-token sql-lst)
             (when-let [m (my-lexical/sql-union sql-lst)]
                 (map to-ast m)))))
 
-; 1、替换 function 在 select ... from table, func(a, b) where ... 中用到
-(defn find-table-func [^Ignite ignite ast]
-    (letfn [(map-replace
-                ([ignite m] (map-replace ignite (keys m) m))
-                ([ignite [f & rs] m]
-                 (if (some? f)
-                     (let [vs (get m f)]
-                         (cond (= f :table-items) (cond (instance? clojure.lang.LazySeq vs) (recur ignite rs (assoc m f (map (partial re-func ignite) vs)))
-                                                        (map? vs) (recur ignite rs (assoc m f (plus-func ignite vs)))
-                                                        :else
-                                                        (recur ignite rs m))
-                               (not (= f :table-items)) (cond (instance? clojure.lang.LazySeq vs) (recur ignite rs (assoc m f (map (partial plus-func ignite) vs)))
-                                                              (map? vs) (recur ignite rs (assoc m f (plus-func ignite vs)))
-                                                              :else
-                                                              (recur ignite rs m))
-                               :else
-                               (recur ignite rs m))) m)))
-            (re-func [ignite m]
-                (if (some? m)
-                    (cond (my-lexical/is-seq? m) (find-table-func ignite m)
-                          (map? m) (if (contains? m :func-name)
-                                       (let [func (my-context/get-func-scenes ignite (get m :func-name))]
-                                           (if (some? func) (cond (= func "func") (throw (Exception. "自定义方法不能当作结果来查询！"))
-                                                                  (= func "builtin") (throw (Exception. "内置方法不能当作结果来查询！"))
-                                                                  (= func "scenes") (if (contains? m :alias) {:parenthesis (get-sql-ast ignite m) :alias (get m :alias)} {:parenthesis (get-sql-ast ignite m)})))) (find-table-func ignite m))
-                          :else
-                          (find-table-func ignite m))))
-            (plus-func [ignite m]
-                (if (some? m)
-                    (cond (my-lexical/is-seq? m) (find-table-func ignite m)
-                          (map? m) (if (contains? m :func-name)
-                                       (let [func (my-context/get-func-scenes ignite (get m :func-name))]
-                                           (if (some? func) (cond (= func "func") (concat [(func_scenes_invoke m)])
-                                                                  (= func "scenes") (concat [(func_scenes_invoke m)])
-                                                                  :else
-                                                                  (find-table-func ignite m)) (find-table-func ignite m))) (find-table-func ignite m))
-                          :else
-                          (find-table-func ignite m))))
-            ; 调用 func 或 scenes
-            (func_scenes_invoke [func_ast]
-                (if (and (contains? func_ast :lst_ps) (> (count (get func_ast :lst_ps)) 0))
-                    (assoc {:func-name "myInvoke"} :lst_ps (concat [{:table_alias "", :item_name (String/format "'%s'" (object-array [(get func_ast :func-name)])), :item_type "", :java_item_type "String", :const true} {:comma_symbol ","}] (get func_ast :lst_ps)))
-                    (assoc {:func-name "myInvoke"} :lst_ps (concat [{:table_alias "", :item_name (String/format "'%s'" (object-array [(get func_ast :func-name)])), :item_type "", :java_item_type "String", :const true}] (get func_ast :lst_ps)))))
-            ; 输入 func ast 提取对应的 sql ast
-            ; 并提取 lst_ps
-            (get-sql-ast [ignite func-ast]
-                (when-let [func_obj (get-scenes ignite (get func-ast :func-name))]
-                    (let [my_func_ast (:ast func_obj) lst_func_ps (:lst_func_ps func_obj) lst_ps (get func-ast :lst_ps)]
-                        (re-func-ast my_func_ast lst_ps lst_func_ps 0)
-                        )))
-            (re-func-ast [my_func_ast [f & rs] lst_func_ps index]
-                (if (some? f)
-                    (if (not (contains? f :comma_symbol))
-                        (re-func-ast (re-func-obj f (:ps_name (nth lst_func_ps index)) my_func_ast) rs lst_func_ps (+ index 1))
-                        (re-func-ast my_func_ast rs lst_func_ps index))
-                    my_func_ast))
-            ; 输入 ps_lst 替换掉原来对应的元素
-            ; 例如：target_ps 参数的 ast
-            ; resourc_ps 参数名称 :a 例如：{:table_alias "", :item_name ":a", :item_type "", :java_item_type nil, :const false} 中的 item_name
-            ; 具体做法是遍历 ast 替换到
-            (re-func-obj [target_ps resourc_ps my_func_ast]
-                (if (some? my_func_ast)
-                    (cond (instance? clojure.lang.LazySeq my_func_ast) (map (partial re-func-obj target_ps resourc_ps) my_func_ast)
-                          (map? my_func_ast) (re-func-obj-map target_ps resourc_ps my_func_ast))))
-            (re-func-obj-map [target_ps resourc_ps my_func_ast]
-                (if (and (contains? my_func_ast :item_name) (my-lexical/is-eq? (get my_func_ast :item_name) resourc_ps)) target_ps
-                                                                                                                         (re-func-obj-map-sub target_ps resourc_ps (keys my_func_ast) my_func_ast)))
-            (re-func-obj-map-sub [target_ps resourc_ps [f & rs] my_func_ast]
-                (if (some? f)
-                    (cond (instance? clojure.lang.LazySeq (get my_func_ast f))
-                          (recur target_ps resourc_ps rs (assoc my_func_ast f (map (partial re-func-obj target_ps resourc_ps) (get my_func_ast f))))
-                          (map? (get my_func_ast f))
-                          (let [m (re-func-obj target_ps resourc_ps (get my_func_ast f))]
-                              (recur target_ps resourc_ps rs (assoc my_func_ast f m)))
-                          :else
-                          (recur target_ps resourc_ps rs my_func_ast)
-                          ) my_func_ast))]
-        (if (some? ast)
-                  (cond (instance? clojure.lang.LazySeq ast) (map (partial find-table-func ignite) ast)
-                        (map? ast) (map-replace ignite ast)))))
-
-(defn get_query_table [ignite group_id ast]
-    (letfn [
-            ; 将 table-items 中的 table_name 和 table_alias 转换为 map
-            ; 输入 ignite group_id
-            ; table-items = (get select_ast :table-items)
-            ; 返回结果：map ，key 值为 别名， value 为 table_select_view
-            (get_map_table_items
-                ([ignite group_id table-items] (get_map_table_items ignite group_id table-items {}))
-                ([ignite group_id [f & rs] m]
-                 (if (some? f)
-                     (if (contains? f :table_name)
-                         (let [table_ast (get_select_view ignite group_id (get f :schema_name) (get f :table_name))]
-                             (if (some? table_ast)
-                                 (if (contains? f :table_alias)
-                                     (recur ignite group_id rs (assoc m (get f :table_alias) (table_select_view. (get f :schema_name) (str/lower-case (str/trim (get f :table_name))) table_ast)))
-                                     (recur ignite group_id rs (assoc m "" (table_select_view. (get f :schema_name) (get f :table_name) table_ast))))
-                                 (if (contains? f :table_alias)
-                                     (recur ignite group_id rs (assoc m (get f :table_alias) (table_select_view. (get f :schema_name) (get f :table_name) nil)))
-                                     (recur ignite group_id rs (assoc m "" (table_select_view. (get f :schema_name) (get f :table_name) nil)))))) (recur ignite group_id rs m)) m)))
-            ; 获取 table_select_view 的 ast
-            ; 重新生成新的 ast
-            ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
-            (get_select_view [ignite group_id schema_name talbe_name]
-                (when-let [code (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m, my_dataset as ds, my_group_view as v where m.data_set_id = ds.id and m.id = v.view_id and ds.dataset_name = ? and m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [schema_name talbe_name group_id "查"])))))]
-                    (when-let [sql_objs (get-my-sql-to-ast (my-lexical/to-back (nth code 0)))]
-                        (if (= (count sql_objs) 1)
-                            (when-let [{query-items :query-items where-items :where-items} (get (nth sql_objs 0) :sql_obj)]
-                                {:query-items (get_query_view query-items) :where-items where-items})))))
-            ; 输入参数：
-            ; ignite
-            ; query_ast 是 query item 的树
-            ; group_id : 用户组 ID
-            (query_authority [ignite group_id table_alias_ast query_ast]
-                (if (some? query_ast)
-                    (cond (instance? clojure.lang.LazySeq query_ast) (map (partial query_authority ignite group_id table_alias_ast) query_ast)
-                          (map? query_ast) (if (and (contains? query_ast :query-items) (contains? query_ast :table-items))
-                                               (get_query_table ignite group_id query_ast)
-                                               (query_map ignite group_id table_alias_ast query_ast)))))
-            (query_map
-                ([ignite group_id table_alias_ast query_ast] (query_map ignite group_id table_alias_ast (keys query_ast) query_ast))
-                ([ignite group_id table_alias_ast [f & rs] query_ast]
-                 (if (some? f)
-                     (let [vs (get query_ast f)]
-                         (cond (and (= f :item_name) (= (get query_ast :const) false)) (if (contains? table_alias_ast (get query_ast :table_alias))
-                                                                                           ; table_obj 是 table_select_view 的对象
-                                                                                           (let [table_obj (get table_alias_ast (get query_ast :table_alias))]
-                                                                                               (if (and (some? table_obj) (some? (get table_obj :ast)) (some? (get (get table_obj :ast) :query-items)))
-                                                                                                   (if (contains? (get (:ast table_obj) :query-items) (str/lower-case (str/trim (get query_ast :item_name))))
-                                                                                                       (replace_alias (get query_ast :table_alias) (get (get (:ast table_obj) :query-items) (get query_ast :item_name)))
-                                                                                                       (throw (Exception. (String/format "没有查询字段(%s)的权限" (object-array [(get query_ast :item_name)])))))
-                                                                                                   query_ast)) query_ast;(throw (Exception. (String/format "没有查询字段(%s)，请仔细检查拼写是否正确？" (object-array [(get query_ast :item_name)]))))
-                                                                                           )
-                               (instance? clojure.lang.LazySeq vs) (recur ignite group_id table_alias_ast rs (assoc query_ast f (map (partial query_authority ignite group_id table_alias_ast) vs)))
-                               (map? vs) (recur ignite group_id table_alias_ast rs (assoc query_ast f (query_authority ignite group_id table_alias_ast vs)))
-                               :else
-                               (recur ignite group_id table_alias_ast rs query_ast))) query_ast)))
-            (get_where [[f & r] table_select_view_obj where-items]
-                (if (some? f)
-                    (let [table_select (get table_select_view_obj f)]
-                        (if (some? table_select)
-                            (let [view_where (get (:ast table_select) :where-items)]
-                                (if (some? view_where)
-                                    (if (some? where-items) (recur r table_select_view_obj (concat [{:parenthesis (replace_alias f view_where)} {:and_or_symbol "and"} {:parenthesis where-items}]))
-                                                            (recur r table_select_view_obj (replace_alias f view_where))) (recur r table_select_view_obj where-items))) (recur r table_select_view_obj where-items))) where-items))
-            (replace_alias [alias ast]
-                (if (some? ast)
-                    (cond (instance? clojure.lang.LazySeq ast) (map (partial replace_alias alias) ast)
-                          (map? ast) (map_replace_alias alias (keys ast) ast))))
-            (map_replace_alias
-                ([alias m] (map_replace_alias alias (keys m) m))
-                ([alias [f & rs] m]
-                 (if (some? f)
-                     (let [vs (get m f)]
-                         (cond (and (= f :item_name) (= (get m :const) false)) (assoc m :table_alias alias)
-                               (instance? clojure.lang.LazySeq vs) (recur alias rs (assoc m f (map (partial replace_alias alias) vs)))
-                               (map? vs) (recur alias rs (assoc m f (replace_alias alias vs)))
-                               :else
-                               (recur alias rs m))) m)))
-            (get_query_view
-                ([query-items] (get_query_view query-items {}))
-                ([[f & r] dic]
-                 (if (some? f)
-                     (cond (contains? f :item_name) (recur r (assoc dic (get f :item_name) nil))
-                           (and (contains? f :func-name) (my-lexical/is-eq? (get f :func-name) "convert_to") (= (count (get f :lst_ps)) 3)) (recur r (assoc dic (get (first (get f :lst_ps)) :item_name) (last (get f :lst_ps))))
-                           (contains? f :comma_symbol) (recur r dic)
-                           :else
-                           (throw (Exception. "select 权限视图中只能是字段或者是转换函数！")))
-                     dic)))
-            (get_query_table_map [ignite group_id [f & rs] ast]
-                (if (some? f)
-                    (let [vs (get ast f)]
-                        (cond (instance? clojure.lang.LazySeq vs) (recur ignite group_id rs (assoc ast f (map (partial get_query_table ignite group_id) vs)))
-                              (map? vs) (recur ignite group_id rs (assoc ast f (get_query_table ignite group_id vs)))
-                              :else
-                              (recur ignite group_id rs ast))) ast))
-            ]
-        (if (and (map? ast) (contains? ast :query-items) (contains? ast :table-items))
-            (let [table_obj (get_map_table_items ignite group_id (get ast :table-items))]
-                (if (some? table_obj)
-                    (let [qt (query_authority ignite group_id table_obj (get ast :query-items)) where (get_where (keys table_obj) table_obj (get ast :where-items))]
-                        (assoc ast :query-items qt :where-items where)) ast))
-            (cond (instance? clojure.lang.LazySeq ast) (map (partial get_query_table ignite group_id) ast)
-                  (map? ast) (get_query_table_map ignite group_id (keys ast) ast)))))
+(defn to-lst [ast]
+    (cond (map? ast) (loop [[f & r] (keys ast) my-ast (Hashtable.)]
+                         (if (some? f)
+                             (cond (map? (get ast f)) (if-let [m (to-lst (get ast f))]
+                                                          (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
+                                                          (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
+                                   (my-lexical/is-seq? (get ast f)) (if-let [m (to-lst (get ast f))]
+                                                                        (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
+                                                                        (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
+                                   :else
+                                   (if-let [m (get ast f)]
+                                       (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
+                                       (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
+                                   )
+                             my-ast))
+          (my-lexical/is-seq? ast) (my-lexical/to_arryList (map to-lst ast))
+          ))
 
 ; 转换成查询字符串
 (def sql_symbol #{"(" ")" "/" "*" "-" "+" "=" ">" "<" ">=" "<=" "<>" ","})
 
 ; array 转换为 sql
 (defn ar-to-sql [[f & rs] ^StringBuilder sb]
-           (cond (and (some? f) (some? (first rs))) (cond (and (my-lexical/is-eq? f "(") (my-lexical/is-eq? (first rs) "select")) (recur rs (.append sb f))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "from")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "where")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "or")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "in")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "exists")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "and")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "union")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "union all")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "not in")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "not exists")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "from") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "where") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "or") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "and") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "in") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "union") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "union all") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
-                                                          (and (my-lexical/is-eq? f "not in") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+    (cond (and (some? f) (some? (first rs))) (cond (and (my-lexical/is-eq? f "(") (my-lexical/is-eq? (first rs) "select")) (recur rs (.append sb f))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "from")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "where")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "or")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "in")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "exists")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "and")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "union")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "union all")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "not in")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f ")") (my-lexical/is-eq? (first rs) "not exists")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "from") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "where") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "or") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "and") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "in") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "union") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "union all") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
+                                                   (and (my-lexical/is-eq? f "not in") (my-lexical/is-eq? (first rs) "(")) (recur rs (.append (.append sb f) " "))
 
-                                                          (and (not (contains? sql_symbol f)) (not (contains? sql_symbol (first rs)))) (recur rs (.append (.append sb f) " "))
-                                                          :else
-                                                          (recur rs (.append sb f)))
-                 (and (some? f) (Strings/isNullOrEmpty (first rs))) (recur rs (.append sb f))
-                 :else
-                 sb))
+                                                   (and (not (contains? sql_symbol f)) (not (contains? sql_symbol (first rs)))) (recur rs (.append (.append sb f) " "))
+                                                   :else
+                                                   (recur rs (.append sb f)))
+          (and (some? f) (Strings/isNullOrEmpty (first rs))) (recur rs (.append sb f))
+          :else
+          sb))
 
 (defn my-array-to-sql [lst]
-                 (if (nil? lst) nil
-                                (letfn [(ar-to-lst [[f & rs]]
-                                            (if (some? f)
-                                                (try
-                                                    (if (string? f) (cons f (ar-to-lst rs))
-                                                                    (concat (ar-to-lst f) (ar-to-lst rs)))
-                                                    (catch Exception e (.getMessage e))) []))]
-                                    (if (string? lst) lst
-                                                      (.toString (ar-to-sql (ar-to-lst lst) (StringBuilder.)))))
-                                ))
+    (if (nil? lst) nil
+                   (letfn [(ar-to-lst [[f & rs]]
+                               (if (some? f)
+                                   (try
+                                       (if (string? f) (cons f (ar-to-lst rs))
+                                                       (concat (ar-to-lst f) (ar-to-lst rs)))
+                                       (catch Exception e (.getMessage e))) []))]
+                       (if (string? lst) lst
+                                         (.toString (ar-to-sql (ar-to-lst lst) (StringBuilder.)))))
+                   ))
 
 ; ast to sql
 (defn ast_to_sql [ignite group_id ast]
@@ -822,6 +724,7 @@
                     (cond
                         (contains? m :sql_obj) (select-to-sql ignite group_id m)
                         (and (contains? m :func-name) (contains? m :lst_ps)) (func-to-line ignite group_id m)
+                        (contains? m :func-link) (func-link-to-line ignite group_id m)
                         (contains? m :and_or_symbol) (get m :and_or_symbol)
                         (contains? m :keyword) (get m :keyword)
                         (contains? m :operation) (map (partial token-to-sql ignite group_id) (get m :operation))
@@ -842,10 +745,42 @@
             (on-to-line [ignite group_id m]
                 (if (some? m)
                     (str/join ["on " (str/join " " (token-to-sql ignite group_id (get m :on)))])))
+            ;(func-to-line [ignite group_id m]
+            ;    (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+            ;        (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")" " as"] [(-> m :alias)])
+            ;        (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")"])))
             (func-to-line [ignite group_id m]
-                (if (and (contains? m :alias) (not (nil? (-> m :alias))))
-                    (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")" " as"] [(-> m :alias)])
-                    (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")"])))
+                (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                    (let [lst-ps-items (map (partial token-to-sql ignite group_id) (-> m :lst_ps))]
+                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                (concat ["my_fun(" (format "'%s'," (-> m :func-name))] lst-ps-items [")" " as"] [(-> m :alias)])
+                                                                                                (concat ["my_fun(" (format "'%s'" (-> m :func-name))] [")" " as"] [(-> m :alias)]))
+                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] lst-ps-items [")" " as"] [(-> m :alias)])
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] [")" " as"] [(-> m :alias)]))
+                              :else
+                              (concat [(-> m :func-name) "("] lst-ps-items [")" " as"] [(-> m :alias)])
+                              ))
+                    (let [lst-ps-items (map (partial token-to-sql ignite group_id) (-> m :lst_ps))]
+                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                (concat ["my_fun(" (format "'%s'," (-> m :func-name))] lst-ps-items [")"] [(-> m :alias)])
+                                                                                                (concat ["my_fun(" (format "'%s'" (-> m :func-name))] [")"] [(-> m :alias)]))
+                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] lst-ps-items [")"] [(-> m :alias)])
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] [")"] [(-> m :alias)]))
+                              :else
+                              (concat [(-> m :func-name) "("] lst-ps-items [")"] [(-> m :alias)])
+                              ))))
+            (func-link-to-line [ignite group_id m]
+                (let [[fn-line args] (my-smart-token-clj/func-link-clj ignite group_id (-> m :func-link))]
+                    (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                        (if (empty? args)
+                            ["my_invoke_link(" fn-line ")" " as" (-> m :alias)]
+                            ["my_invoke_link(" fn-line "," (str/join "," args) ")" " as" (-> m :alias)])
+                        (if (empty? args)
+                            ["my_invoke_link(" fn-line ")"]
+                            ["my_invoke_link(" fn-line "," (str/join "," args) ")"]))
+                    ))
             (item-to-line [m]
                 (let [{table_alias :table_alias item_name :item_name alias :alias} m]
                     (cond
@@ -900,46 +835,6 @@
                                (throw (Exception. "select 语句错误！"))) (throw (Exception. "select 语句错误！"))) lst_rs)))]
         (select-to-sql ignite group_id ast)))
 
-; sql to myAst
-(defn get_my_ast [ignite group_id lst-sql]
-    (when-let [ast (get-my-sql-to-ast lst-sql)]
-        (when-let [func_ast (find-table-func ignite ast)]
-            (get_query_table ignite group_id func_ast))))
-
-(defn get_my_ast_lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
-    (if-not (empty? sql_lst)
-        (when-let [ast (get-my-sql-to-ast sql_lst)]
-            (when-let [func_ast (find-table-func ignite ast)]
-                (get_query_table ignite group_id func_ast)))
-        (throw (Exception. "查询字符串不能为空！"))
-        ))
-
-(defn get_update_delete_ast [ignite group_id sql]
-    (if-not (Strings/isNullOrEmpty sql)
-        (when-let [ast (get-my-sql-to-ast (my-lexical/to-back sql))]
-            (get_query_table ignite group_id ast))))
-
-; 输入 sql 获取处理后的 sql
-; 用于 update 和 delete
-(defn my_update_delete_sql [^Ignite ignite ^Long group_id ^String sql]
-    (if-let [ast (get_update_delete_ast ignite group_id sql)]
-        (ast_to_sql ignite group_id ast)
-        (throw (Exception. (format "查询字符串 %s 错误！" sql)))))
-
-; 输入 sql 获取处理后的 sql
-(defn my_plus_sql [^Ignite ignite ^Long group_id lst-sql]
-    (if-let [ast (get_my_ast ignite group_id lst-sql)]
-        (ast_to_sql ignite group_id ast)
-        (throw (Exception. (format "查询字符串 %s 错误！" (str/join " " lst-sql))))))
-
-(defn my_plus_sql_lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
-    (if-let [ast (get_my_ast_lst ignite group_id sql_lst)]
-        (ast_to_sql ignite group_id ast)
-        (throw (Exception. (format "查询字符串错误！")))))
-
-; 执行sql
-(defn select_run [^Ignite ignite ^Long group_id ^String sql]
-    (.getAll (.query (.getOrCreateCache ignite (MyDbUtil/getPublicCfg)) (SqlFieldsQuery. (my_plus_sql ignite group_id sql)))))
 
 
 
