@@ -202,7 +202,7 @@
                       :else
                       (if (string? (first lst))
                           (my-smart-sql ignite group_id [lst])
-                          (my-smart-sql ignite group_id lst))
+                          (my-smart-sql ignite group_id (apply concat lst)))
                       ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                       ))
             (recur ignite group_id userToken dataset_name group_type dataset_id r sb))

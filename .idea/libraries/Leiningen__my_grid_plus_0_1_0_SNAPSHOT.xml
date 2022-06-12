@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: my-grid-plus:0.1.0-SNAPSHOT">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/my-grid-plus/my-grid-plus/0.1.0-SNAPSHOT/my-grid-plus-0.1.0-SNAPSHOT.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

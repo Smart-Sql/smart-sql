@@ -141,7 +141,6 @@
 (defn func-to-clj [^Ignite ignite group_id m args-dic]
     (let [{func-name :func-name lst_ps :lst_ps} m]
         (cond (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
-              (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "my_view") (format "(smart-func/smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add_job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "remove_job") (format "(smart-func/remove-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
@@ -171,6 +170,7 @@
               (my-lexical/is-eq? func-name "noSqlInsert") (format "(my-lexical/no-sql-insert ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "noSqlUpdate") (format "(my-lexical/no-sql-update ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "noSqlDelete") (format "(my-lexical/no-sql-delete ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+              (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-args-dic))
               (format "(%s %s)" (my-lexical/smart-func func-name) (get-lst-ps-vs ignite group_id lst_ps args-dic))
