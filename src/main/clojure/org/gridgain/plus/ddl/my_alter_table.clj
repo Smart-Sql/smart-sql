@@ -121,7 +121,18 @@
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id ^String dataset_name]
     (let [{sql :sql lst_cachex :lst_cachex} (alter-table-obj ignite dataset_name sql_line)]
         (if-not (nil? lst_cachex)
-            (if (true? (..isMultiUserGroup (.configuration ignite)))
+            (if (true? (.isMultiUserGroup (.configuration ignite)))
+                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
+                    {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex (doto lst_cachex (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (MyLog. ddl_id "ddl_log" (MyCacheExUtil/objToBytes sql)) (SqlType/INSERT))))})
+                {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex})
+            (throw (Exception. "修改表的语句有错误！")))
+        )
+    )
+
+(defn run_ddl_real_time_lst [^Ignite ignite lst ^Long data_set_id ^Long group_id ^String dataset_name]
+    (let [{sql :sql lst_cachex :lst_cachex} (alter-table-obj ignite dataset_name sql_line)]
+        (if-not (nil? lst_cachex)
+            (if (true? (.isMultiUserGroup (.configuration ignite)))
                 (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                     {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex (doto lst_cachex (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (MyLog. ddl_id "ddl_log" (MyCacheExUtil/objToBytes sql)) (SqlType/INSERT))))})
                 {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex})
@@ -140,6 +151,12 @@
                 (run_ddl_real_time ignite sql_code dataset_id group_id dataset_name)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
+(defn alter_table_lst [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id lst]
+    (if (= group_id 0)
+        (run_ddl_real_time ignite lst -1 group_id dataset_name)
+        (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
+            (run_ddl_real_time ignite lst dataset_id group_id dataset_name)
+            (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))))
 
 
 

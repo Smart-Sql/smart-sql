@@ -25,10 +25,26 @@
               (throw (Exception. "输入字符串错误！"))
               )))
 
+(defn get-dataset-name-lst [lst]
+    (cond (and (= (count lst) 5) (= '("drop" "dataset" "if" "exists") (take 4 lst))) (last lst)
+          (and (= (count lst) 3) (= '("drop" "dataset") (take 2 lst))) (last lst)
+          :else
+          (throw (Exception. "输入字符串错误！"))
+          ))
+
 ; 删除 dataset
 (defn drop-data-set [^Ignite ignite ^Long group-id ^String sql]
     (if (= group-id 0)
         (if-let [data_set_name (get-dataset-name sql)]
+            (if-let [ds-cache (.cache ignite (str (str/lower-case data_set_name) "_meta"))]
+                (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select mt.id from my_dataset as m, my_meta_tables as mt where m.id = mt.data_set_id and m.dataset_name = ? limit 0, 1") (to-array [(str/lower-case data_set_name)])))))
+                    (.destroy ds-cache)
+                    )))
+        (throw (Exception. "没有执行语句的权限！"))))
+
+(defn drop-data-set-lst [^Ignite ignite ^Long group-id lst]
+    (if (= group-id 0)
+        (if-let [data_set_name (get-dataset-name-lst lst)]
             (if-let [ds-cache (.cache ignite (str (str/lower-case data_set_name) "_meta"))]
                 (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select mt.id from my_dataset as m, my_meta_tables as mt where m.id = mt.data_set_id and m.dataset_name = ? limit 0, 1") (to-array [(str/lower-case data_set_name)])))))
                     (.destroy ds-cache)

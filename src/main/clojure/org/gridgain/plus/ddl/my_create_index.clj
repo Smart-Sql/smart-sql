@@ -152,7 +152,7 @@
 ;(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
 ;    (if-let [m (get_create_index_obj sql_line)]
 ;        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
-;            (if (true? (..isMultiUserGroup (.configuration ignite)))
+;            (if (true? (.isMultiUserGroup (.configuration ignite)))
 ;                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
 ;                    (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
 ;                    )
