@@ -19,6 +19,12 @@ public class MyScenesParams implements Serializable {
         this.ps_index = ps_index;
     }
 
+    public MyScenesParams (final String ps_type, final Integer ps_index)
+    {
+        this.ps_type = ps_type;
+        this.ps_index = ps_index;
+    }
+
     public MyScenesParams()
     {}
 

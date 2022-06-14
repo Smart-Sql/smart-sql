@@ -287,8 +287,8 @@
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args}
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args})
                               (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args (concat [group_id] args)}
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?" (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args (concat [group_id] args)})
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] sql [")" " as"] [(-> m :alias)]) :args args}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] sql [")" " as"] [(-> m :alias)]) :args args})
                               :else
                               {:sql (concat [(-> m :func-name) "("] sql [")" " as"] [(-> m :alias)]) :args args}
                               )
@@ -298,8 +298,8 @@
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args}
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args})
                               (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?," (-> m :func-name))] sql [")"] [(-> m :alias)]) :args (concat [group_id] args)}
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?" (-> m :func-name))] sql [")"] [(-> m :alias)]) :args (concat [group_id] args)})
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] sql [")"] [(-> m :alias)]) :args args}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] sql [")"] [(-> m :alias)]) :args args})
                               :else
                               {:sql (concat [(-> m :func-name) "("] sql [")"]) :args args}
                               )

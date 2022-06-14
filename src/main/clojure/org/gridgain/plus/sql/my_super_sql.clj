@@ -267,12 +267,12 @@
                    ; no sql
                    ;(contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst))) (.append sb (str (my-super-cache/my-no-lst ignite group_id lst (str/join " " lst)) ";"))
                    (and (string? (first lst)) (contains? #{"noSqlInsert" "noSqlUpdate" "noSqlDelete" "noSqlDrop"} (str/lower-case (first lst)))) (let [my-code (my-smart-clj/token-to-clj ignite group_id (my-select/sql-to-ast (cull-semicolon lst)) nil)]
-                                                                                                                                                     (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (str (eval (read-string my-code)))))
+                                                                                                                                                     (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (str (eval (read-string my-code))))))
                                                                                                                                                      )
                    :else
                    (if (string? (first lst))
-                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (my-smart-sql ignite group_id [(cull-semicolon lst)])))
-                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (my-smart-sql ignite group_id (apply concat lst))))
+                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id [(cull-semicolon lst)]))))
+                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id (apply concat lst)))))
                        )
                    ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                    ))

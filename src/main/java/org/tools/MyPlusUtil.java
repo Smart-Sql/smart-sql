@@ -1,5 +1,6 @@
 package org.tools;
 
+import cn.plus.model.db.MyScenesParams;
 import cn.plus.model.ddl.MyFunc;
 import cn.plus.model.ddl.MyFuncPs;
 import org.apache.ignite.Ignite;
@@ -87,23 +88,96 @@ public class MyPlusUtil {
         return null;
     }
 
+    public static Object getValue(final String vs, final String ps_type) throws Exception {
+        switch (ps_type)
+        {
+            case "Double":
+                return MyConvertUtil.ConvertToDouble(vs);
+            case "double":
+                return MyConvertUtil.ConvertToDouble(vs);
+            case "Integer":
+                return MyConvertUtil.ConvertToInt(vs);
+            case "int":
+                return MyConvertUtil.ConvertToInt(vs);
+            case "Long":
+                return MyConvertUtil.ConvertToLong(vs);
+            case "long":
+                return MyConvertUtil.ConvertToLong(vs);
+            case "Boolean":
+                return MyConvertUtil.ConvertToBoolean(vs);
+            case "boolean":
+                return MyConvertUtil.ConvertToBoolean(vs);
+            case "Date":
+                return MyConvertUtil.ConvertToTimestamp(vs);
+            case "Timestamp":
+                return MyConvertUtil.ConvertToTimestamp(vs);
+            default:
+                return vs;
+        }
+    }
+
+    public static List<MyScenesParams> getParams(final List<MyScenesParams> params)
+    {
+        return params.stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
+    }
+
     /**
      * 调用 func
      * */
-    public static Object invokeFunc(final Ignite ignite, final String func_name, Object... ps)
+    public static Object invokeFunc(final Ignite ignite, final String func_name, String... ps)
     {
         Object rs = null;
         IgniteCache<String, MyFunc> funcCache = ignite.cache("my_func");
         MyFunc myFunc = funcCache.get(func_name);
         try {
-            List<Object> psvalue = new ArrayList<>();
-            for (Object p : ps)
-            {
-                psvalue.add(p);
-            }
 
             List<MyFuncPs> lstFunc = myFunc.getLst().stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
             List<Class<?>> pstypes = lstFunc.stream().map(m -> getClassByName(m.getPs_type())).collect(Collectors.toList());
+
+            List<Object> psvalue = new ArrayList<>();
+            for (int i = 0; i < ps.length; i++)
+            {
+                MyFuncPs myFuncPs = lstFunc.get(i);
+                switch (myFuncPs.getPs_type())
+                {
+                    case "String":
+                        psvalue.add(ps[i]);
+                        break;
+                    case "Double":
+                        psvalue.add(MyConvertUtil.ConvertToDouble(ps[i]));
+                        break;
+                    case "double":
+                        psvalue.add(MyConvertUtil.ConvertToDouble(ps[i]));
+                        break;
+                    case "Integer":
+                        psvalue.add(MyConvertUtil.ConvertToInt(ps[i]));
+                        break;
+                    case "int":
+                        psvalue.add(MyConvertUtil.ConvertToInt(ps[i]));
+                        break;
+                    case "Long":
+                        psvalue.add(MyConvertUtil.ConvertToLong(ps[i]));
+                        break;
+                    case "long":
+                        psvalue.add(MyConvertUtil.ConvertToLong(ps[i]));
+                        break;
+                    case "Boolean":
+                        psvalue.add(MyConvertUtil.ConvertToBoolean(ps[i]));
+                        break;
+                    case "boolean":
+                        psvalue.add(MyConvertUtil.ConvertToBoolean(ps[i]));
+                        break;
+                    case "Date":
+                        psvalue.add(MyConvertUtil.ConvertToTimestamp(ps[i]));
+                        break;
+                    case "Timestamp":
+                        psvalue.add(MyConvertUtil.ConvertToTimestamp(ps[i]));
+                        break;
+                    default:
+                        psvalue.add(ps[i]);
+                        break;
+                }
+            }
 
             Class<?> cls = Class.forName(myFunc.getCls_name());
             Method method = cls.getMethod(myFunc.getJava_method_name(), pstypes.toArray(new Class[]{}));
@@ -117,6 +191,8 @@ public class MyPlusUtil {
         } catch (InstantiationException e) {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return rs;

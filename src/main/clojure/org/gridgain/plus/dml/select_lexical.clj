@@ -10,7 +10,7 @@
              (cn.mysuper.model MyUrlToken)
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
-             (cn.plus.model.db MyScenesCache)
+             (cn.plus.model.db MyScenesCache MyScenesCachePk MyScenesParams)
              (org.gridgain.myservice MyNoSqlFunService)
              (org.gridgain.jdbc MyJdbc)
              (java.util ArrayList Date Iterator)
@@ -33,6 +33,52 @@
         ))
 
 (declare get-schema)
+
+(defn get-scenes-params [params]
+    (if (nil? params)
+        (ArrayList.)
+        params))
+
+; 添加参数
+(defn add-scenes-ps [^Ignite ignite ^Long group_id my-method-name index ps-type]
+    (let [pk-id (MyScenesCachePk. group_id my-method-name)]
+        (let [m (.get (.cache ignite "my_scenes") pk-id)]
+            (let [params (doto (get-scenes-params (.getParams m))
+                             (.add (MyScenesParams. ps-type index)))]
+                (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams params)))))))
+
+; 删除参数
+(defn remove-scenes-ps [^Ignite ignite ^Long group_id my-method-name index]
+    (letfn [(remove-params-index [params index]
+                (if (or (nil? params) (= (count params) 0))
+                    (throw (Exception. "没有参数！"))
+                    (loop [[f & r] params lst (ArrayList.)]
+                        (if (some? f)
+                            (if (= (.getPs_index f) index)
+                                (recur r lst)
+                                (recur r (doto lst (.add f))))
+                            lst)))
+                )]
+        (let [pk-id (MyScenesCachePk. group_id my-method-name)]
+            (let [m (.get (.cache ignite "my_scenes") pk-id)]
+                (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (remove-params-index (.getParams m) index)))))))
+    )
+
+; 替换参数
+(defn replace-scenes-ps [^Ignite ignite ^Long group_id my-method-name index ps-type]
+    (letfn [(replace-params-index [params index ps-type]
+                (if (or (nil? params) (= (count params) 0))
+                    (throw (Exception. "没有参数！"))
+                    (loop [[f & r] params lst (ArrayList.)]
+                        (if (some? f)
+                            (if (= (.getPs_index f) index)
+                                (recur r (doto lst (.add (MyScenesParams. ps-type index))))
+                                (recur r (doto lst (.add f))))
+                            lst)))
+                )]
+        (let [pk-id (MyScenesCachePk. group_id my-method-name)]
+            (let [m (.get (.cache ignite "my_scenes") pk-id)]
+                (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (replace-params-index (.getParams m) index ps-type))))))))
 
 ; 输入场景（方法的名字）实际参，输出 dic
 ; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是

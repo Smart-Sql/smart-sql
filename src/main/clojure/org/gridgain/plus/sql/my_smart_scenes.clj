@@ -28,18 +28,36 @@
         ))
 
 ; 调用 func
-(defn my-invoke-func [^Ignite ignite ^String method-name & ps]
+(defn my-invoke-func [^Ignite ignite ^String method-name ps]
     (MyPlusUtil/invokeFunc ignite method-name ps))
 
+; 获取输入参数和处理后的参数
+(defn get-params [params]
+    (if (> (count params) 0)
+        (loop [[f & r] (MyPlusUtil/getParams params) ps-line [] ps-line-ex []]
+            (if (some? f)
+                (recur r (conj ps-line (.getPs_name f)) (conj ps-line-ex (MyPlusUtil/getValue (.getPs_name f) (.getPs_type f))))
+                [(str/join " " ps-line) (str/join " " ps-line-ex)])
+            )
+        ))
+
+; 获取真实的 clj
+(defn get-code-by-scenes [m]
+    (let [sql-code (.getSql_code m) scenes_name (.getScenes_name m) [ps-line ps-line-ex] (get-params (.getParams m))]
+        (doto (StringBuilder.)
+            (.append sql-code)
+            (.append (format "(defn %s-ex [%s]\n    (%s %s))" scenes_name ps-line scenes_name ps-line-ex)))
+        ))
+
 ; 调用 scenes
-(defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name & ps]
+(defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name ps]
     (let [my-method-name (str/lower-case method-name)]
         (try
-            (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))
+            (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps))
             (catch Exception e
-                (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. (str/lower-case my-method-name) group_id))]
-                    (my-lexical/get-value (apply (eval (read-string (.getSql_code m))) ignite group_id ps))
-                    (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))))))
+                (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. group_id my-method-name))]
+                    (my-lexical/get-value (apply (eval (read-string (get-code-by-scenes m))) ignite group_id ps))
+                    (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps)))))))
 
 ; 调用 scenes
 (defn my-invoke-scenes-link [^Ignite ignite ^Long group_id ^String method-name & ps]
