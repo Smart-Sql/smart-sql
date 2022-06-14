@@ -36,7 +36,8 @@
     (if (> (count params) 0)
         (loop [[f & r] (MyPlusUtil/getParams params) ps-line [] ps-line-ex []]
             (if (some? f)
-                (recur r (conj ps-line (.getPs_name f)) (conj ps-line-ex (MyPlusUtil/getValue (.getPs_name f) (.getPs_type f))))
+                (let [ps-name (str (gensym "c"))]
+                    (recur r (conj ps-line ps-name) (conj ps-line-ex (MyPlusUtil/getValue ps-name (.getPs_type f)))))
                 [(str/join " " ps-line) (str/join " " ps-line-ex)])
             )
         ))
@@ -44,9 +45,7 @@
 ; 获取真实的 clj
 (defn get-code-by-scenes [m]
     (let [sql-code (.getSql_code m) scenes_name (.getScenes_name m) [ps-line ps-line-ex] (get-params (.getParams m))]
-        (doto (StringBuilder.)
-            (.append sql-code)
-            (.append (format "(defn %s-ex [%s]\n    (%s %s))" scenes_name ps-line scenes_name ps-line-ex)))
+        [sql-code (format "(defn %s-ex [^Ignite ignite ^Long group_id %s]\n    (%s ignite group_id %s))" scenes_name ps-line scenes_name ps-line-ex)]
         ))
 
 ; 调用 scenes
@@ -56,7 +55,9 @@
             (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps))
             (catch Exception e
                 (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. group_id my-method-name))]
-                    (my-lexical/get-value (apply (eval (read-string (get-code-by-scenes m))) ignite group_id ps))
+                    (let [[sql-code sql-code-ex] (get-code-by-scenes m)]
+                        (eval (read-string sql-code))
+                        (my-lexical/get-value (apply (eval (read-string sql-code-ex)) ignite group_id ps)))
                     (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps)))))))
 
 ; 调用 scenes

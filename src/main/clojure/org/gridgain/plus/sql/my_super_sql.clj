@@ -271,7 +271,7 @@
                                                                                                                                                      )
                    :else
                    (if (string? (first lst))
-                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id [(cull-semicolon lst)]))))
+                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id lst))))
                        (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id (apply concat lst)))))
                        )
                    ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))

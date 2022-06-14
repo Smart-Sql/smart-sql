@@ -88,31 +88,31 @@ public class MyPlusUtil {
         return null;
     }
 
-    public static Object getValue(final String vs, final String ps_type) throws Exception {
+    public static String getValue(final String vs, final String ps_type) throws Exception {
         switch (ps_type)
         {
             case "Double":
-                return MyConvertUtil.ConvertToDouble(vs);
+                return String.format("(MyConvertUtil/ConvertToDouble %s)", vs);
             case "double":
-                return MyConvertUtil.ConvertToDouble(vs);
+                return String.format("(MyConvertUtil/ConvertToDouble %s)", vs);
             case "Integer":
-                return MyConvertUtil.ConvertToInt(vs);
+                return String.format("(MyConvertUtil/ConvertToInt %s)", vs);
             case "int":
-                return MyConvertUtil.ConvertToInt(vs);
+                return String.format("(MyConvertUtil/ConvertToInt %s)", vs);
             case "Long":
-                return MyConvertUtil.ConvertToLong(vs);
+                return String.format("(MyConvertUtil/ConvertToLong %s)", vs);
             case "long":
-                return MyConvertUtil.ConvertToLong(vs);
+                return String.format("(MyConvertUtil/ConvertToLong %s)", vs);
             case "Boolean":
-                return MyConvertUtil.ConvertToBoolean(vs);
+                return String.format("(MyConvertUtil/ConvertToBoolean %s)", vs);
             case "boolean":
-                return MyConvertUtil.ConvertToBoolean(vs);
+                return String.format("(MyConvertUtil/ConvertToBoolean %s)", vs);
             case "Date":
-                return MyConvertUtil.ConvertToTimestamp(vs);
+                return String.format("(MyConvertUtil/ConvertToTimestamp %s)", vs);
             case "Timestamp":
-                return MyConvertUtil.ConvertToTimestamp(vs);
+                return String.format("(MyConvertUtil/ConvertToTimestamp %s)", vs);
             default:
-                return vs;
+                return String.format("(MyConvertUtil/ConvertToString %s)", vs);
         }
     }
 
