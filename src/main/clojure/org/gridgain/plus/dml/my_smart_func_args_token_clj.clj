@@ -196,7 +196,8 @@
                                        (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (format "(my-lexical/get-value %s)" (str/lower-case (-> m :item_name)))
                                        :else
                                        (format "(my-lexical/get-value %s)" (-> m :item_name)))
-          (true? (-> m :const)) (get-const-vs (-> m :item_name))
+          (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (get-const-vs (-> m :item_name))
+          (and (not (= java.lang.String (-> m :java_item_type))) (true? (-> m :const))) (get-const-vs (-> m :item_name))
           ))
 
 ;(defn judge [ignite group_id lst args-dic]
@@ -300,8 +301,10 @@
               (get-const-vs (-> m :item_name)))))
 
 (defn get-const-vs [vs]
-    (cond (and (= (first vs) "'") (= (last vs) "'")) (str/join (rest (drop-last 1 vs)))
-          (and (= (first vs) "\"") (= (last vs) "\"")) (str/join (rest (drop-last 1 vs)))
+    (cond (and (= (first vs) \') (= (last vs) \')) (str/join (concat ["\""] (drop-last (rest vs)) ["\""])) ;(str/join (rest (drop-last 1 vs)))
+          ;(and (= (first vs) "\"") (= (last vs) "\"")) (str/join (rest (drop-last 1 vs)))
+          (and (= (first vs) \') (= (last vs) \')) (str/join (concat ["\""] (drop-last (rest vs)) ["\""])) ;(str/join (drop-last (rest vs)))
+          ;(and (= (first vs) \") (= (last vs) \")) (str/join (drop-last (rest vs)))
           :else
           vs
           ))

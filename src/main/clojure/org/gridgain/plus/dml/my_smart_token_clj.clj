@@ -191,9 +191,11 @@
     (let [my-let (get-let-context (-> m :item_name) my-context)]
         (if (some? my-let)
             (format "(my-lexical/get-value %s)" (-> m :item_name))
-            (if (my-lexical/is-eq? (-> m :item_name) "null")
-                "nil"
-                (-> m :item_name)))))
+            (cond (my-lexical/is-eq? (-> m :item_name) "null") "nil"
+                  (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (my-lexical/get_str_value (-> m :item_name))
+                  (and (not (= java.lang.String (-> m :java_item_type))) (true? (-> m :const))) (-> m :item_name)
+                  :else
+                  (-> m :item_name)))))
 
 ;(defn judge [ignite group_id lst my-context]
 ;    (cond (= (count lst) 3) (format "(%s %s %s)" (str/lower-case (-> (second lst) :and_or_symbol)) (token-to-clj ignite group_id (first lst) my-context) (token-to-clj ignite group_id (last lst) my-context))

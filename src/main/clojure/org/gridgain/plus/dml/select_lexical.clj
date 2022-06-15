@@ -139,9 +139,12 @@
 
 ; 剔除单括号或双括号
 (defn get_str_value [^String line]
-    (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (reverse (rest (reverse (rest line)))))
-          (re-find #"^\'\'$" line) ""
-          :else line
+    (cond (and (= (first line) \') (= (last line) \')) (str/join (concat ["\""] (drop-last (rest line)) ["\""]))
+          ;(and (= (first line) \") (= (last line) \")) (str/join (drop-last (rest line)))
+          (and (= (first line) \') (= (last line) \')) (str/join (concat ["\""] (drop-last (rest line)) ["\""]))
+          ;(and (= (first line) \") (= (last line) \")) (str/join (drop-last (rest line)))
+          :else
+          line
           ))
 
 (defn my-str-value [^String line]
