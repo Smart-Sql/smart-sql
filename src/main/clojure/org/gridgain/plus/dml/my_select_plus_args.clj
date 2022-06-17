@@ -2,6 +2,7 @@
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+        [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
         [org.gridgain.plus.tools.my-cache :as my-cache]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
@@ -253,6 +254,7 @@
                     (cond
                         (contains? m :sql_obj) (select-to-sql ignite group_id dic-args m)
                         (and (contains? m :func-name) (contains? m :lst_ps)) (func-to-line ignite group_id dic-args m)
+                        (contains? m :func-link) (func-link-to-line ignite group_id dic-args m)
                         (contains? m :and_or_symbol) {:sql (get m :and_or_symbol) :args nil} ;(get m :and_or_symbol)
                         (contains? m :keyword) {:sql (get m :keyword) :args nil} ;(get m :keyword)
                         (contains? m :operation) (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (get m :operation)))
@@ -305,6 +307,14 @@
                               )
                         )
                     ))
+            (func-link-to-line [ignite group_id dic-args m]
+                (let [{sql :sql args :args} (my-lexical/my-func-line-code m)]
+                    (loop [[f & r] args lst-ps []]
+                        (if (some? f)
+                            (if (contains? (-> dic-args :dic) f)
+                                (recur r (conj lst-ps "?"))
+                                (recur r (conj lst-ps f)))
+                            {:sql sql :args lst-ps}))))
             (item-to-line [dic-args m]
                 (let [{table_alias :table_alias item_name :item_name alias :alias} m]
                     (cond

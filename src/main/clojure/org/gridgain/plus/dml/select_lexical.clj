@@ -1239,8 +1239,67 @@
         true
         false))
 
-
-
+; 输入 func-link 的 ast , 返回 func-link 字符串 和 参数列表
+(defn my-func-line-code [m]
+    (letfn [(token-to-code [token-ast]
+                (if (some? token-ast)
+                    (cond (is-seq? token-ast) (lst-token-to-code token-ast)
+                          (map? token-ast) (map-token-to-code token-ast))))
+            (lst-token-to-code [m]
+                (loop [[f & r] m lst-line [] lst-ps []]
+                    (if (some? f)
+                        (let [{sql :sql args :args} (token-to-code f)]
+                            (recur r (concat lst-line [sql]) (concat lst-ps args)))
+                        {:sql (str/join lst-line) :args lst-ps})))
+            (map-token-to-code [m]
+                (if (some? m)
+                    (cond (contains? m :func-link) (func-link-to-code m)
+                          (and (contains? m :func-name) (contains? m :lst_ps)) (func-to-code m)
+                          (contains? m :operation) (operation-to-code m)
+                          (contains? m :operation_symbol) {:sql (get m :operation_symbol) :args nil}
+                          (contains? m :comma_symbol) {:sql (get m :comma_symbol) :args nil}
+                          (contains? m :parenthesis) (parenthesis-to-code m)
+                          (contains? m :item_name) (item-to-code m)
+                          )))
+            (re-str [line]
+                (if (and (= (first line) \') (= (last line) \'))
+                    (str/join (concat ["\""] (drop-last (rest line)) ["\""]))
+                    line))
+            (item-to-code [m]
+                (let [{item_name :item_name my-const :const java_item_type :java_item_type} m]
+                    (cond (and (true? my-const) (= java_item_type java.lang.String)) {:sql (re-str item_name) :args nil}
+                          (false? my-const) {:sql item_name :args [item_name]}
+                          :else
+                          {:sql item_name :args nil}
+                          )))
+            (operation-to-code [op-ast]
+                (if (some? op-ast)
+                    (loop [[f & r] (-> op-ast :operation) lst [] lst-args []]
+                        (if (some? f)
+                            (let [{sql :sql args :args} (token-to-code f)]
+                                (recur r (concat lst [sql]) (concat lst-args args)))
+                            {:sql (str/join lst) :args lst-args}))))
+            (parenthesis-to-code [p-ast]
+                (if (some? p-ast)
+                    (loop [[f & r] (-> p-ast :parenthesis) lst [] lst-args []]
+                        (if (some? f)
+                            (let [{sql :sql args :args} (token-to-code f)]
+                                (recur r (concat lst [sql]) (concat lst-args args)))
+                            {:sql (str/join (str/join (concat ["("] lst [")"]))) :args lst-args}
+                            ))))
+            (func-to-code [func-ast]
+                (loop [[f & r] (-> func-ast :lst_ps) lst [] lst-args []]
+                    (if (some? f)
+                        (let [{sql :sql args :args} (token-to-code f)]
+                            (recur r (concat lst [sql]) (concat lst-args args)))
+                        {:sql (str/join (concat [(-> func-ast :func-name) "("] lst [")"])) :args lst-args})))
+            (func-link-to-code [func-link-ast]
+                (loop [[f & r] (-> func-link-ast :func-link) lst [] lst-args []]
+                    (if (some? f)
+                        (let [{sql :sql args :args} (func-to-code f)]
+                            (recur r (concat lst [sql]) (concat lst-args args)))
+                        {:sql (str/join "." lst) :args lst-args})))]
+        (token-to-code m)))
 
 
 
