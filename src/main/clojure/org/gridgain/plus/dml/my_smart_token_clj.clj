@@ -302,35 +302,44 @@
 
 (declare func-link-to-ps-clj func-link-to-ps-map-clj func-link-to-ps-seq-clj)
 
-(defn func-link-to-ps-clj [ignite group_id m]
-    (cond (map? m) (func-link-to-ps-map-clj ignite group_id m)
-          (my-lexical/is-seq? m) (func-link-to-ps-seq-clj ignite group_id m)))
+(defn func-link-to-ps-clj [m]
+    (cond (map? m) (func-link-to-ps-map-clj m)
+          (my-lexical/is-seq? m) (func-link-to-ps-seq-clj m)))
 
-(defn func-link-to-ps-map-clj [ignite group_id m]
-    (if (and (contains? m :item_name) (false? (-> m :const)))
-        [(-> m :item_name)]
-        (loop [[f & r] (keys m) lst-rs []]
-            (if (some? f)
-                (let [f-m (func-link-to-ps-clj ignite group_id f)]
-                    (if (and (not (empty? f-m)) (not (nil? f-m)))
-                        (recur r (concat lst-rs f-m))
-                        (recur r lst-rs)))
-                lst-rs))))
+(defn func-link-to-ps-map-clj [m]
+    (cond (and (contains? m :item_name) (false? (-> m :const))) (cond (= (-> m :table_alias) "") {:args [(-> m :item_name)] :ast m}
+                                                                      :else {:args [(format "%s_%s" (-> m :table_alias) (-> m :item_name))] :ast (assoc m :item_name (format "%s_%s" (-> m :table_alias) (-> m :item_name)) :table_alias "")})
+          (and (contains? m :item_name) (true? (-> m :const))) {:args [] :ast m}
+          :else
+          (loop [[f & r] (keys m) lst-rs [] my-ast m]
+              (if (some? f)
+                  (let [{f-m :args ast :ast} (func-link-to-ps-clj (get m f))]
+                      (if-not (nil? ast)
+                          (if (and (not (empty? f-m)) (not (nil? f-m)))
+                              (recur r (concat lst-rs f-m) (assoc my-ast f ast))
+                              (recur r lst-rs (assoc my-ast f ast)))
+                          (recur r lst-rs my-ast))
+                      )
+                  {:args lst-rs :ast my-ast}))
+          ))
 
-(defn func-link-to-ps-seq-clj [ignite group_id m]
-    (loop [[f & r] m lst-rs []]
+(defn func-link-to-ps-seq-clj [m]
+    (loop [[f & r] m lst-rs [] my-ast []]
         (if (some? f)
-            (let [f-m (func-link-to-ps-clj ignite group_id f)]
-                (if (and (not (empty? f-m)) (not (nil? f-m)))
-                    (recur r (concat lst-rs f-m))
-                    (recur r lst-rs)))
-            lst-rs)))
+            (let [{f-m :args ast :ast} (func-link-to-ps-clj f)]
+                (if-not (nil? ast)
+                    (if (and (not (empty? f-m)) (not (nil? f-m)))
+                        (recur r (concat lst-rs f-m) (conj my-ast ast))
+                        (recur r lst-rs (conj my-ast ast)))
+                    (recur r lst-rs my-ast)))
+            {:args lst-rs :ast my-ast})))
 
 ; 生成联级方法调用的匿名函数
 ; 1、 获取所有的参数，形成一个参数列表
 (defn func-link-clj [ignite group_id m]
-    (let [lst-ps (func-link-to-ps-clj ignite group_id m) func-body (func-link-to-clj ignite group_id m nil)]
-        [(format "(fn [ignite group_id %s]\n     %s)" (str/join " " lst-ps) func-body) lst-ps]))
+    (let [{lst-ps :args my-ast :ast} (func-link-to-ps-clj m)]
+        (let [func-body (func-link-to-clj ignite group_id (-> my-ast :func-link) nil)]
+            [(format "(fn [ignite group_id %s]\n     %s)" (str/join " " lst-ps) func-body) lst-ps])))
 
 ;(defn map-obj-to-clj [ignite group_id m my-context]
 ;    (loop [[f & r] m lst-rs []]

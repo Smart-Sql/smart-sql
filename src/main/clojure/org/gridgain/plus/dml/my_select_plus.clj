@@ -775,16 +775,22 @@
                               :else
                               (concat [(-> m :func-name) "("] lst-ps-items [")"] [(-> m :alias)])
                               ))))
+            ;(func-link-to-line [ignite group_id m]
+            ;    (let [[fn-line args] (my-smart-token-clj/func-link-clj ignite group_id (-> m :func-link))]
+            ;        (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+            ;            (if (empty? args)
+            ;                ["my_invoke_link(" fn-line ")" " as" (-> m :alias)]
+            ;                ["my_invoke_link(" fn-line "," (str/join "," args) ")" " as" (-> m :alias)])
+            ;            (if (empty? args)
+            ;                ["my_invoke_link(" fn-line ")"]
+            ;                ["my_invoke_link(" fn-line "," (str/join "," args) ")"]))
+            ;        ))
             (func-link-to-line [ignite group_id m]
-                (let [[fn-line args] (my-smart-token-clj/func-link-clj ignite group_id (-> m :func-link))]
-                    (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
-                        (if (empty? args)
-                            ["my_invoke_link(" fn-line ")" " as" (-> m :alias)]
-                            ["my_invoke_link(" fn-line "," (str/join "," args) ")" " as" (-> m :alias)])
-                        (if (empty? args)
-                            ["my_invoke_link(" fn-line ")"]
-                            ["my_invoke_link(" fn-line "," (str/join "," args) ")"]))
-                    ))
+                (let [{sql :sql args :args} (my-lexical/my-func-line-code m)]
+                    (loop [[f & r] args lst-ps [group_id] lst-args []]
+                        (if (some? f)
+                            (recur r (conj lst-ps f) lst-args)
+                            (str/join ["my_invoke_link('" sql "'," (str/join "," lst-ps) ")"])))))
             (item-to-line [m]
                 (let [{table_alias :table_alias item_name :item_name alias :alias} m]
                     (cond

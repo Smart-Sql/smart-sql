@@ -2,6 +2,7 @@
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+        [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
@@ -70,9 +71,13 @@
                     (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps)))))))
 
 ; 调用 scenes
-(defn my-invoke-scenes-link [^Ignite ignite ^Long group_id ^String method-name & ps]
-    (let [my-method-name (str/lower-case method-name)]
-        (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))))
+;(defn my-invoke-scenes-link [^Ignite ignite ^Long group_id ^String method-name & ps]
+;    (let [my-method-name (str/lower-case method-name)]
+;        (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))))
+
+(defn my-invoke-scenes-link [^Ignite ignite ^Long group_id ^String method-code ps]
+    (let [[code args] (my-smart-token-clj/func-link-clj ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back method-code)))]
+        (apply (eval (read-string code)) ignite group_id ps)))
 
 ; 首先调用方法，如果不存在，在从 cache 中读取数据在执行
 (defn -invokeScenes [this ^Ignite ignite ^Long group_id ^String method-name ^List ps]

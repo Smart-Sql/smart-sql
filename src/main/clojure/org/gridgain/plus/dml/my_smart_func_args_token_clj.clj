@@ -324,3 +324,10 @@
                                         (let [m (assoc next-item :lst_ps (concat [{:table_alias "", :item_name first-item, :item_type "", :java_item_type nil, :const false}] (-> next-item :lst_ps)))]
                                             (func-link-to-clj ignite group_id (concat [m] (rest r)) args-dic)))
           ))
+
+(defn invoke-func-link-to-clj [ignite group_id [f & r]]
+    (cond (and (some? f) (or (nil? r) (empty? r))) (token-clj ignite group_id f nil)
+          (and (some? f) (some? r)) (let [first-item (token-clj ignite group_id f nil) next-item (first r)]
+                                        (let [m (assoc next-item :lst_ps (concat [{:table_alias "", :item_name first-item, :item_type "", :java_item_type nil, :const false}] (-> next-item :lst_ps)))]
+                                            (func-link-to-clj ignite group_id (concat [m] (rest r)) nil)))
+          ))

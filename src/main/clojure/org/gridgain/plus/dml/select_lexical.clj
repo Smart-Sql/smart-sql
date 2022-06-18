@@ -16,7 +16,8 @@
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
              (org.tools MyTools MyFunction)
-             (java.math BigDecimal))
+             (java.math BigDecimal)
+             (com.google.common.base Strings))
     (:gen-class
         :implements [org.gridgain.superservice.INoSqlFun]
         ; 生成 class 的类名
@@ -1266,9 +1267,11 @@
                     (str/join (concat ["\""] (drop-last (rest line)) ["\""]))
                     line))
             (item-to-code [m]
-                (let [{item_name :item_name my-const :const java_item_type :java_item_type} m]
+                (let [{table_alias :table_alias item_name :item_name my-const :const java_item_type :java_item_type} m]
                     (cond (and (true? my-const) (= java_item_type java.lang.String)) {:sql (re-str item_name) :args nil}
-                          (false? my-const) {:sql item_name :args [item_name]}
+                          (false? my-const) (if-not (Strings/isNullOrEmpty table_alias)
+                                                {:sql (format "%s.%s" table_alias item_name) :args [(format "%s.%s" table_alias item_name)]}
+                                                {:sql item_name :args [item_name]})
                           :else
                           {:sql item_name :args nil}
                           )))

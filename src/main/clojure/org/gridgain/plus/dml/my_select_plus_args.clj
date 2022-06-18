@@ -309,12 +309,12 @@
                     ))
             (func-link-to-line [ignite group_id dic-args m]
                 (let [{sql :sql args :args} (my-lexical/my-func-line-code m)]
-                    (loop [[f & r] args lst-ps []]
+                    (loop [[f & r] args lst-ps [group_id] lst-args []]
                         (if (some? f)
                             (if (contains? (-> dic-args :dic) f)
-                                (recur r (conj lst-ps "?"))
-                                (recur r (conj lst-ps f)))
-                            {:sql sql :args lst-ps}))))
+                                (recur r (conj lst-ps "?") (conj lst-args (get (-> dic-args :dic) f)))
+                                (recur r (conj lst-ps f) lst-args))
+                            {:sql (str/join ["my_invoke_link('" sql "'," (str/join "," lst-ps) ")"]) :args lst-args}))))
             (item-to-line [dic-args m]
                 (let [{table_alias :table_alias item_name :item_name alias :alias} m]
                     (cond
