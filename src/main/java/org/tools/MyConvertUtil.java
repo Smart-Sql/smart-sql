@@ -1,19 +1,33 @@
 package org.tools;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import org.gridgain.dml.util.MyCacheExUtil;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MyConvertUtil {
+
+    private static Gson gson = new GsonBuilder()
+            .enableComplexMapKeySerialization()
+            .create();
+
+    public static List ConvertToList(final Object obj)
+    {
+        return gson.fromJson(ConvertToString(obj), new TypeToken<List<Object>>() {}.getType());
+    }
+
+    public static Hashtable ConvertToDic(final Object obj)
+    {
+        return gson.fromJson(ConvertToString(obj), new TypeToken<Hashtable<Object, Object>>() {}.getType());
+    }
 
     public static byte[] ConvertToByte(final Object obj)
     {

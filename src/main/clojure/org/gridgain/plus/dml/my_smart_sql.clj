@@ -23,6 +23,35 @@
 (defn add-let-name [my-context let-name]
     (assoc my-context :let-params (conj (-> my-context :let-params) let-name)))
 
+(defn get-date-ps [lst]
+    (cond (= (count lst) 3) nil
+          (and (= (count lst) 6) (= (nth lst 3) "(") (= (last lst) ")")) (nth lst 4)
+          :else
+          (throw (Exception. "Date 类型的格式错误！"))
+          ))
+
+(defn get-args-obj [args-lst]
+    (loop [[f & r] args-lst lst []]
+        (if (some? f)
+            (if (= (second f) ":")
+                (cond (and (= (count f) 3) (contains? #{"int" "integer"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "int"}))
+                      (and (= (count f) 3) (contains? #{"long"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "long"}))
+                      (and (= (count f) 3) (contains? #{"string" "char" "varchar"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "string"}))
+                      (and (= (count f) 3) (contains? #{"bool" "boolean"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "bool"}))
+                      (and (= (count f) 3) (contains? #{"double"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "double"}))
+                      (and (= (count f) 3) (contains? #{"decimal"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "decimal"}))
+                      (and (= (count f) 3) (contains? #{"list"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "list"}))
+                      (and (= (count f) 3) (contains? #{"dic"} (str/lower-case (last f)))) (recur r (conj lst {:args-name (first f) :args-type "dic"}))
+                      (and (>= (count f) 3) (contains? #{"date" "timestamp"} (str/lower-case (nth f 2)))) (if-let [ps (get-date-ps f)]
+                                                                                                              (recur r (conj lst {:args-name (first f) :args-type "date" :date-format ps}))
+                                                                                                              (recur r (conj lst {:args-name (first f) :args-type "date"}))
+                                                                                                              )
+                      :else
+                      (throw (Exception. (format "参数 %s 的数据类型错误！" (first f))))
+                      )
+                (recur r lst))
+            lst)))
+
 (defn get-smart-segment
     ([lst] (get-smart-segment lst [] nil nil [] []))
     ([[f & r] stack func-for-match mid-small stack-lst lst]
@@ -423,10 +452,16 @@
          lst)))
 
 ; 获取 func 的名字 和 参数
-(defn get-func-name [[f & r]]
+(defn get-func-name-0 [[f & r]]
     (if (and (my-lexical/is-eq? f "function") (= (second r) "("))
         (let [{args-lst :args-lst body-lst :body-lst} (get-small (rest r))]
             {:func-name (first r) :args-lst (filter #(not (= % ",")) args-lst) :body-lst body-lst})
+        ))
+
+(defn get-func-name [[f & r]]
+    (if (and (my-lexical/is-eq? f "function") (= (second r) "("))
+        (let [{args-lst :args-lst body-lst :body-lst} (get-small (rest r))]
+            {:func-name (first r) :args-lst (get-args-obj (my-select-plus/my-get-items args-lst)) :body-lst body-lst})
         ))
 
 (defn get-for-in-args [lst]
@@ -516,11 +551,28 @@
                     [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}])
                 ))))
 
+;(defn re-body-lst [args-lst body-lst]
+;    (loop [[f & r] args-lst new-args-lst [] new-body-lst []]
+;        (if (some? f)
+;            (let [ps (str (gensym (format "c_%s_f" f)))]
+;                (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name f, :let-vs {:table_alias "", :item_name ps, :item_type "", :java_item_type nil, :const false}})))
+;            [new-args-lst (concat new-body-lst body-lst)])))
+
 (defn re-body-lst [args-lst body-lst]
     (loop [[f & r] args-lst new-args-lst [] new-body-lst []]
         (if (some? f)
-            (let [ps (str (gensym (format "c_%s_f" f)))]
-                (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name f, :let-vs {:table_alias "", :item_name ps, :item_type "", :java_item_type nil, :const false}})))
+            (let [ps (str (gensym (format "c_%s_f" (-> f :args-name))))]
+                (cond (= (-> f :args-type) "int") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToInt %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (= (-> f :args-type) "long") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToLong %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (= (-> f :args-type) "string") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToString %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (= (-> f :args-type) "bool") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToBoolean %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (= (-> f :args-type) "double") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToDouble %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (= (-> f :args-type) "decimal") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToDecimal %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (and (= (-> f :args-type) "date") (contains? f :date-format)) (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToTimestamp %s %s)" ps (-> f :date-format)), :item_type "", :java_item_type nil, :const false}}))
+                      (and (= (-> f :args-type) "date") (not (contains? f :date-format))) (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToTimestamp %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (= (-> f :args-type) "list") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToList %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      (= (-> f :args-type) "dic") (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name (-> f :args-name), :let-vs {:table_alias "", :item_name (format "(MyConvertUtil/ConvertToDic %s)" ps), :item_type "", :java_item_type nil, :const false}}))
+                      ))
             [new-args-lst (concat new-body-lst body-lst)])))
 
 (defn re-ast

@@ -62,13 +62,24 @@
 (defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name ps]
     (let [my-method-name (str/lower-case method-name)]
         (try
-            (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps))
+            (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))
             (catch Exception e
                 (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. group_id my-method-name))]
-                    (let [[sql-code sql-code-ex] (get-code-by-scenes m)]
+                    (let [sql-code (.getSql_code m)]
                         (eval (read-string sql-code))
-                        (my-lexical/get-value (apply (eval (read-string sql-code-ex)) ignite group_id ps)))
-                    (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps)))))))
+                        (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))
+                    (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))))))
+
+;(defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name ps]
+;    (let [my-method-name (str/lower-case method-name)]
+;        (try
+;            (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps))
+;            (catch Exception e
+;                (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. group_id my-method-name))]
+;                    (let [[sql-code sql-code-ex] (get-code-by-scenes m)]
+;                        (eval (read-string sql-code))
+;                        (my-lexical/get-value (apply (eval (read-string sql-code-ex)) ignite group_id ps)))
+;                    (my-lexical/get-value (apply (eval (read-string (format "%s-ex" my-method-name))) ignite group_id ps)))))))
 
 ; 调用 scenes
 ;(defn my-invoke-scenes-link [^Ignite ignite ^Long group_id ^String method-name & ps]

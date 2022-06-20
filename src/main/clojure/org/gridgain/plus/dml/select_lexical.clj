@@ -45,7 +45,7 @@
     (let [pk-id (MyScenesCachePk. group_id my-method-name)]
         (let [m (.get (.cache ignite "my_scenes") pk-id)]
             (let [params (doto (get-scenes-params (.getParams m))
-                             (.add (MyScenesParams. ps-type index)))]
+                             (.add (MyScenesParams. ps-type (MyConvertUtil/ConvertToInt index))))]
                 (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams params)))))))
 
 ; 删除参数
@@ -62,7 +62,7 @@
                 )]
         (let [pk-id (MyScenesCachePk. group_id my-method-name)]
             (let [m (.get (.cache ignite "my_scenes") pk-id)]
-                (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (remove-params-index (.getParams m) index)))))))
+                (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (remove-params-index (.getParams m) (MyConvertUtil/ConvertToInt index))))))))
     )
 
 ; 替换参数
@@ -79,7 +79,7 @@
                 )]
         (let [pk-id (MyScenesCachePk. group_id my-method-name)]
             (let [m (.get (.cache ignite "my_scenes") pk-id)]
-                (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (replace-params-index (.getParams m) index ps-type))))))))
+                (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (replace-params-index (.getParams m) (MyConvertUtil/ConvertToInt index) ps-type))))))))
 
 ; 输入场景（方法的名字）实际参，输出 dic
 ; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是
