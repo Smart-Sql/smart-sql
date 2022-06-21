@@ -35,9 +35,9 @@
                ))))
 
 ; 获取名字
-(defn get_table_name [[f & r]]
-    (if (and (some? f) (my-lexical/is-eq? f "DELETE") (my-lexical/is-eq? (first r) "FROM") (my-lexical/is-eq? (first (rest (rest r))) "WHERE"))
-        {:table_name (second r) :where_lst (my-lexical/double-to-signal (rest (rest (rest r))))}))
+(defn get_table_name [lst]
+    (if (and (my-lexical/is-eq? (first lst) "DELETE") (my-lexical/is-eq? (second lst) "FROM"))
+        (delete-table (rest (rest lst)))))
 
 (defn get_pk_lst [[f & r] dic lst]
     (if (some? f)
