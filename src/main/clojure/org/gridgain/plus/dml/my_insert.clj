@@ -92,20 +92,24 @@
 (defn my_insert_obj [^Ignite ignite ^Long group_id [f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
-            (if-let [items (get-insert-items vs-line)]
-                (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
-                    (if (nil? (has-my-authority items v-items))
+            (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
+                true
+                (if-let [items (get-insert-items vs-line)]
+                    (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
+                        (if (nil? (has-my-authority items v-items))
+                            {:schema_name schema_name :table_name table_name :values items})
                         {:schema_name schema_name :table_name table_name :values items})
-                    {:schema_name schema_name :table_name table_name :values items})
-                (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))))
+                    (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))))
         ))
 
 (defn my_insert_obj-no-authority [^Ignite ignite ^Long group_id [f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
-            (if-let [items (get-insert-items vs-line)]
-                {:schema_name schema_name :table_name table_name :values items}
-                (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))))
+            (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
+                true
+                (if-let [items (get-insert-items vs-line)]
+                    {:schema_name schema_name :table_name table_name :values items}
+                    (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))))
         ))
 
 ; 获取表中 PK列 和 数据列

@@ -50,21 +50,22 @@
     (when-let [lst_rs (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m join my_group_view as v on m.id = v.view_id where m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [table_name group_id "删"])))))]
         (if (> (count lst_rs) 0) (get_table_name (my-lexical/to-back (nth lst_rs 0))))))
 
-(defn my_delete_query_sql [^Ignite ignite obj]
-    (if-let [{pk_line :line lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (str/lower-case (-> obj :schema_name)) (str/lower-case (-> obj :table_name)))]
+(defn my_delete_query_sql [^Ignite ignite ^Long group_id obj]
+    (if-let [{pk_line :line lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite group_id (str/lower-case (-> obj :schema_name)) (str/lower-case (-> obj :table_name)))]
         {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :args (-> obj :args) :sql (format "select %s from %s.%s where %s" pk_line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst (get_pk_lst lst_pk dic [])}))
 
 (defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [{schema_name :schema_name table_name :table_name where_lst :where_lst} (get_table_name lst-sql)]
-        (let [[where-lst args] (my-update/my-where-line where_lst args-dic)]
-            (if (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0))
-                (throw (Exception. "用户不存在或者没有权限！"))
-                (if-let [{v_table_name :table_name v_where_lst :where_lst} (my_view_db ignite group_id schema_name table_name)]
-                    (if (my-lexical/is-eq? table_name v_table_name)
-                        {:schema_name schema_name :table_name table_name :args args :where_lst (my-update/merge_where where-lst v_where_lst)})
-                    {:schema_name schema_name :table_name table_name :args args :where_lst where-lst}
-                    )))
-        ))
+        (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
+            true
+            (let [[where-lst args] (my-update/my-where-line where_lst args-dic)]
+                (if (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0))
+                    (throw (Exception. "用户不存在或者没有权限！"))
+                    (if-let [{v_table_name :table_name v_where_lst :where_lst} (my_view_db ignite group_id schema_name table_name)]
+                        (if (my-lexical/is-eq? table_name v_table_name)
+                            {:schema_name schema_name :table_name table_name :args args :where_lst (my-update/merge_where where-lst v_where_lst)})
+                        {:schema_name schema_name :table_name table_name :args args :where_lst where-lst}
+                        ))))))
 
 (defn my-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [{schema_name :schema_name table_name :table_name where_lst :where_lst} (get_table_name lst-sql)]
@@ -76,10 +77,14 @@
 
 (defn my_delete_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
-        (my_delete_query_sql ignite m)
+        (if (and (boolean? m) (true? m))
+            true
+            (my_delete_query_sql ignite group_id m))
         (throw (Exception. "删除语句字符串错误！"))))
 
 (defn my_delete_obj-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
-        (my_delete_query_sql ignite m)
+        (if (and (boolean? m) (true? m))
+            true
+            (my_delete_query_sql ignite group_id m))
         (throw (Exception. "删除语句字符串错误！"))))
