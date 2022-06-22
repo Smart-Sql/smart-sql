@@ -115,21 +115,27 @@
     (cond (my-lexical/is-eq? "select" (first lst)) (if-let [ast (my-select-plus/sql-to-ast lst)]
                                                        (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql))
           (my-lexical/is-eq? "insert" (first lst)) (let [logCache (insert-to-cache ignite group_id lst)]
-                                                       (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
-                                                           "select show_msg('true') as tip;"
-                                                           "select show_msg('false') as tip;"))
+                                                       (if (string? logCache)
+                                                           logCache
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
+                                                               "select show_msg('true') as tip;"
+                                                               "select show_msg('false') as tip;")))
           (my-lexical/is-eq? "update" (first lst)) (let [logCache (update-to-cache ignite group_id lst)]
-                                                       (if (string? logCache)
-                                                           logCache
-                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                               "select show_msg('true') as tip;"
-                                                               "select show_msg('false') as tip;")))
+                                                       (cond (string? logCache) logCache
+                                                             (= logCache []) (throw (Exception. "要修改的数据不存在！"))
+                                                             :else
+                                                             (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                                 "select show_msg('true') as tip;"
+                                                                 "select show_msg('false') as tip;")))
           (my-lexical/is-eq? "delete" (first lst)) (let [logCache (delete-to-cache ignite group_id lst)]
-                                                       (if (string? logCache)
-                                                           logCache
-                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                               "select show_msg('true') as tip;"
-                                                               "select show_msg('false') as tip;")))
+                                                       (cond (string? logCache) logCache
+                                                             (= logCache []) (throw (Exception. "要删除的数据不存在！"))
+                                                             :else
+                                                             (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                                 "select show_msg('true') as tip;"
+                                                                 "select show_msg('false') as tip;")
+                                                             )
+                                                       )
           :else
           (throw (Exception. "query_sql 只能执行 DML 语句！"))
           ))
@@ -144,17 +150,21 @@
                                                                "select show_msg('true') as tip;"
                                                                "select show_msg('false') as tip;")))
           (my-lexical/is-eq? "update" (first lst)) (let [logCache (update-to-cache-no-authority ignite group_id lst)]
-                                                       (if (string? logCache)
-                                                           logCache
-                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                               "select show_msg('true') as tip;"
-                                                               "select show_msg('false') as tip;")))
+                                                       (cond (string? logCache) logCache
+                                                             (= logCache []) (throw (Exception. "要修改的数据不存在！"))
+                                                             :else
+                                                             (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                                 "select show_msg('true') as tip;"
+                                                                 "select show_msg('false') as tip;"))
+                                                       )
           (my-lexical/is-eq? "delete" (first lst)) (let [logCache (delete-to-cache-no-authority ignite group_id lst)]
-                                                       (if (string? logCache)
-                                                           logCache
-                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                               "select show_msg('true') as tip;"
-                                                               "select show_msg('false') as tip;")))
+                                                       (cond (string? logCache) logCache
+                                                             (= logCache []) (throw (Exception. "要删除的数据不存在！"))
+                                                             :else
+                                                             (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                                 "select show_msg('true') as tip;"
+                                                                 "select show_msg('false') as tip;")
+                                                             ))
           :else
           (throw (Exception. "query_sql 只能执行 DML 语句！"))
           ))
