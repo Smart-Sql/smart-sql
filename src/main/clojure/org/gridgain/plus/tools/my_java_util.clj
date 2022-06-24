@@ -8,7 +8,8 @@
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache CacheMode)
              (com.google.gson Gson GsonBuilder)
-             (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery))
+             (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
+             (org.gridgain.smart MyVar))
     (:gen-class
         :implements [org.gridgain.superservice.IJavaUtil]
         ; 生成 class 的类名
@@ -20,6 +21,11 @@
         ))
 
 (declare my-to-arrayList to-my-val)
+
+(defn get-vs [m]
+    (if-not (instance? MyVar m)
+        m
+        (get-vs (.getVar m))))
 
 (defn my-to-arrayList
     ([lst] (my-to-arrayList lst (ArrayList.)))
@@ -42,3 +48,17 @@
 
 (defn -toArray [this lst]
     (to-my-val lst))
+
+(defn -isSeq [this m]
+    (if (instance? MyVar m)
+        (my-lexical/is-seq? (get-vs m))
+        (my-lexical/is-seq? m)))
+
+(defn -isDic [this m]
+    (my-lexical/is-dic? m))
+
+(defn -myToArrayList [this m]
+    (if (instance? MyVar m)
+        (my-to-arrayList (get-vs m))
+        (my-to-arrayList m))
+    )

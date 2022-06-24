@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import org.gridgain.dml.util.MyCacheExUtil;
+import org.gridgain.myservice.MyJavaUtilService;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -19,14 +20,36 @@ public class MyConvertUtil {
             .enableComplexMapKeySerialization()
             .create();
 
-    public static List ConvertToList(final Object obj)
-    {
-        return gson.fromJson(ConvertToString(obj), new TypeToken<List<Object>>() {}.getType());
+    private static MyJavaUtilService myJavaUtilService = MyJavaUtilService.getInstance();
+
+    public static List ConvertToList(final Object obj) throws Exception {
+        if (myJavaUtilService.getJavaUtil().isSeq(obj))
+        {
+            return myJavaUtilService.getJavaUtil().myToArrayList(obj);
+        }
+        else if (obj instanceof String) {
+            return gson.fromJson(ConvertToString(obj), new TypeToken<List<Object>>() {
+            }.getType());
+        }
+        else
+        {
+            throw new Exception("输入参数：" + obj.toString() + " 不能转换为序列！");
+        }
     }
 
-    public static Hashtable ConvertToDic(final Object obj)
-    {
-        return gson.fromJson(ConvertToString(obj), new TypeToken<Hashtable<Object, Object>>() {}.getType());
+    public static Hashtable ConvertToDic(final Object obj) throws Exception {
+        if (myJavaUtilService.getJavaUtil().isDic(obj))
+        {
+            return (Hashtable) obj;
+        }
+        else if (obj instanceof String) {
+            return gson.fromJson(ConvertToString(obj), new TypeToken<Hashtable<Object, Object>>() {
+            }.getType());
+        }
+        else
+        {
+            throw new Exception("输入参数：" + obj.toString() + " 不能转换为字典！");
+        }
     }
 
     public static byte[] ConvertToByte(final Object obj)
