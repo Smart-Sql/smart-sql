@@ -13,6 +13,7 @@
              (cn.plus.model.db MyScenesCache MyScenesCachePk MyScenesParams)
              (org.gridgain.myservice MyNoSqlFunService)
              (org.gridgain.jdbc MyJdbc)
+             (org.gridgain.smart.view MyViewAstPK)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
              (org.tools MyTools MyFunction)
@@ -109,6 +110,7 @@
                       (= String type) (str_item_value value)
                       (= Boolean type) (MyConvertUtil/ConvertToBoolean value)
                       (= Long type) (MyConvertUtil/ConvertToLong value)
+                      (= Double type) (MyConvertUtil/ConvertToDouble value)
                       (= Timestamp type) (MyConvertUtil/ConvertToTimestamp value)
                       (= BigDecimal type) (MyConvertUtil/ConvertToDecimal value)
                       (= "byte[]" type) (MyConvertUtil/ConvertToByte value)
@@ -616,19 +618,27 @@
 
 ; 获取 select 的权限 code
 (defn get-select-code [ignite schema_name table_name my_group_id]
-    (get-code ignite schema_name table_name my_group_id "查"))
+    ;(get-code ignite schema_name table_name my_group_id "查")
+    (.get (.getOrCreateCache ignite "my_select_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    )
 
 ; 获取 insert 的权限 code
 (defn get-insert-code [ignite schema_name table_name my_group_id]
-    (get-code-insert ignite schema_name table_name my_group_id "增"))
+    ;(get-code-insert ignite schema_name table_name my_group_id "增")
+    (.get (.getOrCreateCache ignite "my_insert_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    )
 
 ; 获取 delete 的权限 code
 (defn get-delete-code [ignite schema_name table_name my_group_id]
-    (get-code-delete ignite schema_name table_name my_group_id "删"))
+    ;(get-code-delete ignite schema_name table_name my_group_id "删")
+    (.get (.getOrCreateCache ignite "my_delete_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    )
 
 ; 获取 update 的权限 code
 (defn get-update-code [ignite schema_name table_name my_group_id]
-    (get-code-update ignite schema_name table_name my_group_id "改"))
+    ;(get-code-update ignite schema_name table_name my_group_id "改")
+    (.get (.getOrCreateCache ignite "my_update_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    )
 
 (defn get-schema
     ([lst] (if-let [m (get-schema lst [] [])]
@@ -718,7 +728,7 @@
 (defn convert_to_java_type [column_type]
     (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) {:java_type Integer}
           (re-find #"^(?i)SMALLINT$|^(?i)SMALLINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)SMALLINT\(\s*\d+\s*\)$" column_type) {:java_type Integer}
-          (re-find #"^(?i)float$|^(?i)long$" column_type) {:java_type Double}
+          (re-find #"^(?i)float$|^(?i)double$" column_type) {:java_type Double}
           (re-find #"^(?i)TINYINT$|^(?i)TINYINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)TINYINT\(\s*\d+\s*\)$" column_type) {:java_type Byte}
           (re-find #"^(?i)varchar$" column_type) {:java_type String :len 0}
           (re-find #"^(?i)varchar\(\d+\)$" column_type) {:java_type String :len (Integer/parseInt (re-find #"(?<=^(?i)varchar\()\d+(?=\))" column_type))}

@@ -35,14 +35,13 @@
                         ; 重新生成新的 ast
                         ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
                         (get_select_view [ignite group_id schema_name talbe_name]
-                            (if-let [code (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
-                                (if-let [sql_objs (my-select-plus/sql-to-ast (my-lexical/to-back (first code)))]
-                                    (if (= (count sql_objs) 1)
-                                        (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
-                                            (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
-                                                {:query-items nil :where-items where-items}
-                                                {:query-items (get_query_view query-items) :where-items where-items})
-                                            )))))
+                            (if-let [sql_objs (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
+                                (if (= (count sql_objs) 1)
+                                    (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                        (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                            {:query-items nil :where-items where-items}
+                                            {:query-items (get_query_view query-items) :where-items where-items})
+                                        ))))
                         (get_query_view
                             ([query-items] (get_query_view query-items {}))
                             ([[f & r] dic]

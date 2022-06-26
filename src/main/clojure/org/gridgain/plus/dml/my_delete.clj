@@ -47,8 +47,7 @@
         lst))
 
 (defn my_view_db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
-    (when-let [lst_rs (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m join my_group_view as v on m.id = v.view_id where m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [table_name group_id "删"])))))]
-        (if (> (count lst_rs) 0) (get_table_name (my-lexical/to-back (nth lst_rs 0))))))
+    (get_table_name (my-lexical/get-delete-code ignite schema_name table_name group_id)))
 
 (defn my_delete_query_sql [^Ignite ignite ^Long group_id obj]
     (if-let [{pk_line :line lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite group_id (str/lower-case (-> obj :schema_name)) (str/lower-case (-> obj :table_name)))]

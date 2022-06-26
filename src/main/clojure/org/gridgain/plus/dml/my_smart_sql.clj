@@ -18,7 +18,7 @@
         ))
 
 (declare body-segment get-ast-lst get-ast get-re-pair get-pairs get-pairs-tokens
-         my-item-tokens get-pair-item-ex split-pair-item-ex)
+         my-item-tokens get-pair-item-ex split-pair-item-ex re-ast)
 
 (defn add-let-name [my-context let-name]
     (assoc my-context :let-params (conj (-> my-context :let-params) let-name)))
@@ -532,7 +532,7 @@
                                                                                             (recur rest-lst [] (conj lst {:expression "match" :pairs (get-pairs-tokens (split-pair-item-ex big-lst))}))
                                                                                             )
                (and (empty? stack-lst) (my-lexical/is-eq? f "innerFunction") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
-                                                                                                    (recur rest-lst [] (conj lst {:functions (get-ast-lst big-lst)})))
+                                                                                                    (recur rest-lst [] (conj lst {:functions (re-ast (get-ast-lst big-lst))})))
                (= f ";") (recur r [] (conj lst (lst-to-token stack-lst)))
                :else
                (recur r (conj stack-lst f) lst)
@@ -545,7 +545,7 @@
     (let [{func-name :func-name  args-lst :args-lst body-lst :body-lst} (get-func-name lst)]
         (let [{big-lst :big-lst rest-lst :rest-lst} (get-big body-lst)]
             (if-not (nil? rest-lst)
-                (concat [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}] (get-ast-lst rest-lst))
+                (concat [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}] (re-ast (get-ast-lst rest-lst)))
                 (if (nil? func-name)
                     (throw (Exception. "smart sql 程序有误！"))
                     [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}])

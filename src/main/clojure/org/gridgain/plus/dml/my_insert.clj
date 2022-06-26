@@ -72,17 +72,16 @@
          (if (and (> (count stack) 0) (> (count lst) 0)) [lst stack]))))
 
 (defn my-authority [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
-    (if-let [code (my-lexical/get-insert-code ignite schema_name table_name group_id)]
-        (letfn [(get_insert_view_items [[f & r] lst]
-                    (if (some? f)
-                        (if (not (or (= f "(") (= f ")") (= f ",")))
-                            (recur r (conj lst f))
-                            (recur r lst))
-                        lst))]
-            (let [my-lst (my-lexical/to-back (first code))]
-                (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest (rest my-lst)))]
-                    (let [vs (get_insert_view_items vs-line #{})]
-                        {:schema_name schema_name :table_name table_name :v-items vs}))))))
+    (letfn [(get_insert_view_items [[f & r] lst]
+                (if (some? f)
+                    (if (not (or (= f "(") (= f ")") (= f ",")))
+                        (recur r (conj lst f))
+                        (recur r lst))
+                    lst))]
+        (let [my-lst (my-lexical/get-insert-code ignite schema_name table_name group_id)]
+            (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest (rest my-lst)))]
+                (let [vs (get_insert_view_items vs-line #{})]
+                    {:schema_name schema_name :table_name table_name :v-items vs})))))
 
 (defn has-my-authority [[f & r] v-items]
     (cond (contains? v-items (str/lower-case (-> f :item_name))) (recur r v-items)

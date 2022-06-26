@@ -23,6 +23,14 @@ public class MySelectViews implements Serializable {
         this.code = code;
     }
 
+    public MySelectViews(final Long id, final String table_name, final Long data_set_id, final String code)
+    {
+        this.id = id;
+        this.table_name = table_name;
+        this.data_set_id = data_set_id;
+        this.code = code;
+    }
+
     public MySelectViews()
     {}
 

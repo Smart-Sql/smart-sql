@@ -12,6 +12,7 @@ public class MCron implements Serializable {
     private static final long serialVersionUID = 5363891392457651930L;
     private String cron_name;
     private String cron;
+    private byte[] ps;
     private String descrip;
     private clojure.lang.PersistentArrayMap ast;
 
@@ -23,8 +24,23 @@ public class MCron implements Serializable {
         this.ast = ast;
     }
 
+    public MCron(final String cron_name, final String cron, final byte[] ps)
+    {
+        this.cron_name = cron_name;
+        this.cron = cron;
+        this.ps = ps;
+    }
+
     public MCron()
     {}
+
+    public byte[] getPs() {
+        return ps;
+    }
+
+    public void setPs(byte[] ps) {
+        this.ps = ps;
+    }
 
     public PersistentArrayMap getAst() {
         return ast;

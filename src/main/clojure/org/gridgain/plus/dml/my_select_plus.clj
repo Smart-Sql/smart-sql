@@ -314,12 +314,12 @@
                                     (contains? #{"exists" "not exists"} (str/lower-case line)) {:exists_symbol (str/lower-case line)}
                                     (contains? #{","} line) {:comma_symbol line}
                                     (some? (re-find #"^(?i)\d+$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Integer :const true}
-                                    (some? (re-find #"^(?i)\d+\.\d$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type BigDecimal :const true}
+                                    (some? (re-find #"^(?i)\d+\.\d$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Double :const true}
                                     ;(some? (re-find #"^(?i)\"\w*\"$|^(?i)'\w*'$|^(?i)\"\W*\"$|^(?i)'\W*'$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type String :const true}
                                     (some? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$|^\'\'$|^\"\"$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type String :const true}
                                     (some? (re-find #"^(?i)\d+D$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Double :const true}
                                     (some? (re-find #"^(?i)\d+L$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Long :const true}
-                                    (some? (re-find #"^(?i)\d+F$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Float :const true}
+                                    (some? (re-find #"^(?i)\d+F$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Double :const true}
                                     (some? (re-find #"^(?i)true$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Boolean :const true}
                                     (some? (re-find #"^(?i)false$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Boolean :const true}
                                     :else
@@ -455,7 +455,7 @@
                             (get-token-line (first lst))
                             (if (and (= (count lst) 3) (= (second lst) "."))
                                 (if (and (re-find #"^(?i)\d+$" (first lst)) (re-find #"^(?i)\d+$" (last lst)))
-                                    {:table_alias "" :item_name (str (first lst) "." (last lst)) :item_type "" :java_item_type BigDecimal :const true}
+                                    {:table_alias "" :item_name (str (first lst) "." (last lst)) :item_type "" :java_item_type Double :const true}
                                     {:item_name (last lst) :table_alias (first lst) :const false})
                                 (let [where-line-m (get-where-line lst)]
                                     (if (is-true? where-line-m)

@@ -88,7 +88,7 @@
 
 (defn my-view-db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
     (if-let [code (my-lexical/get-update-code ignite schema_name table_name group_id)]
-        (let [rs-lst (-> (update-table (rest (my-lexical/to-back code))) :rs_lst)]
+        (let [rs-lst (-> (update-table (rest code)) :rs_lst)]
             (let [{items_line :items_line where_line :where_line} (get_items rs-lst)]
                 (loop [[f & r] (my-select/my-get-items items_line) lst-rs #{}]
                     (if (some? f)
