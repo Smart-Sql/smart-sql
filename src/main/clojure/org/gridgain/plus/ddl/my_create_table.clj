@@ -23,6 +23,34 @@
         :methods [^:static [plus_create_table [org.apache.ignite.Ignite Long String String Long String String] void]]
         ))
 
+(defn get-create-table-items
+    ([lst] (get-create-table-items lst [] [] [] [] []))
+    ([[f & r] create_table schema_name table_name items_line template]
+     (if (some? f)
+         (cond (empty? create_table) (recur r (conj create_table "create") schema_name table_name items_line template)
+               (and (not (empty? create_table)) (empty? schema_name)) (cond (and (= (count create_table) 1) (my-lexical/is-eq? (first create_table) "create") (my-lexical/is-eq? f "table")) (recur r (conj create_table "table") schema_name table_name items_line template)
+                                                                            (and (= (count create_table) 2) (my-lexical/is-eq? (first create_table) "create") (my-lexical/is-eq? (second create_table) "table")) (if (my-lexical/is-eq? f "if")
+                                                                                                                                                                                                                     (recur r (conj create_table "if") schema_name table_name items_line template)
+                                                                                                                                                                                                                     (recur r create_table (conj schema_name f) table_name items_line template))
+                                                                            (and (= (count create_table) 3) (my-lexical/is-eq? (first create_table) "create") (my-lexical/is-eq? (nth create_table 1) "table") (my-lexical/is-eq? (nth create_table 2) "if") (my-lexical/is-eq? f "not")) (recur r (conj create_table "not") schema_name table_name items_line template)
+                                                                            (and (= (count create_table) 4) (my-lexical/is-eq? (first create_table) "create") (my-lexical/is-eq? (nth create_table 1) "table") (my-lexical/is-eq? (nth create_table 2) "if") (my-lexical/is-eq? (nth create_table 3) "not") (my-lexical/is-eq? f "exists")) (recur r (conj create_table "exists") schema_name table_name items_line template)
+                                                                            (and (= (count create_table) 5) (my-lexical/is-eq? (first create_table) "create") (my-lexical/is-eq? (nth create_table 1) "table") (my-lexical/is-eq? (nth create_table 2) "if") (my-lexical/is-eq? (nth create_table 3) "not") (my-lexical/is-eq? (nth create_table 4) "exists")) (recur r create_table (conj schema_name f) table_name items_line template)
+                                                                            :else
+                                                                            (throw (Exception. "Create Table 语句错误！"))
+                                                                            )
+               (and (not (empty? create_table)) (not (empty? schema_name)) (empty? table_name)) (cond (and (not (= (first schema_name) "")) (= f ".")) (recur (rest (rest r)) create_table schema_name (conj table_name (first r)) (conj items_line (second r)) template)
+                                                                                                      (and (not (= (first schema_name) "")) (= f "(")) (recur r create_table [""] [(first schema_name)] (conj items_line f) template)
+                                                                                                      :else
+                                                                                                      (throw (Exception. "Create Table 语句错误！"))
+                                                                                                      )
+               (and (not (empty? create_table)) (not (empty? schema_name)) (not (empty? table_name)) (not (empty? items_line)) (empty? template)) (if (and (my-lexical/is-eq? f "with") (= (count r) 1))
+                                                                                                                                                      (recur [] create_table schema_name table_name items_line [(first r)])
+                                                                                                                                                      (recur r create_table schema_name table_name (conj items_line f) template))
+               :else
+               (throw (Exception. "Create Table 语句错误！"))
+               )
+         {:create_table (str/join " " create_table) :schema_name (first schema_name) :table_name (first table_name) :items_line items_line :template (first template)})))
+
 (defn get_tmp_item [^String item_line]
     (if-let [items (my-lexical/to-back item_line)]
         (if (and (= (count items) 3) (= (nth items 1) "="))
@@ -360,39 +388,54 @@
             ))
     )
 
+;(defn get_table_line_obj_lst [^Ignite ignite lst ^String data_set_name]
+;    (letfn [(is-no-exists [lst]
+;                (let [items (take 4 lst)]
+;                    (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))
+;                        (if (nil? (last lst))
+;                            (throw (Exception. "创建表必须有 template 的设置！"))
+;                            (assoc (my-lexical/get-schema (nth items 2)) :create_table "CREATE TABLE" :items_line (drop-last 2 (drop 3 lst)) :template (last lst)))
+;                        )))
+;            (is-exists [lst]
+;                (let [items (take 7 lst)]
+;                    (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (my-lexical/is-eq? (nth items 2) "IF") (my-lexical/is-eq? (nth items 3) "NOT") (my-lexical/is-eq? (nth items 4) "EXISTS") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))
+;                        (assoc (my-lexical/get-schema (nth items 5)) :create_table "CREATE TABLE IF NOT EXISTS" :items_line (drop-last 2 (drop 6 lst)) :template (last lst)))))
+;            (get-segment [lst]
+;                (if-let [m (is-no-exists lst)]
+;                    m
+;                    (if-let [vs (is-exists lst)]
+;                        vs)))
+;            (get-table-name [schema_name table_name]
+;                (if (Strings/isNullOrEmpty schema_name)
+;                    table_name
+;                    (str schema_name "." table_name)))]
+;        (let [{schema_name :schema_name table_name :table_name create_table :create_table items_line :items_line template :template} (get-segment lst) schema_table (get-table-name schema_name table_name)]
+;            (if-let [{lst_table_item :lst_table_item code_sb :code_sb indexs :indexs} (get_obj (get_items_obj_lst items_line) schema_name table_name data_set_name)]
+;                {:create_table create_table
+;                 :schema_name schema_name
+;                 :table_name table_name
+;                 :lst_table_item lst_table_item
+;                 :code_sb (.toString code_sb)
+;                 :indexs indexs
+;                 :template (get_template ignite table_name schema_name data_set_name (str/join (rest template)))
+;                 }
+;                (throw (Exception. "创建表的语句错误！")))
+;            ))
+;    )
+
 (defn get_table_line_obj_lst [^Ignite ignite lst ^String data_set_name]
-    (letfn [(is-no-exists [lst]
-                (let [items (take 4 lst)]
-                    (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))
-                        (if (nil? (last lst))
-                            (throw (Exception. "创建表必须有 template 的设置！"))
-                            (assoc (my-lexical/get-schema (nth items 2)) :create_table "CREATE TABLE" :items_line (drop-last 2 (drop 3 lst)) :template (last lst)))
-                        )))
-            (is-exists [lst]
-                (let [items (take 7 lst)]
-                    (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (my-lexical/is-eq? (nth items 2) "IF") (my-lexical/is-eq? (nth items 3) "NOT") (my-lexical/is-eq? (nth items 4) "EXISTS") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))
-                        (assoc (my-lexical/get-schema (nth items 5)) :create_table "CREATE TABLE IF NOT EXISTS" :items_line (drop-last 2 (drop 6 lst)) :template (last lst)))))
-            (get-segment [lst]
-                (if-let [m (is-no-exists lst)]
-                    m
-                    (if-let [vs (is-exists lst)]
-                        vs)))
-            (get-table-name [schema_name table_name]
-                (if (Strings/isNullOrEmpty schema_name)
-                    table_name
-                    (str schema_name "." table_name)))]
-        (let [{schema_name :schema_name table_name :table_name create_table :create_table items_line :items_line template :template} (get-segment lst) schema_table (get-table-name schema_name table_name)]
-            (if-let [{lst_table_item :lst_table_item code_sb :code_sb indexs :indexs} (get_obj (get_items_obj_lst items_line) schema_name table_name data_set_name)]
-                {:create_table create_table
-                 :schema_name schema_name
-                 :table_name table_name
-                 :lst_table_item lst_table_item
-                 :code_sb (.toString code_sb)
-                 :indexs indexs
-                 :template (get_template ignite table_name schema_name data_set_name (str/join (rest template)))
-                 }
-                (throw (Exception. "创建表的语句错误！")))
-            ))
+    (let [{schema_name :schema_name table_name :table_name create_table :create_table items_line :items_line template :template} (get-create-table-items lst)]
+        (if-let [{lst_table_item :lst_table_item code_sb :code_sb indexs :indexs} (get_obj (get_items_obj_lst items_line) schema_name table_name data_set_name)]
+            {:create_table create_table
+             :schema_name schema_name
+             :table_name table_name
+             :lst_table_item lst_table_item
+             :code_sb (.toString code_sb)
+             :indexs indexs
+             :template (get_template ignite table_name schema_name data_set_name (str/join (rest template)))
+             }
+            (throw (Exception. "创建表的语句错误！")))
+        )
     )
 
 ; json 转换为 ddl 序列

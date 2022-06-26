@@ -1,4 +1,11 @@
 (require
+    '[org.gridgain.plus.ddl.my-create-table :as my-create-table]
+    '[org.gridgain.plus.ddl.my-alter-table :as my-alter-table]
+    '[org.gridgain.plus.ddl.my-create-index :as my-create-index]
+    '[org.gridgain.plus.ddl.my-drop-index :as my-drop-index]
+    '[org.gridgain.plus.ddl.my-drop-table :as my-drop-table]
+    '[org.gridgain.plus.ddl.my-create-dataset :as my-create-dataset]
+    '[org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
     '[org.gridgain.plus.dml.my-select-plus :as my-select-plus]
     '[org.gridgain.plus.dml.my-insert :as my-insert]
     '[org.gridgain.plus.dml.my-update :as my-update]
