@@ -82,27 +82,25 @@
            )
      ))
 
-(defn get_create_index_obj [^String sql_line]
-    (if-let [sql (my-create-table/get_sql sql_line)]
-        (let [create_index_line (re-find #"^(?i)CREATE\sINDEX\sIF\sNOT\sEXISTS\s|^(?i)CREATE\sINDEX\s|^(?i)CREATE\sSPATIAL\sINDEX\sIF\sNOT\sEXISTS\s|^(?i)CREATE\sSPATIAL\sINDEX\s" sql) last_line (str/replace sql #"^(?i)CREATE\sINDEX\sIF\sNOT\sEXISTS\s|^(?i)CREATE\sINDEX\s|^(?i)CREATE\sSPATIAL\sINDEX\sIF\sNOT\sEXISTS\s|^(?i)CREATE\sSPATIAL\sINDEX\s" "")]
-            (if (some? create_index_line)
-                (let [index_name (re-find #"^(?i)\w+\sON\s" last_line) last_line_1 (str/replace last_line #"^(?i)\w+\sON\s" "")]
-                    (if (some? index_name)
-                        (let [table_name (re-find #"^(?i)\w+\.\w+\s|^(?i)\w+\s" last_line_1) last_line_2 (str/replace last_line_1 #"^(?i)\w+\.\w+\s|^(?i)\w+\s" "")]
-                            (if (some? table_name)
-                                (let [index_items (re-find #"(?i)(?<=^\()[\s\S]*(?=\))" last_line_2) last_line_3 (str/replace last_line_2 #"(?i)(?<=^\()[\s\S]*(?=\))" "") {schema_name :schema_name table_name :table_name} (my-lexical/get-schema (str/trim (str/lower-case table_name)))]
-                                    (if (some? index_name)
-                                        {:create_index (index_map (str/trim create_index_line))
-                                         :index_name (str/replace index_name #"(?i)\sON\s$" "")
-                                         :schema_name schema_name
-                                         :table_name table_name :index_items_obj (get_index_obj (str/trim index_items))
-                                         :inline_size (get_inline_size last_line_3)}
-                                        ))
-                                (throw (Exception. "创建索引语句错误！"))
-                                ))
-                        (throw (Exception. "创建索引语句错误！"))))
-                (throw (Exception. "创建索引语句错误！"))))
-        (throw (Exception. "创建索引语句错误！"))))
+(defn get_create_index_obj [^String sql]
+    (let [create_index_line (re-find #"^(?i)CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+|^(?i)CREATE\s+INDEX\s+|^(?i)CREATE\s+SPATIAL\s+INDEX\s+IF\s+NOT\s+EXISTS\s+|^(?i)CREATE\s+SPATIAL\s+INDEX\s+" sql) last_line (str/replace sql #"^(?i)CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+|^(?i)CREATE\s+INDEX\s+|^(?i)CREATE\s+SPATIAL\s+INDEX\s+IF\s+NOT\s+EXISTS\s+|^(?i)CREATE\s+SPATIAL\s+INDEX\s+" "")]
+        (if (some? create_index_line)
+            (let [index_name (re-find #"^(?i)\w+\s+ON\s+" last_line) last_line_1 (str/replace last_line #"^(?i)\w+\s+ON\s+" "")]
+                (if (some? index_name)
+                    (let [table_name (re-find #"^(?i)\w+\.\w+\s+|^(?i)\w+\s+" last_line_1) last_line_2 (str/replace last_line_1 #"^(?i)\w+\.\w+\s+|^(?i)\w+\s+" "")]
+                        (if (some? table_name)
+                            (let [index_items (re-find #"(?i)(?<=^\()[\s\S]*(?=\))" last_line_2) last_line_3 (str/replace last_line_2 #"(?i)(?<=^\()[\s\S]*(?=\))" "") {schema_name :schema_name table_name :table_name} (my-lexical/get-schema (str/trim (str/lower-case table_name)))]
+                                (if (some? index_name)
+                                    {:create_index (index_map (str/trim create_index_line))
+                                     :index_name (str/replace index_name #"(?i)\sON\s$" "")
+                                     :schema_name schema_name
+                                     :table_name table_name :index_items_obj (get_index_obj (str/trim index_items))
+                                     :inline_size (get_inline_size last_line_3)}
+                                    ))
+                            (throw (Exception. "创建索引语句错误！"))
+                            ))
+                    (throw (Exception. "创建索引语句错误！"))))
+            (throw (Exception. "创建索引语句错误！")))))
 
 (defn create-index-obj [^Ignite ignite ^String data_set_name ^String sql_line]
     (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]

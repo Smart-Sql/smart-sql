@@ -31,17 +31,16 @@
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
 
-(defn get_update_data_set_obj [^String sql_line]
-    (if-let [sql (my-create-table/get_sql sql_line)]
-        (let [update_dataset (re-find #"^(?i)update\sDATASET\s" sql) last_line (str/replace sql #"^(?i)update\sDATASET\s" "")]
-            (if (some? update_dataset)
-                (if-let [items (str/split last_line #"\s+where\s+")]
-                    (if (= (count items) 2)
-                        {:update_dataset update_dataset :data_set_name (nth items 0) :time (nth items 1)}
-                        (throw (Exception. "删除数据集语句错误！")))
+(defn get_update_data_set_obj [^String sql]
+    (let [update_dataset (re-find #"^(?i)update\s+DATASET\s+" sql) last_line (str/replace sql #"^(?i)update\s+DATASET\s+" "")]
+        (if (some? update_dataset)
+            (if-let [items (str/split last_line #"\s+where\s+")]
+                (if (= (count items) 2)
+                    {:update_dataset update_dataset :data_set_name (nth items 0) :time (nth items 1)}
                     (throw (Exception. "删除数据集语句错误！")))
                 (throw (Exception. "删除数据集语句错误！")))
-            (throw (Exception. "删除数据集语句错误！")))))
+            (throw (Exception. "删除数据集语句错误！")))
+        (throw (Exception. "删除数据集语句错误！"))))
 
 (defn update_dataset [^Ignite ignite ^Long group_id ^String sql_line]
     ())

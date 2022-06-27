@@ -3,6 +3,7 @@ package org.gridgain.ddl;
 import clojure.lang.Keyword;
 import clojure.lang.PersistentArrayMap;
 import cn.plus.model.MyCacheEx;
+import cn.plus.model.MyNoSqlCache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -21,7 +22,7 @@ import java.util.ArrayList;
 public class MyDdlUtil implements Serializable {
     private static final long serialVersionUID = 3140120621889292506L;
 
-    private static void saveCache(final Ignite ignite, final PersistentArrayMap map)
+    private static void saveCache_0(final Ignite ignite, final PersistentArrayMap map)
     {
         IgniteTransactions transactions = ignite.transactions();
         Transaction tx = null;
@@ -65,6 +66,59 @@ public class MyDdlUtil implements Serializable {
         finally {
             if (tx != null) {
                 tx.close();
+            }
+        }
+    }
+
+    public static void saveCache(final Ignite ignite, final PersistentArrayMap map)
+    {
+        if (map.containsKey(Keyword.intern("lst_cachex"))) {
+            ArrayList lst_caches = (ArrayList) map.get(Keyword.intern("lst_cachex"));
+
+            MyNoSqlCache noSqlCache = (MyNoSqlCache) map.get(Keyword.intern("nosql"));
+            MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType());
+            lst_caches.add(kvCache);
+
+            IgniteTransactions transactions = ignite.transactions();
+            Transaction tx = null;
+
+            try {
+                tx = transactions.txStart();
+                for (int i = 0; i < lst_caches.size(); i++)
+                {
+                    MyCacheEx myCacheEx = (MyCacheEx) lst_caches.get(i);
+                    switch (myCacheEx.getSqlType())
+                    {
+                        case UPDATE:
+                            myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                            break;
+                        case INSERT:
+                            myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                            break;
+                        case DELETE:
+                            myCacheEx.getCache().remove(myCacheEx.getKey());
+                            break;
+                    }
+                }
+                tx.commit();
+
+            } catch (Exception ex)
+            {
+                if (tx != null)
+                {
+                    tx.rollback();
+
+                    if (map.containsKey(Keyword.intern("un_sql")))
+                    {
+                        ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll());
+                    }
+                    //flag = true;
+                }
+            }
+            finally {
+                if (tx != null) {
+                    tx.close();
+                }
             }
         }
     }

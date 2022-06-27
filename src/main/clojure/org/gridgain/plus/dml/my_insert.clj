@@ -7,6 +7,7 @@
              (org.apache.ignite.binary BinaryObjectBuilder)
              (org.tools MyConvertUtil KvSql MyDbUtil)
              (cn.plus.model.db MyScenesCache)
+             (cn.plus.model.ddl MySchemaTable)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType MyLog)
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query SqlFieldsQuery)
@@ -118,33 +119,35 @@
 ;        {:column_name "description", :column_type "varchar", :pkid false, :auto_increment false}
 ;        {:column_name "picture", :column_type "varchar", :pkid false, :auto_increment false})}
 (defn get_pk_data [^Ignite ignite ^String schema_name ^String table_name]
-    (if (my-lexical/is-eq? schema_name "public")
-        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id where t.table_name = ? and t.data_set_id = 0")
-                                                                                        (.setLazy true)) (to-array [(str/lower-case table_name)]))))]
-            (letfn [
-                    ; 从 iterator 中获取 pk列和数据列
-                    (get_pk_data_it [it lst_pk lst_data]
-                        (if (.hasNext it)
-                            (when-let [row (.next it)]
-                                (if (true? (.get row 2))
-                                    (recur it (concat lst_pk [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]) lst_data)
-                                    (recur it lst_pk (concat lst_data [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]))
-                                    ))
-                            {:pk lst_pk :data lst_data}))]
-                (get_pk_data_it it [] [])))
-        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id join my_dataset as ds on ds.id = t.data_set_id where t.table_name = ? and ds.dataset_name = ?")
-                                                                                        (.setLazy true)) (to-array [(str/lower-case table_name) (str/lower-case schema_name)]))))]
-            (letfn [
-                    ; 从 iterator 中获取 pk列和数据列
-                    (get_pk_data_it [it lst_pk lst_data]
-                        (if (.hasNext it)
-                            (when-let [row (.next it)]
-                                (if (true? (.get row 2))
-                                    (recur it (concat lst_pk [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]) lst_data)
-                                    (recur it lst_pk (concat lst_data [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]))
-                                    ))
-                            {:pk lst_pk :data lst_data}))]
-                (get_pk_data_it it [] [])))))
+    (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name)))
+;(defn get_pk_data [^Ignite ignite ^String schema_name ^String table_name]
+;    (if (my-lexical/is-eq? schema_name "public")
+;        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id where t.table_name = ? and t.data_set_id = 0")
+;                                                                                        (.setLazy true)) (to-array [(str/lower-case table_name)]))))]
+;            (letfn [
+;                    ; 从 iterator 中获取 pk列和数据列
+;                    (get_pk_data_it [it lst_pk lst_data]
+;                        (if (.hasNext it)
+;                            (when-let [row (.next it)]
+;                                (if (true? (.get row 2))
+;                                    (recur it (concat lst_pk [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]) lst_data)
+;                                    (recur it lst_pk (concat lst_data [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]))
+;                                    ))
+;                            {:pk lst_pk :data lst_data}))]
+;                (get_pk_data_it it [] [])))
+;        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id join my_dataset as ds on ds.id = t.data_set_id where t.table_name = ? and ds.dataset_name = ?")
+;                                                                                        (.setLazy true)) (to-array [(str/lower-case table_name) (str/lower-case schema_name)]))))]
+;            (letfn [
+;                    ; 从 iterator 中获取 pk列和数据列
+;                    (get_pk_data_it [it lst_pk lst_data]
+;                        (if (.hasNext it)
+;                            (when-let [row (.next it)]
+;                                (if (true? (.get row 2))
+;                                    (recur it (concat lst_pk [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]) lst_data)
+;                                    (recur it lst_pk (concat lst_data [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]))
+;                                    ))
+;                            {:pk lst_pk :data lst_data}))]
+;                (get_pk_data_it it [] [])))))
 
 
 ; 获取 insert obj 和 insert view obj 两个对象

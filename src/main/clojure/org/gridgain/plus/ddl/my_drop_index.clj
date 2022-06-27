@@ -34,13 +34,11 @@
         true
         false))
 
-(defn get_drop_index_obj [^String sql_line]
-    (if-let [sql (my-create-table/get_sql sql_line)]
-        (let [drop_index (re-find #"^(?i)DROP\sINDEX\sIF\sEXISTS\s|^(?i)DROP\sINDEX\s" sql) index_name (str/replace sql #"^(?i)DROP\sINDEX\sIF\sEXISTS\s|^(?i)DROP\sINDEX\s" "")]
-            (if (some? drop_index)
-                {:drop_line (str/trim drop_index) :is_exists (index_exists (str/trim drop_index)) :index_name (str/trim index_name)}
-                (throw (Exception. "删除索引语句错误！"))))
-        (throw (Exception. "删除索引语句错误！"))))
+(defn get_drop_index_obj [^String sql]
+    (let [drop_index (re-find #"^(?i)DROP\s+INDEX\s+IF\s+EXISTS\s+|^(?i)DROP\s+INDEX\s+" sql) index_name (str/replace sql #"^(?i)DROP\s+INDEX\s+IF\s+EXISTS\s+|^(?i)DROP\s+INDEX\s+" "")]
+        (if (some? drop_index)
+            {:drop_line (str/trim drop_index) :is_exists (index_exists (str/trim drop_index)) :index_name (str/trim index_name)}
+            (throw (Exception. "删除索引语句错误！")))))
 
 (defn drop-index-obj [^Ignite ignite ^String data_set_name ^String sql_line]
     (letfn [(get-index-id [^Ignite ignite ^String index_name]

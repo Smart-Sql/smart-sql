@@ -2,6 +2,7 @@ package org.gridgain.ddl;
 
 import clojure.lang.*;
 import cn.plus.model.MyCacheEx;
+import cn.plus.model.MyNoSqlCache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -20,7 +21,7 @@ public class MyCreateTableUtil implements Serializable {
         return new CacheConfiguration<>("public_meta").setSqlSchema("PUBLIC");
     }
 
-    public static void run_ddl_dml(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table)
+    public static void run_ddl_dml(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table, final MyNoSqlCache noSqlCache)
     {
         boolean flag = false;
         IgniteCache cache = ignite.getOrCreateCache(getCfg());
@@ -43,12 +44,14 @@ public class MyCreateTableUtil implements Serializable {
 
         if (flag)
         {
-            saveCache(ignite, lst_ddl, lst_dml_table);
+            saveCache(ignite, lst_ddl, lst_dml_table, noSqlCache);
         }
     }
 
-    private static void saveCache(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table)
+    private static void saveCache(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table, final MyNoSqlCache noSqlCache)
     {
+        MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType());
+        lst_dml_table.add(kvCache);
         IgniteTransactions transactions = ignite.transactions();
         Transaction tx = null;
         try {

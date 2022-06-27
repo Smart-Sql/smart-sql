@@ -619,25 +619,25 @@
 ; 获取 select 的权限 code
 (defn get-select-code [ignite schema_name table_name my_group_id]
     ;(get-code ignite schema_name table_name my_group_id "查")
-    (.get (.getOrCreateCache ignite "my_select_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    (.get (.cache ignite "my_select_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
     )
 
 ; 获取 insert 的权限 code
 (defn get-insert-code [ignite schema_name table_name my_group_id]
     ;(get-code-insert ignite schema_name table_name my_group_id "增")
-    (.get (.getOrCreateCache ignite "my_insert_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    (.get (.cache ignite "my_insert_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
     )
 
 ; 获取 delete 的权限 code
 (defn get-delete-code [ignite schema_name table_name my_group_id]
     ;(get-code-delete ignite schema_name table_name my_group_id "删")
-    (.get (.getOrCreateCache ignite "my_delete_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    (.get (.cache ignite "my_delete_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
     )
 
 ; 获取 update 的权限 code
 (defn get-update-code [ignite schema_name table_name my_group_id]
     ;(get-code-update ignite schema_name table_name my_group_id "改")
-    (.get (.getOrCreateCache ignite "my_update_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
+    (.get (.cache ignite "my_update_view_ast") (MyViewAstPK. schema_name table_name my_group_id))
     )
 
 (defn get-schema

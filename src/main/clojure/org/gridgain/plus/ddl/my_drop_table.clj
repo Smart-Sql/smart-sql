@@ -11,8 +11,8 @@
              (org.apache.ignite.internal IgnitionEx)
              (com.google.common.base Strings)
              (org.tools MyConvertUtil)
-             (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
-             (cn.plus.model.ddl MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK)
+             (cn.plus.model MyNoSqlCache MyCacheEx MyKeyValue MyLogCache SqlType)
+             (cn.plus.model.ddl MySchemaTable MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
              (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
@@ -35,12 +35,11 @@
         {:create_index_line create_index :exists true}
         {:create_index_line create_index :exists false}))
 
-(defn get_drop_table_obj [^String sql_line]
-    (when-let [sql (my-create-table/get_sql sql_line)]
-        (let [drop_index (re-find #"^(?i)DROP\sTable\sIF\sEXISTS\s|^(?i)DROP\sTable\s" sql) table_name (str/replace sql #"^(?i)DROP\sTable\sIF\sEXISTS\s|^(?i)DROP\sTable\s" "")]
-            (if (some? drop_index)
-                (assoc (my-lexical/get-schema (str/trim table_name)) :drop_line (str/trim drop_index) :is_exists (table_exists (str/trim drop_index)))
-                (throw (Exception. "删除表语句错误！"))))))
+(defn get_drop_table_obj [^String sql]
+    (let [drop_index (re-find #"^(?i)DROP\s+Table\s+IF\s+EXISTS\s+|^(?i)DROP\s+Table\s+" sql) table_name (str/replace sql #"^(?i)DROP\s+Table\s+IF\s+EXISTS\s+|^(?i)DROP\s+Table\s+" "")]
+        (if (some? drop_index)
+            (assoc (my-lexical/get-schema (str/trim table_name)) :drop_line (str/trim drop_index) :is_exists (table_exists (str/trim drop_index)))
+            (throw (Exception. "删除表语句错误！")))))
 
 (defn drop-table-obj [^Ignite ignite ^String data_set_name ^String sql_line]
     (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
@@ -84,8 +83,8 @@
                         (doto lst (.add (MyCacheEx. (.cache ignite "my_meta_tables") table_id nil (SqlType/DELETE))))
                         )))]
         (let [{schema_name :schema_name table_name :table_name drop_line :drop_line {create_index_line :create_index_line exists :exists} :is_exists} (get_drop_table_obj sql_line)]
-            (cond (and (= schema_name "") (not (= data_set_name ""))) {:sql (format "%s %s.%s" create_index_line data_set_name table_name) :lst_cachex (get-cachex ignite data_set_name table_name (ArrayList.))}
-                  (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:sql (format "%s %s.%s" create_index_line schema_name table_name) :lst_cachex (get-cachex ignite schema_name (str/lower-case table_name) (ArrayList.))}
+            (cond (and (= schema_name "") (not (= data_set_name ""))) {:sql (format "%s %s.%s" create_index_line data_set_name table_name) :lst_cachex (get-cachex ignite data_set_name table_name (ArrayList.)) :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))}
+                  (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:sql (format "%s %s.%s" create_index_line schema_name table_name) :lst_cachex (get-cachex ignite schema_name (str/lower-case table_name) (ArrayList.)) :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))}
                   :else
                   (throw (Exception. "没有删除表语句的权限！"))
                   )))
@@ -95,8 +94,8 @@
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^String dataset_name]
     (if-let [m (get_drop_table_obj sql_line)]
         (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
-            (let [{sql :sql lst_cachex :lst_cachex} (drop-table-obj ignite dataset_name sql_line)]
-                 (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex}))
+            (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (drop-table-obj ignite dataset_name sql_line)]
+                 (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql}))
             (throw (Exception. "没有执行语句的权限！")))
         ))
 
