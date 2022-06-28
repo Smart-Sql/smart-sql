@@ -75,49 +75,45 @@ public class MyDdlUtil implements Serializable {
         if (map.containsKey(Keyword.intern("lst_cachex"))) {
             ArrayList lst_caches = (ArrayList) map.get(Keyword.intern("lst_cachex"));
 
-            MyNoSqlCache noSqlCache = (MyNoSqlCache) map.get(Keyword.intern("nosql"));
-            MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType());
-            lst_caches.add(kvCache);
+            if (lst_caches != null) {
+                MyNoSqlCache noSqlCache = (MyNoSqlCache) map.get(Keyword.intern("nosql"));
+                MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType());
+                lst_caches.add(kvCache);
 
-            IgniteTransactions transactions = ignite.transactions();
-            Transaction tx = null;
+                IgniteTransactions transactions = ignite.transactions();
+                Transaction tx = null;
 
-            try {
-                tx = transactions.txStart();
-                for (int i = 0; i < lst_caches.size(); i++)
-                {
-                    MyCacheEx myCacheEx = (MyCacheEx) lst_caches.get(i);
-                    switch (myCacheEx.getSqlType())
-                    {
-                        case UPDATE:
-                            myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
-                            break;
-                        case INSERT:
-                            myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
-                            break;
-                        case DELETE:
-                            myCacheEx.getCache().remove(myCacheEx.getKey());
-                            break;
+                try {
+                    tx = transactions.txStart();
+                    for (int i = 0; i < lst_caches.size(); i++) {
+                        MyCacheEx myCacheEx = (MyCacheEx) lst_caches.get(i);
+                        switch (myCacheEx.getSqlType()) {
+                            case UPDATE:
+                                myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                                break;
+                            case INSERT:
+                                myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                                break;
+                            case DELETE:
+                                myCacheEx.getCache().remove(myCacheEx.getKey());
+                                break;
+                        }
                     }
-                }
-                tx.commit();
+                    tx.commit();
 
-            } catch (Exception ex)
-            {
-                if (tx != null)
-                {
-                    tx.rollback();
+                } catch (Exception ex) {
+                    if (tx != null) {
+                        tx.rollback();
 
-                    if (map.containsKey(Keyword.intern("un_sql")))
-                    {
-                        ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll());
+                        if (map.containsKey(Keyword.intern("un_sql"))) {
+                            ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll());
+                        }
+                        //flag = true;
                     }
-                    //flag = true;
-                }
-            }
-            finally {
-                if (tx != null) {
-                    tx.close();
+                } finally {
+                    if (tx != null) {
+                        tx.close();
+                    }
                 }
             }
         }

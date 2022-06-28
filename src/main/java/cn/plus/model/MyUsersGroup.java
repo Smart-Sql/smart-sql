@@ -29,6 +29,7 @@ public class MyUsersGroup implements Serializable {
      * DDL, DML, 或者都有
      * */
     private String group_type;
+
     private MyGroupSqlType myGroupSqlType;
 
     public Long getId() {

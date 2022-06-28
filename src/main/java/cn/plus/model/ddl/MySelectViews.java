@@ -9,19 +9,9 @@ public class MySelectViews implements Serializable {
     private static final long serialVersionUID = 6402785453662372283L;
 
     private Long id;
-    private String view_name;
     private String table_name;
     private Long data_set_id;
     private String code;
-
-    public MySelectViews(final Long id, final String view_name, final String table_name, final Long data_set_id, final String code)
-    {
-        this.id = id;
-        this.view_name = view_name;
-        this.table_name = table_name;
-        this.data_set_id = data_set_id;
-        this.code = code;
-    }
 
     public MySelectViews(final Long id, final String table_name, final Long data_set_id, final String code)
     {
@@ -40,14 +30,6 @@ public class MySelectViews implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getView_name() {
-        return view_name;
-    }
-
-    public void setView_name(String view_name) {
-        this.view_name = view_name;
     }
 
     public String getTable_name() {
@@ -78,7 +60,6 @@ public class MySelectViews implements Serializable {
     public String toString() {
         return "MySelectViews{" +
                 "id=" + id +
-                ", view_name='" + view_name + '\'' +
                 ", table_name='" + table_name + '\'' +
                 ", data_set_id=" + data_set_id +
                 ", code='" + code + '\'' +

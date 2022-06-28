@@ -32,6 +32,14 @@ public class MyScenesCachePk implements Serializable {
     public void setScenes_name(String scenes_name) {
         this.scenes_name = scenes_name;
     }
+
+    @Override
+    public String toString() {
+        return "MyScenesCachePk{" +
+                "group_id=" + group_id +
+                ", scenes_name='" + scenes_name + '\'' +
+                '}';
+    }
 }
 
 

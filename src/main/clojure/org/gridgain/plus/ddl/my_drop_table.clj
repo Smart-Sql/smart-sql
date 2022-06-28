@@ -105,9 +105,7 @@
         (if (= group_id 0)
             (run_ddl_real_time ignite sql_code dataset_name)
             (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
-                (do
-                    (MyCljLogger/showParams [sql_code dataset_name])
-                    (run_ddl_real_time ignite sql_code dataset_name))
+                (run_ddl_real_time ignite sql_code dataset_name)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 ;(defn drop_table [^Ignite ignite ^Long group_id ^String sql_line]

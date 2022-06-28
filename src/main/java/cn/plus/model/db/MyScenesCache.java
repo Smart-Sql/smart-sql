@@ -19,23 +19,17 @@ public class MyScenesCache implements Serializable {
     private String smart_code;
     // 场景描述
     private String descrip;
-    // 是否是处理
-    private Boolean is_batch;
     // 参数
     private List<MyScenesParams> params;
-    // 场景类型
-    private ScenesType scenesType;
 
-    public MyScenesCache(final Long group_id, final String scenes_name, final String sql_code, final String smart_code, final String descrip, final Boolean is_batch, final List<MyScenesParams> params, final ScenesType scenesType)
+    public MyScenesCache(final Long group_id, final String scenes_name, final String sql_code, final String smart_code, final String descrip, final List<MyScenesParams> params)
     {
         this.group_id = group_id;
         this.scenes_name = scenes_name;
         this.sql_code = sql_code;
         this.smart_code = smart_code;
         this.descrip = descrip;
-        this.is_batch = is_batch;
         this.params = params;
-        this.scenesType = scenesType;
     }
 
     public MyScenesCache(final Long group_id, final String scenes_name, final String sql_code, final String smart_code)
@@ -48,14 +42,6 @@ public class MyScenesCache implements Serializable {
 
     public MyScenesCache()
     {}
-
-    public ScenesType getScenesType() {
-        return scenesType;
-    }
-
-    public void setScenesType(ScenesType scenesType) {
-        this.scenesType = scenesType;
-    }
 
     public Long getGroup_id() {
         return group_id;
@@ -89,14 +75,6 @@ public class MyScenesCache implements Serializable {
         this.descrip = descrip;
     }
 
-    public Boolean getIs_batch() {
-        return is_batch;
-    }
-
-    public void setIs_batch(Boolean is_batch) {
-        this.is_batch = is_batch;
-    }
-
     public List<MyScenesParams> getParams() {
         return params;
     }
@@ -121,9 +99,7 @@ public class MyScenesCache implements Serializable {
                 ", sql_code='" + sql_code + '\'' +
                 ", smart_code='" + smart_code + '\'' +
                 ", descrip='" + descrip + '\'' +
-                ", is_batch=" + is_batch +
                 ", params=" + params +
-                ", scenesType=" + scenesType +
                 '}';
     }
 }

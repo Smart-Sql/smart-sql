@@ -18,7 +18,6 @@
         [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
-        [org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
@@ -172,7 +171,7 @@
                       ;                                                                                                "select show_msg('true') as tip"
                       ;                                                                                                "select show_msg('false') as tip"))
                       ; create table
-                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/create-table ignite group_id dataset_name group_type dataset_id (str/join " " lst))]
+                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/create-table ignite group_id dataset_name group_type dataset_id "" (str/join " " lst))]
                                                                                                                                         (if (nil? rs)
                                                                                                                                             (.append sb "select show_msg('true') as tip;")
                                                                                                                                             (.append sb "select show_msg('false') as tip;")))

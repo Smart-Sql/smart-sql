@@ -126,44 +126,15 @@
     CREATE TABLE IF NOT EXISTS my_scenes (
                     group_id BIGINT,
                     scenes_name VARCHAR(40),
-                    sql_code VARCHAR,
+                    --sql_code VARCHAR,
+                    smart_code VARCHAR,
                     --ps_code VARCHAR,
                     descrip VARCHAR,
-                    is_batch BOOLEAN DEFAULT false,
+                    --is_batch BOOLEAN DEFAULT false,
                     PRIMARY KEY (scenes_name, group_id)
                     ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyScenesCachePk,VALUE_TYPE=cn.plus.model.db.MyScenesCache,cache_name=my_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     CREATE INDEX IF NOT EXISTS scenes_group_id_idx ON my_scenes (scenes_name, group_id);
-
-    /**
-    11、场景参数表：my_scenes_params
-    DROP TABLE IF EXISTS my_scenes_params;
-    DROP INDEX IF EXISTS scenes_params_idx;
-    */
-    CREATE TABLE IF NOT EXISTS my_scenes_params (
-                    scenes_name VARCHAR,
-                    ps_type VARCHAR,
-                    ps_index INT,
-                    PRIMARY KEY (scenes_name, ps_index)
-                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyScenesParamsPk,VALUE_TYPE=cn.plus.model.db.MyScenesParams,cache_name=my_scenes_params,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
-
-    -- 创建一个索引，便于检索数据
-    CREATE INDEX IF NOT EXISTS scenes_params_idx ON my_scenes_params (scenes_name);
-
-    /**
-    13、记录场景操作的表：my_scenes_log
-    DROP TABLE IF EXISTS my_scenes_log;
-    DROP INDEX IF EXISTS my_scenes_log_create_date_idx;
-    */
-    CREATE TABLE IF NOT EXISTS my_scenes_log (
-                    id BIGINT,
-                    mycacheex VARBINARY,
-                    create_date TIMESTAMP,
-                    PRIMARY KEY (id)
-                    ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.MyScenesLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=my_scenes_log,cache_group=my_meta_log\";
-
-
-    CREATE INDEX IF NOT EXISTS my_scenes_log_create_date_idx ON my_scenes_log (create_date DESC);
 
     /**
     14、将本用户组场景的使用权限，赋给其它用户组的表：
@@ -190,7 +161,6 @@
     */
     CREATE TABLE IF NOT EXISTS my_select_views (
                     id BIGINT,
-                    view_name VARCHAR(40),
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
@@ -203,7 +173,6 @@
     */
     CREATE TABLE IF NOT EXISTS my_update_views (
                     id BIGINT,
-                    view_name VARCHAR(40),
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
@@ -216,7 +185,6 @@
     */
     CREATE TABLE IF NOT EXISTS my_insert_views (
                     id BIGINT,
-                    view_name VARCHAR(40),
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
@@ -229,7 +197,6 @@
     */
     CREATE TABLE IF NOT EXISTS my_delete_views (
                     id BIGINT,
-                    view_name VARCHAR(40),
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
@@ -292,24 +259,10 @@
                     ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.ddl.MyFunc,cache_name=my_func,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     CREATE TABLE IF NOT EXISTS my_func_ps (
-                    method_name VARCHAR(30),
                     ps_index INTEGER,
                     ps_type VARCHAR(20),
                     PRIMARY KEY (method_name, ps_index)
                     ) WITH \"template=MyMeta_template,affinityKey=method_name,VALUE_TYPE=cn.plus.model.ddl.MyFuncPs,cache_name=my_func_ps,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
-
-
-    /**
-    25、No sql 的定义
-    */
-    CREATE TABLE IF NOT EXISTS my_cache (
-                    sql_line VARCHAR,
-                    data_regin VARCHAR,
-                    cache_name VARCHAR(20),
-                    group_id BIGINT,
-                    PRIMARY KEY (cache_name, group_id)
-                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.nosql.MyCacheGroup,VALUE_TYPE=cn.plus.model.nosql.MyCacheValue,cache_name=my_cache,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
-
 
 ")
 
@@ -326,12 +279,9 @@
      "DROP INDEX IF EXISTS ot_ds_tname_idx"
      "DROP TABLE IF EXISTS my_scenes"
      "DROP INDEX IF EXISTS scenes_group_id_idx"
-     "DROP TABLE IF EXISTS my_scenes_params"
      "DROP INDEX IF EXISTS scenes_params_idx"
-     "DROP TABLE IF EXISTS my_scenes_obj"
      "DROP INDEX IF EXISTS scenes_obj_tn_idx"
      "DROP INDEX IF EXISTS scenes_obj_in_idx"
-     "DROP TABLE IF EXISTS my_scenes_log"
      "DROP INDEX IF EXISTS my_scenes_log_create_date_idx"
      "DROP TABLE IF EXISTS call_scenes"
      "DROP INDEX IF EXISTS call_scenes_idx"
@@ -342,7 +292,6 @@
      "DROP TABLE IF EXISTS my_group_view"
      "DROP TABLE IF EXISTS my_log"
      "DROP INDEX IF EXISTS my_log_idx"
-     "DROP TABLE IF EXISTS my_cache;"
      ])
 
 (def my-grid-tables-set #{"my_users_group"
@@ -352,9 +301,6 @@
                           "table_index"
                           "table_index_item"
                           "my_scenes"
-                          "my_scenes_params"
-                          "my_scenes_obj"
-                          "my_scenes_log"
                           "call_scenes"
                           "my_select_views"
                           "my_update_views"
@@ -362,4 +308,4 @@
                           "my_delete_views"
                           "my_group_view"
                           "my_log"
-                          "my_cache"})
+                          })
