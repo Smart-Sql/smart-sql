@@ -503,6 +503,9 @@
 (defn no-sql-delete [ignite group_id m]
     (.myDelete (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
 
+(defn my-show-msg [msg]
+    msg)
+
 (defn smart-func [func-name]
     (cond (is-eq? func-name "add") "my-lexical/list-add"
           (is-eq? func-name "set") "my-lexical/list-set"
@@ -576,6 +579,7 @@
           (is-eq? func-name "trim") "MyFunction/trim"
           (is-eq? func-name "translate") "MyFunction/translate"
           (is-eq? func-name "avg") "MyFunction/my-avg"
+          (is-eq? func-name "show_msg") "my-lexical/my-show-msg"
           :else
           (str/lower-case func-name)
           ))

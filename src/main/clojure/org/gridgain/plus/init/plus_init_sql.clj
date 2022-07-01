@@ -259,6 +259,7 @@
                     ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.ddl.MyFunc,cache_name=my_func,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     CREATE TABLE IF NOT EXISTS my_func_ps (
+                    method_name VARCHAR(30),
                     ps_index INTEGER,
                     ps_type VARCHAR(20),
                     PRIMARY KEY (method_name, ps_index)

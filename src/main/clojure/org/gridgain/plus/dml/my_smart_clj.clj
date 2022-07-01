@@ -418,11 +418,12 @@
                                                                                    (recur r [] (conj lst-rs func-line f))))
                               (my-lexical/is-eq? (first f) "function") (recur r (conj func-stack f) lst-rs)
                               :else
-                              (recur r func-stack (conj lst-rs f))
+                              (if (empty? func-stack)
+                                  (recur r [] (conj lst-rs f))
+                                  (let [func-line (concat ["innerFunction" "{"] (apply concat func-stack) ["}"])]
+                                      (recur r [] (conj lst-rs func-line f))))
                               )
-                        (if (empty? func-stack)
-                            lst-rs
-                            (conj lst-rs (concat ["innerFunction" "{"] (apply concat func-stack) ["}"]))))))
+                        lst-rs)))
             (get-fn [lst]
                 (concat ["function" "cnc-cf-fn" "(" ")" "{"] (apply concat (get-fn-body lst)) ["}"]))]
         (get-fn lst)))
