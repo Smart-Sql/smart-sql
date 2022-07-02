@@ -126,19 +126,22 @@
                   (> (count stack) 1) (conj lst stack)
                   ))))
 
+;(defn -reSmartSegmentLst [^List segment-lst]
+;    (loop [[f & r] segment-lst stack [] lst (ArrayList.)]
+;        (if (some? f)
+;            (cond (and (empty? stack) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add f)))
+;                  (and (= (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (first stack)) (.add f)))
+;                  (and (> (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (my-lexical/to_arryList stack)) (.add f)))
+;                  :else
+;                  (recur r (conj stack f) lst)
+;                  )
+;            (cond (empty? stack) lst
+;                  (= (count stack) 1) (doto lst (.add (first stack)))
+;                  (> (count stack) 1) (doto lst (.add stack))
+;                  ))))
+
 (defn -reSmartSegmentLst [^List segment-lst]
-    (loop [[f & r] segment-lst stack [] lst (ArrayList.)]
-        (if (some? f)
-            (cond (and (empty? stack) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add f)))
-                  (and (= (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (first stack)) (.add f)))
-                  (and (> (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (my-lexical/to_arryList stack)) (.add f)))
-                  :else
-                  (recur r (conj stack f) lst)
-                  )
-            (cond (empty? stack) lst
-                  (= (count stack) 1) (doto lst (.add (first stack)))
-                  (> (count stack) 1) (doto lst (.add stack))
-                  ))))
+    (re-smart-segment segment-lst))
 
 (defn get-my-smart-segment [^String sql]
     (loop [[f & r] (get-smart-segment (my-lexical/to-back sql)) ar (ArrayList.)]

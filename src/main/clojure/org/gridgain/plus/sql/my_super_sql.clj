@@ -229,7 +229,7 @@
                                                                                                                                            (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                            ))
                    ; drop dataset
-                   (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (cull-semicolon lst))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (cull-semicolon lst))]
                                                                                                                (if (nil? rs)
                                                                                                                    "select show_msg('true') as tip"
                                                                                                                    "select show_msg('false') as tip"))
@@ -281,20 +281,23 @@
 (defn super-sql [^Ignite ignite ^String userToken ^List lst]
     (let [[group_id dataset_name group_type dataset_id] (my_group_id ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
+        ;(println lst)
         (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id lst)))
 
 (defn super-sql-line [^Ignite ignite ^String userToken ^String line]
     (let [[group_id dataset_name group_type dataset_id] (my_group_id ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
-        (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id (my-smart-sql/get-my-smart-segment line))))
+        (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
 
 ; 传入 [["select" "name" ...], ["update" ...], ["insert" ...]]
 (defn -superSql [^Ignite ignite ^Object userToken ^Object lst-sql]
     (if (some? userToken)
         (if-let [m-obj (MyCacheExUtil/restore lst-sql)]
             (cond (string? m-obj) (super-sql-line ignite (MyCacheExUtil/restoreToLine userToken) m-obj)
+                  ;(my-lexical/is-seq? m-obj) (super-sql ignite (MyCacheExUtil/restoreToLine userToken) (my-smart-sql/re-super-smart-segment m-obj))
                   (my-lexical/is-seq? m-obj) (super-sql ignite (MyCacheExUtil/restoreToLine userToken) (my-smart-sql/re-super-smart-segment m-obj))
-                  ))
+                  )
+            )
         (throw (Exception. "没有权限不能访问数据库！"))))
 
 (defn -getGroupId [^Ignite ignite ^String userToken]

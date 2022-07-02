@@ -431,7 +431,9 @@
 (defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
     (let [smart-lst (re-fn lst)]
         (if-let [my-smart-code (my-ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
-            (apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id])))
+            (apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id])
+            ;(apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id])
+            ))
     ;(let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
     ;    (let [my-smart-code (str/replace smart-code #"^\(defn\s+cnc-cf-fn\s+" "(fn ")]
     ;        (apply (eval (read-string my-smart-code)) [ignite group_id]))
