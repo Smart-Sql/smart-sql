@@ -12,6 +12,7 @@
              (com.google.common.base Strings)
              (com.google.gson Gson GsonBuilder)
              (cn.plus.model MyKeyValue MyLogCache SqlType)
+             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
@@ -408,6 +409,52 @@
                            )
           ))
 
+(declare get-funcs get-func-name get-funcs-map get-funcs-lst)
+
+(defn get-func-name [lst-func]
+    (loop [[f & r] lst-func lst []]
+        (if (some? f)
+            (cond (contains? f :func-name) (recur r (conj lst (-> f :func-name)))
+                  :else
+                  (recur r lst)
+                  )
+            lst)))
+
+(defn get-funcs [ast]
+    (cond (map? ast) (get-funcs-map ast)
+          (my-lexical/is-seq? ast) (get-funcs-lst ast)
+          ))
+
+(defn get-funcs-lst [ast]
+    (loop [[f & r] ast lst []]
+        (if (some? f)
+            (let [m (get-funcs f)]
+                (if-not (empty? m)
+                    (recur r (concat lst m))
+                    (recur r lst)))
+            lst)))
+
+(defn get-funcs-map [ast]
+    (loop [[f & r] (keys ast) lst []]
+        (if (some? f)
+            (let [vs (get ast f)]
+                (cond (= f :functions) (let [m (get-func-name vs)]
+                                           (if-not (empty? m)
+                                               (recur r (concat lst m))
+                                               (recur r lst)))
+                      (and (not (= f :functions)) (my-lexical/is-seq? vs)) (let [m (get-funcs-lst vs)]
+                                                                               (if-not (empty? m)
+                                                                                   (recur r (concat lst m))
+                                                                                   (recur r lst)))
+                      (map? vs) (let [m (get-funcs vs)]
+                                    (if-not (empty? m)
+                                        (recur r (concat lst m))
+                                        (recur r lst)))
+                      :else
+                      (recur r lst)
+                      ))
+            lst)))
+
 (defn re-fn [^clojure.lang.LazySeq lst]
     (letfn [(get-fn-body [lst]
                 (loop [[f & r] (my-smart-sql/get-smart-segment lst) func-stack [] lst-rs []]
@@ -428,17 +475,48 @@
                 (concat ["function" "cnc-cf-fn" "(" ")" "{"] (apply concat (get-fn-body lst)) ["}"]))]
         (get-fn lst)))
 
+(defn has-func [^Ignite ignite ^Long group_id ast]
+    (let [func-lst (get-funcs ast)]
+        (cond (nil? func-lst) true
+              (empty? func-lst) true
+              :else
+              (loop [[f & r] func-lst]
+                  (if (some? f)
+                      (cond (some? (.get (.cache ignite "my_scenes") (MyScenesCachePk. group_id (str/lower-case f)))) (throw (Exception. (format "已经存在方法：%s 不能在新建" f)))
+                            (some? (.get (.cache ignite "my_func") (str/lower-case f))) (throw (Exception. (format "已经存在方法：%s 不能在新建" f)))
+                            :else
+                            (recur r)
+                            )
+                      true))
+              )))
+
 (defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
     (let [smart-lst (re-fn lst)]
-        (if-let [my-smart-code (my-ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
-            (apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id])
-            ;(apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id])
-            ))
-    ;(let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
-    ;    (let [my-smart-code (str/replace smart-code #"^\(defn\s+cnc-cf-fn\s+" "(fn ")]
-    ;        (apply (eval (read-string my-smart-code)) [ignite group_id]))
-    ;    )
+        (let [ast (first (my-smart-sql/my-get-ast-lst smart-lst))]
+            (println lst)
+            (println ast)
+            (println "*******************")
+            (if (has-func ignite group_id ast)
+                (if-let [my-smart-code (my-ast-to-clj ignite group_id ast nil)]
+                    (do
+                        (println (format "(fn [ignite group_id] %s)" my-smart-code))
+                        (apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id]))
+                    ))
+            )
+        )
     )
+
+;(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
+;    (let [smart-lst (re-fn lst)]
+;        (if-let [my-smart-code (my-ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
+;            (apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id])
+;            ;(apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id])
+;            ))
+;    ;(let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
+;    ;    (let [my-smart-code (str/replace smart-code #"^\(defn\s+cnc-cf-fn\s+" "(fn ")]
+;    ;        (apply (eval (read-string my-smart-code)) [ignite group_id]))
+;    ;    )
+;    )
 
 
 
