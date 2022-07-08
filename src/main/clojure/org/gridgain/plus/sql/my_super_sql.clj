@@ -166,10 +166,10 @@
                       ;                                                                                                 "select show_msg('true') as tip"
                       ;                                                                                                 "select show_msg('false') as tip"))
                       ; drop dataset
-                      ;(and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop_data_set ignite group_id sql)]
-                      ;                                                                                            (if (nil? rs)
-                      ;                                                                                                "select show_msg('true') as tip"
-                      ;                                                                                                "select show_msg('false') as tip"))
+                      (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id lst)]
+                                                                                                                  (if (nil? rs)
+                                                                                                                      "select show_msg('false') as tip"
+                                                                                                                      "select show_msg('true') as tip"))
                       ; create table
                       (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/create-table ignite group_id dataset_name group_type dataset_id "" (str/join " " lst))]
                                                                                                                                         (if (nil? rs)
