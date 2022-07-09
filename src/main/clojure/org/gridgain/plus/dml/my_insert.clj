@@ -92,7 +92,7 @@
 (defn my_insert_obj [^Ignite ignite ^Long group_id [f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
-            (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
+            (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= group_id 0))
                 true
                 (if-let [items (get-insert-items vs-line)]
                     (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
@@ -105,7 +105,7 @@
 (defn my_insert_obj-no-authority [^Ignite ignite ^Long group_id [f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
-            (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
+            (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= group_id 0))
                 true
                 (if-let [items (get-insert-items vs-line)]
                     {:schema_name schema_name :table_name table_name :values items}

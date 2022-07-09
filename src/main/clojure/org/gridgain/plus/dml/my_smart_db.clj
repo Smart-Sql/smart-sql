@@ -128,22 +128,34 @@
     (if (some? args)
         (let [args-dic (args-to-dic args)]
             (let [insert_obj (my-insert/my_insert_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
-                (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))))
+                (if (true? insert_obj)
+                    (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. sql) (to-array args))))
+                    (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
+                        (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT))))
+                ))
         (let [insert_obj (my-insert/my_insert_obj ignite group_id (my-lexical/to-back sql))]
-            (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT)))))
+            (if (true? insert_obj)
+                (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))
+                (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
+                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))))
+            ))
     )
 
 (defn insert-to-cache-no-authority [ignite group_id sql args]
     (if (some? args)
         (let [args-dic (args-to-dic args)]
             (let [insert_obj (my-insert/my_insert_obj-no-authority ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
-                (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))))
+                (if (true? insert_obj)
+                    (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. sql) (to-array args))))
+                    (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
+                        (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT))))
+                ))
         (let [insert_obj (my-insert/my_insert_obj-no-authority ignite group_id (my-lexical/to-back sql))]
-            (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT)))))
+            (if (true? insert_obj)
+                (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))
+                (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
+                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))))
+            ))
     )
 
 (defn update-to-cache [ignite group_id sql args]
@@ -312,7 +324,8 @@
                                               (let [sql (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)]
                                                   (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true))))))
           (re-find #"^(?i)insert\s+" sql) (let [logCache (insert-to-cache ignite group_id sql nil)]
-                                              (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
+                                              (if (instance? MyLogCache logCache)
+                                                  (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache]))))
           (re-find #"^(?i)update\s+" sql) (let [logCache (update-to-cache ignite group_id sql nil)]
                                               (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
           (re-find #"^(?i)delete\s+" sql) (let [logCache (delete-to-cache ignite group_id sql nil)]
@@ -327,7 +340,9 @@
                                                   (let [{sql :sql args-1 :args} (my-select-plus-args/my-ast-to-sql ignite group_id args-dic ast)]
                                                       (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true) (.setArgs (to-array args-1))))))))
           (re-find #"^(?i)insert\s+" sql) (let [logCache (insert-to-cache ignite group_id sql args)]
-                                              (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
+                                              (if (instance? MyLogCache logCache)
+                                                  (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
+                                              )
           (re-find #"^(?i)update\s+" sql) (let [logCache (update-to-cache ignite group_id sql args)]
                                               (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
           (re-find #"^(?i)delete\s+" sql) (let [logCache (delete-to-cache ignite group_id sql args)]

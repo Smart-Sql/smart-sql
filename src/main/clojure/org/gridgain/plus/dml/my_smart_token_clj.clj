@@ -117,11 +117,11 @@
 
 ; 判断 func
 (defn is-func? [^Ignite ignite ^String func-name]
-    (.containsKey (.cache ignite "my_func") func-name))
+    (.containsKey (.cache ignite "my_func") (str/lower-case func-name)))
 
 ; 判断 scenes
 (defn is-scenes? [^Ignite ignite ^Long group_id ^String scenes-name]
-    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. group_id scenes-name)))
+    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. group_id (str/lower-case scenes-name))))
 
 ; 判断是否有函数
 (defn has-func? [let-obj func-name]

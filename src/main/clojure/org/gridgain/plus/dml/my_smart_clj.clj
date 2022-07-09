@@ -379,6 +379,16 @@
                 [(str/replace code #"^\(\s*" "(defn ") (-> ast :func-name)])
             )))
 
+(defn my-smart-to-clj-lower [^Ignite ignite ^Long group_id smart-lst]
+    (let [ast-0 (first (my-smart-sql/my-get-ast-lst smart-lst))]
+        (let [ast (assoc ast-0 :func-name (str/lower-case (-> ast-0 :func-name)))]
+            (let [code (ast-to-clj ignite group_id ast nil)]
+                (if (re-find #"^\(defn\s*" code)
+                    [code (-> ast :func-name)]
+                    [(str/replace code #"^\(\s*" "(defn ") (-> ast :func-name)])
+                ))
+        ))
+
 ; smart-lst: (my-lexical/to-back smart-sql)
 (defn my-smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq smart-lst]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
@@ -499,6 +509,7 @@
             (if (has-func ignite group_id ast)
                 (if-let [my-smart-code (my-ast-to-clj ignite group_id ast nil)]
                     (do
+                        (println "my-clj code:")
                         (println (format "(fn [ignite group_id] %s)" my-smart-code))
                         (apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id]))
                     ))
