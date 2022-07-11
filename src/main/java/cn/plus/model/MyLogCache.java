@@ -16,10 +16,11 @@ public class MyLogCache implements Serializable {
      * key 如果是单独的主键，则是基础类型，如果是联合主键，则是 List<MyKeyValue> 类型
      * */
     private Object key;
-    private List<MyKeyValue> value;
+    //private List<MyKeyValue> value;
+    private Object value;
     private SqlType sqlType;
 
-    public MyLogCache(final String cache_name, final String schema_name, final String table_name, final Object key, final List<MyKeyValue> value, final SqlType sqlType)
+    public MyLogCache(final String cache_name, final String schema_name, final String table_name, final Object key, final Object value, final SqlType sqlType)
     {
         this.cache_name = cache_name;
         this.schema_name = schema_name;
@@ -64,7 +65,7 @@ public class MyLogCache implements Serializable {
         this.key = key;
     }
 
-    public List<MyKeyValue> getValue() {
+    public Object getValue() {
         return value;
     }
 

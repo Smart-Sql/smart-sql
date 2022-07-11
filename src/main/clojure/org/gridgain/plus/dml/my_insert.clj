@@ -93,7 +93,7 @@
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
             (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= group_id 0))
-                true
+                {:schema_name "MY_META" :table_name table_name :values (get-insert-items vs-line)}
                 (if-let [items (get-insert-items vs-line)]
                     (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
                         (if (nil? (has-my-authority items v-items))
@@ -106,7 +106,7 @@
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
             (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= group_id 0))
-                true
+                {:schema_name "MY_META" :table_name table_name :values (get-insert-items vs-line)}
                 (if-let [items (get-insert-items vs-line)]
                     {:schema_name schema_name :table_name table_name :values items}
                     (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))))

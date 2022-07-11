@@ -87,15 +87,24 @@
                         (if (some? f)
                             (if-not (nil? (first (first (.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. "select id from MY_META.table_item where table_id = ? and column_name = ?") (to-array [table_id (str/lower-case (.getColumn_name f))])))))))
                                 (let [table-item-id (.incrementAndGet (.atomicSequence ignite "table_item" 0 true))]
-                                    (recur r (doto lst-rs (.add (MyCacheEx. (.cache ignite "table_index") (MyTableItemPK. table-item-id table_id) (doto f (.setId table-item-id)
-                                                                                                                                                          (.setTable_id table_id)) (SqlType/INSERT))))))
+                                    (let [my-key (MyTableItemPK. table-item-id table_id) my-value (doto f (.setId table-item-id)
+                                                                                                          (.setTable_id table_id))]
+                                        (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
+                                            (recur r (doto lst-rs (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) (MyLogCache. "table_index" "MY_META" "table_index" my-key my-value (SqlType/INSERT))))))
+                                            (recur r (doto lst-rs (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) nil)))))
+                                        )
+                                    )
                                 (recur r lst-rs))
                             lst-rs)))
 (defn get-drop-table-item [^Ignite ignite ^Long table_id lst_table_item]
                      (loop [[f & r] lst_table_item lst-rs (ArrayList.)]
                          (if (some? f)
                              (if-let [table-item-id (first (first (.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. "select id from MY_META.table_item where table_id = ? and column_name = ?") (to-array [table_id (str/lower-case (.getColumn_name f))]))))))]
-                                 (recur r (doto lst-rs (.add (MyCacheEx. (.cache ignite "table_index") (MyTableItemPK. table-item-id table_id) nil (SqlType/DELETE)))))
+                                 (let [my-key (MyTableItemPK. table-item-id table_id)]
+                                     (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
+                                         (recur r (doto lst-rs (.add (MyCacheEx. (.cache ignite "table_index") my-key nil (SqlType/DELETE) (MyLogCache. "table_index" "MY_META" "table_index" my-key nil (SqlType/DELETE))))))
+                                         (recur r (doto lst-rs (.add (MyCacheEx. (.cache ignite "table_index") my-key nil (SqlType/DELETE) nil)))))
+                                     )
                                  (throw (Exception. (format "要删除的列 %s 不存在！" (.getColumn_name f)))))
                              lst-rs)))
 (defn re-obj [^String data_set_name ^String sql_line]
@@ -142,11 +151,10 @@
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id ^String dataset_name]
     (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (alter-table-obj ignite dataset_name sql_line)]
         (if-not (nil? lst_cachex)
-            (if (true? (.isMultiUserGroup (.configuration ignite)))
-                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex (doto lst_cachex (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (MyLog. ddl_id "ddl_log" (MyCacheExUtil/objToBytes sql)) (SqlType/INSERT)))) :nosql nosql}))
-                (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql})
-                )
+            (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql})
+            ;(if (true? (.isMultiUserGroup (.configuration ignite)))
+            ;    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql})
+            ;    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql}))
             (throw (Exception. "修改表的语句有错误！")))
         )
     )

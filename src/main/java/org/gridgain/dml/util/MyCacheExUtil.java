@@ -2,9 +2,11 @@ package org.gridgain.dml.util;
 
 import clojure.lang.*;
 import cn.plus.model.*;
+import cn.smart.service.IMyLog;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.smart.service.MyLogService;
 import org.apache.ignite.transactions.Transaction;
 import org.tools.KvSql;
 import org.apache.ignite.Ignite;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 public class MyCacheExUtil implements Serializable {
     private static final long serialVersionUID = 7714300623488330841L;
 
+    private static IMyLog myLog = MyLogService.getInstance().getMyLog();
+
 //    public static void transLogCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
 //    {
 //        List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
@@ -33,11 +37,11 @@ public class MyCacheExUtil implements Serializable {
     public static void transLogCache(final Ignite ignite, final List lstLogCache)
     {
         List<MyCacheEx> lstCache = (List<MyCacheEx>) lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
-        if (ignite.configuration().isMyLogEnabled()) {
-            long log_id = ignite.atomicSequence("my_log", 0, true).incrementAndGet();
-            List<MyCacheEx> lst = (List<MyCacheEx>) lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
-            lstCache.addAll(lst);
-        }
+//        if (ignite.configuration().isMyLogEnabled() && myLog != null) {
+//            long log_id = ignite.atomicSequence("my_log", 0, true).incrementAndGet();
+//            List<MyCacheEx> lst = (List<MyCacheEx>) lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
+//            lstCache.addAll(lst);
+//        }
         if (lstCache != null && lstCache.size() > 0) {
             transMyCache(ignite, lstCache);
         }
@@ -68,48 +72,55 @@ public class MyCacheExUtil implements Serializable {
     private static void transMyCache(final Ignite ignite, final List<MyCacheEx> lstCache) {
         //List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
 
-        if (lstCache.size() == 1)
-        {
-            MyCacheEx m = lstCache.get(0);
-            switch (m.getSqlType()) {
-                case UPDATE:
-                    m.getCache().replace(m.getKey(), m.getValue());
-                    break;
-                case INSERT:
-                    m.getCache().put(m.getKey(), m.getValue());
-                    break;
-                case DELETE:
-                    m.getCache().remove(m.getKey());
-                    break;
+        IgniteTransactions transactions = ignite.transactions();
+        Transaction tx = null;
+        try {
+            tx = transactions.txStart();
+
+            for (MyCacheEx m : lstCache)
+            {
+                switch (m.getSqlType()) {
+                    case UPDATE:
+                        m.getCache().replace(m.getKey(), m.getValue());
+                        if (myLog != null)
+                        {
+                            if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
+                            {
+                                throw new Exception("log 保存失败！");
+                            }
+                        }
+                        break;
+                    case INSERT:
+                        m.getCache().put(m.getKey(), m.getValue());
+                        if (myLog != null)
+                        {
+                            if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
+                            {
+                                throw new Exception("log 保存失败！");
+                            }
+                        }
+                        break;
+                    case DELETE:
+                        m.getCache().remove(m.getKey());
+                        if (myLog != null)
+                        {
+                            if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
+                            {
+                                throw new Exception("log 保存失败！");
+                            }
+                        }
+                        break;
+                }
             }
-        }
-        else {
-            IgniteTransactions transactions = ignite.transactions();
-            Transaction tx = null;
-            try {
-                tx = transactions.txStart();
-                lstCache.stream().forEach(m -> {
-                    switch (m.getSqlType()) {
-                        case UPDATE:
-                            m.getCache().replace(m.getKey(), m.getValue());
-                            break;
-                        case INSERT:
-                            m.getCache().put(m.getKey(), m.getValue());
-                            break;
-                        case DELETE:
-                            m.getCache().remove(m.getKey());
-                            break;
-                    }
-                });
-                tx.commit();
-            } catch (Exception ex) {
-                if (tx != null) {
-                    tx.rollback();
-                }
-            } finally {
-                if (tx != null) {
-                    tx.close();
-                }
+
+            tx.commit();
+        } catch (Exception ex) {
+            if (tx != null) {
+                tx.rollback();
+            }
+        } finally {
+            if (tx != null) {
+                tx.close();
             }
         }
     }
@@ -124,24 +135,43 @@ public class MyCacheExUtil implements Serializable {
         else
             return convertToCacheEx_noSql(ignite, (MyNoSqlCache)logCache);
     }
+
+    private static Boolean isLstKv(Object o)
+    {
+        if (o instanceof List)
+        {
+            List lst = (List) o;
+            if (lst.size() > 0 && lst.get(0) instanceof MyKeyValue)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static MyCacheEx convertToCacheEx_logCache(final Ignite ignite, final MyLogCache logCache)
     {
         switch (logCache.getSqlType())
         {
             case INSERT:
-                return new MyCacheEx(ignite.cache(logCache.getCache_name()), convertToKey(ignite, logCache), convertToValue(ignite, logCache), logCache.getSqlType());
+                return new MyCacheEx(ignite.cache(logCache.getCache_name()), convertToKey(ignite, logCache), convertToValue(ignite, logCache), logCache.getSqlType(), logCache);
             case DELETE:
-                return new MyCacheEx(ignite.cache(logCache.getCache_name()), convertToKey(ignite, logCache), null, logCache.getSqlType());
+                return new MyCacheEx(ignite.cache(logCache.getCache_name()), convertToKey(ignite, logCache), null, logCache.getSqlType(), logCache);
             case UPDATE:
                 Object key = convertToKey(ignite, logCache);
                 IgniteCache igniteCache = ignite.cache(logCache.getCache_name()).withKeepBinary();
                 BinaryObject binaryObject = (BinaryObject) igniteCache.get(key);
-                BinaryObjectBuilder binaryObjectBuilder = binaryObject.toBuilder();
-                for (MyKeyValue m : logCache.getValue())
-                {
-                    binaryObjectBuilder.setField(m.getName(), m.getValue());
+                if (isLstKv(logCache.getValue())) {
+                    BinaryObjectBuilder binaryObjectBuilder = binaryObject.toBuilder();
+                    for (MyKeyValue m : (List<MyKeyValue>) logCache.getValue()) {
+                        binaryObjectBuilder.setField(m.getName(), m.getValue());
+                    }
+                    return new MyCacheEx(igniteCache, key, binaryObjectBuilder.build(), logCache.getSqlType(), logCache);
                 }
-                return new MyCacheEx(igniteCache, key, binaryObjectBuilder.build(), logCache.getSqlType());
+                else
+                {
+                    return new MyCacheEx(igniteCache, key, logCache.getValue(), logCache.getSqlType(), logCache);
+                }
         }
         return null;
     }
@@ -151,11 +181,11 @@ public class MyCacheExUtil implements Serializable {
         switch (sqlCache.getSqlType())
         {
             case INSERT:
-                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), sqlCache.getValue(), sqlCache.getSqlType());
+                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), sqlCache.getValue(), sqlCache.getSqlType(), sqlCache);
             case DELETE:
-                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), null, sqlCache.getSqlType());
+                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), null, sqlCache.getSqlType(), sqlCache);
             case UPDATE:
-                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), sqlCache.getValue(), sqlCache.getSqlType());
+                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), sqlCache.getValue(), sqlCache.getSqlType(), sqlCache);
         }
         return null;
     }
@@ -198,7 +228,7 @@ public class MyCacheExUtil implements Serializable {
     public static Object convertToKey(final Ignite ignite, final MyLogCache myLogCache)
     {
         Object key = null;
-        if (myLogCache.getKey() instanceof List) {
+        if (isLstKv(myLogCache.getKey())) {
             key = MyCacheExUtil.getKeys(ignite, myLogCache.getCache_name(), (List<MyKeyValue>)myLogCache.getKey());
         } else {
             key = myLogCache.getKey();
@@ -209,8 +239,8 @@ public class MyCacheExUtil implements Serializable {
     public static Object convertToValue(final Ignite ignite, final MyLogCache myLogCache)
     {
         Object value = null;
-        if (myLogCache.getValue() instanceof List) {
-            value = MyCacheExUtil.getValues(ignite, myLogCache.getCache_name(), myLogCache.getValue());
+        if (isLstKv(myLogCache.getValue())) {
+            value = MyCacheExUtil.getValues(ignite, myLogCache.getCache_name(), (List<MyKeyValue>)myLogCache.getValue());
         } else {
             value = myLogCache.getValue();
         }

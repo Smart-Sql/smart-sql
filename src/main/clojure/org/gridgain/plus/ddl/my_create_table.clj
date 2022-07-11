@@ -506,7 +506,9 @@
     ([^Ignite ignite lst_dml_table] (to_mycachex ignite lst_dml_table (ArrayList.)))
     ([^Ignite ignite [f & r] lst]
      (if (some? f)
-         (recur ignite r (doto lst (.add (MyCacheEx. (.cache ignite (-> f :table)) (-> f :key) (-> f :value) (SqlType/INSERT)))))
+         (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
+             (recur ignite r (doto lst (.add (MyCacheEx. (.cache ignite (-> f :table)) (-> f :key) (-> f :value) (SqlType/INSERT) (MyLogCache. (-> f :table) "MY_META" (-> f :table) (-> f :key) (-> f :value) (SqlType/INSERT))))))
+             (recur ignite r (doto lst (.add (MyCacheEx. (.cache ignite (-> f :table)) (-> f :key) (-> f :value) (SqlType/INSERT) nil)))))
          lst)))
 
 ; 先执行 lst_ddl 全部成功后，在执行 lst_dml_table

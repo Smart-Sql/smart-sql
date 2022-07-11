@@ -116,10 +116,18 @@
                                 (if (some? f)
                                     (do
                                         (let [index_item_id (.incrementAndGet (.atomicSequence ignite "table_index_item" 0 true)) {index_item :item_name sort_order :asc_desc} f]
-                                            (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") (MyTableItemPK. index_item_id index_id) (MyTableIndexItem. index_item_id index_item sort_order index_id) (SqlType/INSERT)))))
+                                            (let [my-key (MyTableItemPK. index_item_id index_id) my-value (MyTableIndexItem. index_item_id index_item sort_order index_id)]
+                                                (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
+                                                    (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key my-value (SqlType/INSERT) (MyLogCache. "table_index_item" "MY_META" "table_index_item" my-key my-value (SqlType/INSERT)))))
+                                                    (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key my-value (SqlType/INSERT) nil))))
+                                                )
+                                            )
                                         (recur r))))
-                            (doto lst (.add (MyCacheEx. (.cache ignite "table_index") (MyTableItemPK. index_id table_id) (MyTableIndex. index_id (format "%s_%s" schema_name index_name) spatial table_id) (SqlType/INSERT))))
-                            ))))
+                            (let [my-key (MyTableItemPK. index_id table_id) my-value (MyTableIndex. index_id (format "%s_%s" schema_name index_name) spatial table_id)]
+                                (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
+                                    (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) (MyLogCache. "table_index" "MY_META" "table_index" my-key my-value (SqlType/INSERT)))))
+                                    (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) nil)))))
+))))
             (get-index-obj [^String data_set_name ^String sql_line]
                 (let [m (get_create_index_obj sql_line)]
                     (cond (and (= (-> m :schema_name) "") (not (= data_set_name ""))) (assoc m :schema_name data_set_name)

@@ -3,18 +3,23 @@ package org.gridgain.ddl;
 import clojure.lang.*;
 import cn.plus.model.MyCacheEx;
 import cn.plus.model.MyNoSqlCache;
+import cn.smart.service.IMyLog;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.smart.service.MyLogService;
 import org.apache.ignite.transactions.Transaction;
+import org.gridgain.dml.util.MyCacheExUtil;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
 public class MyCreateTableUtil implements Serializable {
     private static final long serialVersionUID = 1484107803014288212L;
+
+    private static IMyLog myLog = MyLogService.getInstance().getMyLog();
 
     public static CacheConfiguration getCfg()
     {
@@ -50,7 +55,7 @@ public class MyCreateTableUtil implements Serializable {
 
     private static void saveCache(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table, final MyNoSqlCache noSqlCache)
     {
-        MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType());
+        MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
         lst_dml_table.add(kvCache);
         IgniteTransactions transactions = ignite.transactions();
         Transaction tx = null;
@@ -63,12 +68,33 @@ public class MyCreateTableUtil implements Serializable {
                 {
                     case UPDATE:
                         myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                        if (myLog != null)
+                        {
+                            if(myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false)
+                            {
+                                throw new Exception("log 保存失败！");
+                            }
+                        }
                         break;
                     case INSERT:
                         myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                        if (myLog != null)
+                        {
+                            if(myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false)
+                            {
+                                throw new Exception("log 保存失败！");
+                            }
+                        }
                         break;
                     case DELETE:
                         myCacheEx.getCache().remove(myCacheEx.getKey());
+                        if (myLog != null)
+                        {
+                            if(myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false)
+                            {
+                                throw new Exception("log 保存失败！");
+                            }
+                        }
                         break;
                 }
             }

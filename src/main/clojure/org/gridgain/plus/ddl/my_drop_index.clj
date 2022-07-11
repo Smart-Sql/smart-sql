@@ -62,9 +62,15 @@
                         (loop [[f & r] items]
                             (if (some? f)
                                 (do
-                                    (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") (MyTableItemPK. (-> f :index_item_id) (-> f :index_id)) nil (SqlType/DELETE))))
+                                    (let [my-key (MyTableItemPK. (-> f :index_item_id) (-> f :index_id))]
+                                        (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
+                                            (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key nil (SqlType/DELETE) (MyLogCache. "table_index_item" "MY_META" "table_index_item" my-key nil (SqlType/DELETE)))))
+                                            (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key nil (SqlType/DELETE) nil)))))
                                     (recur r))))
-                        {:schema_name (get-index-schema ignite table_id) :lst_cachex (doto lst (.add (MyCacheEx. (.cache ignite "table_index") (MyTableItemPK. index_id table_id) nil (SqlType/DELETE))))}
+                        (let [my-key (MyTableItemPK. index_id table_id)]
+                            (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
+                                {:schema_name (get-index-schema ignite table_id) :lst_cachex (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key nil (SqlType/DELETE) (MyLogCache. "table_index" "MY_META" "table_index" my-key nil (SqlType/DELETE)))))}
+                                {:schema_name (get-index-schema ignite table_id) :lst_cachex (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key nil (SqlType/DELETE) nil)))}))
                         )))
             ]
         (let [{index_name :index_name} (get_drop_index_obj sql_line)]

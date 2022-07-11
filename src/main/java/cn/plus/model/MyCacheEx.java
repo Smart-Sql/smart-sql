@@ -7,12 +7,23 @@ public class MyCacheEx extends MyCache {
 
     private SqlType sqlType;
 
-    public MyCacheEx(IgniteCache cache, Object key, Object value, SqlType sqlType)
+    private Object data;
+
+    public MyCacheEx(IgniteCache cache, Object key, Object value, SqlType sqlType, Object data)
     {
         this.setCache(cache);
         this.setKey(key);
         this.setValue(value);
         this.setSqlType(sqlType);
+        this.data = data;
+    }
+
+    public Object getData() {
+        return data;
+    }
+
+    public void setData(Object data) {
+        this.data = data;
     }
 
     public SqlType getSqlType() {
