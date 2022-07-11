@@ -1,10 +1,11 @@
 (ns org.gridgain.plus.init.plus-init
     (:require
         [org.gridgain.plus.init.plus-init-sql :as plus-init]
+        [org.gridgain.plus.ddl.my-create-table :as my-create-table]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
-             (org.apache.ignite.internal IgnitionEx)
+             (cn.plus.model.ddl MySchemaTable MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK)
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache CacheMode)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
@@ -27,15 +28,24 @@
 (defn -init [^Ignite ignite]
     [[] (atom {:ignite ignite})])
 
+(defn meta-ast [^Ignite ignite ^String sql]
+    (if (some? (re-find #"^(?i)\s*CREATE\s+TABLE\s+" sql))
+        (let [{schema_name :schema_name table_name :table_name value :value} (my-create-table/get-meta-pk-data sql)]
+            (let [table-ast-cache (.cache ignite "table_ast") my-pk (MySchemaTable. schema_name table_name)]
+                (if-not (.containsKey table-ast-cache my-pk)
+                    (.put table-ast-cache my-pk value)))
+            )))
+
 ; 获取 code 序列
 (defn get-code-lst
     [code]
     (str/split (MyTools/eliminate_comment code) #";"))
 
-(defn run-sql [[f & rs] cache]
+(defn run-sql [ignite [f & rs] cache]
     (if (some? f)
         (do (.getAll (.query cache (SqlFieldsQuery. f)))
-            (recur rs cache)
+            (meta-ast ignite f)
+            (recur ignite rs cache)
             )))
 
 ;; 添加自定义 template
@@ -70,7 +80,7 @@
 
 ; 创建所有的元表和索引
 (defn init-meta-table [^Ignite ignite]
-    (run-sql (get-code-lst plus-init/my-grid-tables) (get_meta_cache ignite)))
+    (run-sql ignite (get-code-lst plus-init/my-grid-tables) (get_meta_cache ignite)))
 
 ; 获取 cache
 ;(defn get-cache
@@ -90,7 +100,7 @@
     [^Ignite ignite]
     (let [cache (get_meta_cache ignite) lst (get-code-lst plus-init/my-grid-tables)]
         (get_public_cache ignite)
-        (run-sql lst cache)))
+        (run-sql ignite lst cache)))
 
 (defn -initialization
     [this]

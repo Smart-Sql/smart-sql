@@ -543,6 +543,22 @@
 (defn create-table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String descrip sql-line]
     (my_create_table_lst ignite group_id dataset_name group_type dataset_id descrip (my-lexical/to-back sql-line)))
 
+; 用户 meta table 获取 ast
+(defn get-meta-pk-data [^String sql]
+    (letfn [(meta_table_line_obj_lst [lst ^String data_set_name]
+                (let [{schema_name :schema_name table_name :table_name create_table :create_table items_line :items_line template :template} (get-create-table-items lst)]
+                    (if-let [{lst_table_item :lst_table_item code_sb :code_sb indexs :indexs} (get_obj (get_items_obj_lst items_line) schema_name table_name data_set_name)]
+                        {:create_table create_table
+                         :schema_name schema_name
+                         :table_name table_name
+                         :lst_table_item lst_table_item
+                         }
+                        (throw (Exception. "创建表的语句错误！")))
+                    )
+                )]
+        (let [{table_name :table_name lst_table_item :lst_table_item} (meta_table_line_obj_lst (my-lexical/to-back sql) "MY_META")]
+            {:schema_name "MY_META" :table_name table_name :value (get_pk_data lst_table_item)})))
+
 ; java 中调用
 ;(defn -plus_create_table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String descrip ^String code]
 ;    (my_create_table ignite group_id dataset_name group_type dataset_id descrip code))
