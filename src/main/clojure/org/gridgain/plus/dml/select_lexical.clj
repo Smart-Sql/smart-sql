@@ -506,6 +506,9 @@
 (defn my-show-msg [msg]
     msg)
 
+(defn auto_id [^Ignite ignite ^String cache-name]
+    (.incrementAndGet (.atomicSequence ignite cache-name 0 true)))
+
 (defn smart-func [func-name]
     (cond (is-eq? func-name "add") "my-lexical/list-add"
           (is-eq? func-name "set") "my-lexical/list-set"
@@ -712,6 +715,7 @@
     (cond (re-find #"^(?i)FLOAT$" f-type) "double"
           (re-find #"^(?i)DATETIME$" f-type) "TIMESTAMP"
           (re-find #"^(?i)REAL$" f-type) "TIMESTAMP"
+          (re-find #"^(?i)VARBINARY$" f-type) "VARBINARY"
           (re-find #"^(?i)REAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)REAL\(\s*\d+\s*\)$|^(?i)REAL$" f-type) (str/replace f-type #"REAL" "DECIMAL")
           (re-find #"^(?i)BIT$" f-type) "BOOLEAN"
           :else
@@ -757,6 +761,7 @@
 (defn convert_to_type [column_type]
     (cond (re-find #"^(?i)integer$|^(?i)int$|^(?i)long$|^(?i)double$|^(?i)float$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$|^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$" column_type) column_type
           (re-find #"^(?i)REAL$" column_type) "DECIMAL"
+          (re-find #"^(?i)VARBINARY$" column_type) "VARBINARY"
           (re-find #"^(?i)SMALLINT$" column_type) "INTEGER"
           :else
           (throw (Exception. (format "数据类型写法有误请确认正确的写法！%s" column_type)))
@@ -786,6 +791,7 @@
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_str_value column_value))
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_str_value column_value))
               (re-find #"^(?i)DECIMAL$" column_type) (MyConvertUtil/ConvertToDecimal (get_str_value column_value))
+              (re-find #"^(?i)VARBINARY$" column_type) (get_str_value column_value)
               :else
               (throw (Exception. (format "数据类型写法有误请确认正确的写法！%s %s" column_type column_value)))
               ))

@@ -184,7 +184,9 @@
                     ;         {:column_name "description", :column_type "varchar", :item_value "'Soft drinks, coffees, teas, beers, and ales'", :pkid false, :auto_increment false}
                     ;         {:column_name "picture", :column_type "varchar", :item_value nil, :pkid false, :auto_increment false})
                     get_rs
-                    ([lst_column values] (get_rs lst_column values []))
+                    ([lst_column values] (if (map? lst_column)
+                                             (get_rs [lst_column] values [])
+                                             (get_rs lst_column values [])))
                     ([[f & r] values lst]
                      (if (some? f)
                          (let [m (get_value values f)]

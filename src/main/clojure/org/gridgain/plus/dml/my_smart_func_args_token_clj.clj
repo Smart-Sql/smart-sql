@@ -170,6 +170,7 @@
               (my-lexical/is-eq? func-name "noSqlInsert") (format "(my-lexical/no-sql-insert ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "noSqlUpdate") (format "(my-lexical/no-sql-update ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "noSqlDelete") (format "(my-lexical/no-sql-delete ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+              (my-lexical/is-eq? func-name "auto_id") (format "(my-lexical/auto_id ignite %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-args-dic))
@@ -192,8 +193,13 @@
 
 (defn item-to-clj [m args-dic]
     (cond (my-lexical/is-eq? (-> m :item_name) "null") "nil"
-          (false? (-> m :const)) (cond (contains? (-> args-dic :dic) (-> m :item_name)) (format "(my-lexical/get-value %s)" (-> m :item_name))
-                                       (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (format "(my-lexical/get-value %s)" (str/lower-case (-> m :item_name)))
+          (false? (-> m :const)) (cond (contains? (-> args-dic :dic) (-> m :item_name)) (let [line (get (-> args-dic :dic) (-> m :item_name))]
+                                                                                            (cond (and (= (first line) \") (= (last line) \")) (format "(my-lexical/get-value \"%s\")" line)
+                                                                                                  (and (= (first line) \') (= (last line) \')) (format "(my-lexical/get-value \"%s\")" line)
+                                                                                                  :else
+                                                                                                  (format "(my-lexical/get-value %s)" line))
+                                                                                            )
+                                       (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (get (-> args-dic :dic) (str/lower-case (-> m :item_name))) ;(format "(my-lexical/get-value %s)" (get (-> args-dic :dic) (str/lower-case (-> m :item_name))))
                                        :else
                                        (format "(my-lexical/get-value %s)" (-> m :item_name)))
           (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (get-const-vs (-> m :item_name))

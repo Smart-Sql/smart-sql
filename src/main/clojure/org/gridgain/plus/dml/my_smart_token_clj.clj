@@ -168,6 +168,7 @@
               (my-lexical/is-eq? func-name "noSqlInsert") (format "(my-lexical/no-sql-insert ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "noSqlUpdate") (format "(my-lexical/no-sql-update ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "noSqlDelete") (format "(my-lexical/no-sql-delete ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "auto_id") (format "(my-lexical/auto_id ignite %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
