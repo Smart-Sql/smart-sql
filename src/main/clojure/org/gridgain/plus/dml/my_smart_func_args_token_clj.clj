@@ -193,13 +193,16 @@
 
 (defn item-to-clj [m args-dic]
     (cond (my-lexical/is-eq? (-> m :item_name) "null") "nil"
-          (false? (-> m :const)) (cond (contains? (-> args-dic :dic) (-> m :item_name)) (let [line (get (-> args-dic :dic) (-> m :item_name))]
-                                                                                            (cond (and (= (first line) \") (= (last line) \")) (format "(my-lexical/get-value \"%s\")" line)
-                                                                                                  (and (= (first line) \') (= (last line) \')) (format "(my-lexical/get-value \"%s\")" line)
-                                                                                                  :else
-                                                                                                  (format "(my-lexical/get-value %s)" line))
+          (false? (-> m :const)) (cond (contains? (-> args-dic :dic) (-> m :item_name)) (let [vs-obj (get (-> args-dic :dic) (-> m :item_name))]
+                                                                                            (if (= java.lang.String (last vs-obj))
+                                                                                                (format "(my-lexical/get-value \"%s\")" (first vs-obj))
+                                                                                                (format "(my-lexical/get-value %s)" (first vs-obj)))
                                                                                             )
-                                       (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (get (-> args-dic :dic) (str/lower-case (-> m :item_name))) ;(format "(my-lexical/get-value %s)" (get (-> args-dic :dic) (str/lower-case (-> m :item_name))))
+                                       (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (let [vs-obj (get (-> args-dic :dic) (str/lower-case (-> m :item_name)))]
+                                                                                                             (if (= java.lang.String (last vs-obj))
+                                                                                                                 (format "(my-lexical/get-value \"%s\")" (first vs-obj))
+                                                                                                                 (format "(my-lexical/get-value %s)" (first vs-obj)))
+                                                                                                             )
                                        :else
                                        (format "(my-lexical/get-value %s)" (-> m :item_name)))
           (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (get-const-vs (-> m :item_name))

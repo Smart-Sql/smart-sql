@@ -65,7 +65,7 @@
     ([[f & r] dic keys-lst]
      (if (some? f)
          (let [args-key (str "?$p_s_5_c_f_" (gensym "n$#c"))]
-             (recur r (assoc dic args-key f) (conj keys-lst args-key)))
+             (recur r (assoc dic args-key [f (type f)]) (conj keys-lst args-key)))
          {:dic dic :keys keys-lst})))
 
 (defn get-args-to-lst
