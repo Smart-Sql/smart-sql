@@ -302,8 +302,16 @@
 ;            (eval (read-string (-> m :item_name))))))
 
 (defn my-item-to-clj [m args-dic]
-    (cond (contains? (-> args-dic :dic) (-> m :item_name)) (get (-> args-dic :dic) (-> m :item_name))
-          (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (get (-> args-dic :dic) (str/lower-case (-> m :item_name)))
+    (cond (contains? (-> args-dic :dic) (-> m :item_name))  (let [vs-obj (get (-> args-dic :dic) (-> m :item_name))]
+                                                                (if (= java.lang.String (last vs-obj))
+                                                                    (eval (read-string (format "(my-lexical/get-value \"%s\")" (first vs-obj))))
+                                                                    (eval (read-string (format "(my-lexical/get-value %s)" (first vs-obj)))))
+                                                                ) ;(get (-> args-dic :dic) (-> m :item_name))
+          (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (let [vs-obj (get (-> args-dic :dic) (str/lower-case (-> m :item_name)))]
+                                                                                (if (= java.lang.String (last vs-obj))
+                                                                                    (eval (read-string (format "(my-lexical/get-value \"%s\")" (first vs-obj))))
+                                                                                    (eval (read-string (format "(my-lexical/get-value %s)" (first vs-obj)))))
+                                                                                );(get (-> args-dic :dic) (str/lower-case (-> m :item_name)))
           :else
           (if (my-lexical/is-eq? (-> m :item_name) "null")
               nil
@@ -318,13 +326,20 @@
           vs
           ))
 
+(defn get-vals
+    ([lst] (get-vals lst []))
+    ([[f & r] lst]
+     (if (some? f)
+         (recur r (conj lst (first f)))
+         lst)))
+
 ; args-dic 的终极使用在这里，通过匿名函数来替换真正的值
 (defn func-token-to-clj [ignite group_id m args-dic]
     (if (contains? m :item_name)
         (my-item-to-clj m args-dic)
         (let [fn-line (token-to-clj ignite group_id m args-dic)]
             (if-not (Strings/isNullOrEmpty fn-line)
-                (apply (eval (read-string (format "(fn [ignite group_id %s]\n     %s)" (str/join " " (keys (-> args-dic :dic))) fn-line))) (concat [ignite group_id] (vals (-> args-dic :dic)))))))
+                (apply (eval (read-string (format "(fn [ignite group_id %s]\n     %s)" (str/join " " (keys (-> args-dic :dic))) fn-line))) (concat [ignite group_id] (get-vals (vals (-> args-dic :dic))))))))
     )
 
 (defn func-link-to-clj [ignite group_id [f & r] args-dic]

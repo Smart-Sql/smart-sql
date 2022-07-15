@@ -311,7 +311,7 @@
                     (loop [[f & r] args lst-ps [group_id] lst-args []]
                         (if (some? f)
                             (if (contains? (-> dic-args :dic) f)
-                                (recur r (conj lst-ps "?") (conj lst-args (get (-> dic-args :dic) f)))
+                                (recur r (conj lst-ps "?") (conj lst-args (first (get (-> dic-args :dic) f))))
                                 (recur r (conj lst-ps f) lst-args))
                             {:sql (str/join ["my_invoke_link('" sql "'," (str/join "," lst-ps) ")"]) :args lst-args}))))
             (item-to-line [dic-args m]
@@ -320,7 +320,7 @@
                         (and (not (Strings/isNullOrEmpty table_alias)) (not (nil? alias)) (not (Strings/isNullOrEmpty alias))) {:sql (str/join [table_alias "." item_name " as " alias]) :args nil}
                         (and (not (Strings/isNullOrEmpty table_alias)) (Strings/isNullOrEmpty alias)) {:sql (str/join [table_alias "." item_name]) :args nil}
                         (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? (-> dic-args :dic) item_name)
-                                                                                                    {:sql "?" :args [(get (-> dic-args :dic) item_name)]}
+                                                                                                    {:sql "?" :args [(first (get (-> dic-args :dic) item_name))]}
                                                                                                     {:sql item_name :args nil}
                                                                                                     )
                         )))
@@ -362,7 +362,7 @@
                      {:sql (str/join " " lst_rs) :args (filter #(not (nil? %)) lst-args)})))]
         (select-to-sql ignite group_id dic-args ast)))
 
-
+; {:dic {"?$p_s_5_c_f_n$#c1894" ["myy" java.lang.String]}, :keys ["?$p_s_5_c_f_n$#c1894"]}
 (defn my-ast-to-sql [ignite group_id dic-args ast]
     (let [my-ast (re-select-ast ignite group_id ast)]
         (ast_to_sql ignite group_id dic-args my-ast)))

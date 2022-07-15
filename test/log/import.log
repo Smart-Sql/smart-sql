@@ -30,7 +30,7 @@
         (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
         (cn.plus.model.ddl MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyUpdateViews)
         (org.gridgain.dml.util MyCacheExUtil)
-        (cn.plus.model.db MyScenesCache)
+        (cn.plus.model.db MyScenesCache MyScenesCachePk)
         (org.apache.ignite.configuration CacheConfiguration)
         (org.apache.ignite.cache CacheMode CacheAtomicityMode)
         (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
