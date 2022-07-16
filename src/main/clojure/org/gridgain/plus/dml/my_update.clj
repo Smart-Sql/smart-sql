@@ -110,7 +110,7 @@
           (and (some? where_line) (some? v_where_line)) (concat ["("] where_line [") and ("] v_where_line [")"])
           ))
 
-(defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
     (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
             true
@@ -123,12 +123,31 @@
                     )))
         ))
 
-(defn my-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
+        (let [[where-lst args] (my-where-line where_line args-dic)]
+            (cond (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0)) {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+                  :else
+                  (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
+                      (if (nil? (my-has-authority-item items v_items))
+                          {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where-lst v_where_line) :args args}
+                          {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
+                      {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+                      )))
+        ))
+
+(defn my-no-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
     (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
             true
             (let [[where-lst args] (my-where-line where_line args-dic)]
                 {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}))
+        ))
+
+(defn my-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
+        (let [[where-lst args] (my-where-line where_line args-dic)]
+            {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
         ))
 
 (defn my-items
@@ -209,8 +228,24 @@
         (let [{query-line :query-line query-lst :query-lst dic :dic} (my-pk-def-map ignite group_id (-> obj :schema_name) (-> obj :table_name) obj)]
             {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst query-lst :sql (format "select %s from %s.%s where %s" query-line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) dic [])})))
 
+(defn my_update_obj-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (my-authority ignite group_id lst-sql args-dic)]
+        (if (and (boolean? m) (true? m))
+            true
+            (if-let [us (my_update_query_sql ignite group_id m)]
+                us
+                (throw (Exception. "更新语句字符串错误！"))))
+        (throw (Exception. "更新语句字符串错误！"))))
+
 (defn my_update_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
+        (if-let [us (my_update_query_sql ignite group_id m)]
+            us
+            (throw (Exception. "更新语句字符串错误！")))
+        (throw (Exception. "更新语句字符串错误！"))))
+
+(defn my_update_obj-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
         (if (and (boolean? m) (true? m))
             true
             (if-let [us (my_update_query_sql ignite group_id m)]
@@ -220,11 +255,9 @@
 
 (defn my_update_obj-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
-        (if (and (boolean? m) (true? m))
-            true
-            (if-let [us (my_update_query_sql ignite group_id m)]
-                us
-                (throw (Exception. "更新语句字符串错误！"))))
+        (if-let [us (my_update_query_sql ignite group_id m)]
+            us
+            (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))
 
 
