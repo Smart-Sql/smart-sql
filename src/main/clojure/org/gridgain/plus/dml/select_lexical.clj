@@ -518,6 +518,7 @@
           (is-eq? func-name "nth") "nth"
           (is-eq? func-name "count") "count"
           (is-eq? func-name "concat") "my-lexical/my-concat"
+          (is-eq? func-name "contains") "my-lexical/is-contains?"
           (is-eq? func-name "put") ".put"
           (is-eq? func-name "get") "my-lexical/map-list-get"
           (is-eq? func-name "remove") "my-lexical/list-remove"
@@ -582,6 +583,10 @@
           (is-eq? func-name "trim") "MyFunction/trim"
           (is-eq? func-name "translate") "MyFunction/translate"
           (is-eq? func-name "avg") "MyFunction/my-avg"
+          (is-eq? func-name "tolowercase") "str/lower-case"
+          (is-eq? func-name "lowercase") "str/lower-case"
+          (is-eq? func-name "toUpperCase") "str/upper-case"
+          (is-eq? func-name "uppercase") "str/upper-case"
           (is-eq? func-name "show_msg") "my-lexical/my-show-msg"
           :else
           (str/lower-case func-name)
