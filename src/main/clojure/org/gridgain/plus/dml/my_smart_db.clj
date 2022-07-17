@@ -148,11 +148,16 @@
         (let [args-dic (args-to-dic args)]
             (let [insert_obj (my-insert/my_insert_obj-no-authority ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
                 (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))
+                    (if (my-lexical/is-eq? (-> insert_obj :schema_name) "MY_META")
+                        (MyLogCache. (str/lower-case (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT))
+                        (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))
+                    )
                 ))
         (let [insert_obj (my-insert/my_insert_obj-no-authority ignite group_id (my-lexical/to-back sql))]
             (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT)))
+                (if (my-lexical/is-eq? (-> insert_obj :schema_name) "MY_META")
+                    (MyLogCache. (str/lower-case (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))
+                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))))
             ))
     )
 
@@ -165,7 +170,9 @@
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
                         (if-let [row (.next it)]
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE))))
+                            (if (my-lexical/is-eq? schema_name "MY_META")
+                                (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE))))
+                                (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE)))))
                             )
                         lst-rs))))
         (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) []) {})]
@@ -174,8 +181,9 @@
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))
-                        )
+                        (if (my-lexical/is-eq? schema_name "MY_META")
+                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))
+                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))))
                     lst-rs)))
         ))
 
@@ -188,8 +196,9 @@
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
                         (if-let [row (.next it)]
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE))))
-                            )
+                            (if (my-lexical/is-eq? schema_name "MY_META")
+                                (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE))))
+                                (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE))))))
                         lst-rs))))
         (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj-authority ignite group_id (get-args-to-lst (my-lexical/to-back sql) []) {})]
             (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
@@ -197,8 +206,9 @@
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))
-                        )
+                        (if (my-lexical/is-eq? schema_name "MY_META")
+                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))
+                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))))
                     lst-rs)))
         ))
 
@@ -211,8 +221,9 @@
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
                         (if-let [row (.next it)]
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
-                            )
+                            (if (my-lexical/is-eq? schema_name "MY_META")
+                                (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
+                                (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))))
                         lst-rs))))
         (let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} (my-delete/my_delete_obj ignite group_id (my-lexical/to-back sql) {})]
             (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
@@ -220,8 +231,9 @@
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
-                        )
+                        (if (my-lexical/is-eq? schema_name "MY_META")
+                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
+                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))))
                     lst-rs)))))
 
 (defn delete-to-cache-no-authority [ignite group_id sql args]
@@ -233,8 +245,9 @@
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
                         (if-let [row (.next it)]
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
-                            )
+                            (if (my-lexical/is-eq? schema_name "MY_META")
+                                (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
+                                (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))))
                         lst-rs))))
         (let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} (my-delete/my_delete_obj-no-authority ignite group_id (my-lexical/to-back sql) {})]
             (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
@@ -242,8 +255,9 @@
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
-                        )
+                        (if (my-lexical/is-eq? schema_name "MY_META")
+                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))
+                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE))))))
                     lst-rs)))))
 
 ; no sql
