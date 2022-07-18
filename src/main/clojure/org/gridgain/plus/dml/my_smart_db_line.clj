@@ -38,75 +38,75 @@
 
 ; 在类似 DBeaver 这种工具中开发用的，一条，几条语句一起执行
 
+(defn my-cache-name [^String schema_name ^String table_name]
+    (if (my-lexical/is-eq? schema_name "MY_META")
+        (str/lower-case table_name)
+        (format "f_%s_%s" (str/lower-case schema_name) (str/lower-case table_name))))
+
 (defn insert-to-cache [ignite group_id lst]
     (let [insert_obj (my-insert/my_insert_obj ignite group_id lst)]
         (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-            (if (my-lexical/is-eq? (-> insert_obj :schema_name) "MY_META")
-                (MyLogCache. (str/lower-case (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))
-                (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT)))
+            (MyLogCache. (my-cache-name (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))
             ))
     )
 
 (defn insert-to-cache-no-authority [ignite group_id lst]
     (let [insert_obj (my-insert/my_insert_obj-no-authority ignite group_id lst)]
         (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-            (if (my-lexical/is-eq? (-> insert_obj :schema_name) "MY_META")
-                (MyLogCache. (str/lower-case (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))
-                (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT)))
+            (MyLogCache. (my-cache-name (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))
             ))
     )
 
 (defn update-to-cache [ignite group_id lst]
     (let [m-obj (my-update/my_update_obj ignite group_id lst {})]
         (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} m-obj]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (if (my-lexical/is-eq? schema_name "MY_META")
-                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (my-smart-db/get-update-key row (filter #(-> % :is-pk) query-lst)) (my-smart-db/get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (my-smart-db/get-update-key row (filter #(-> % :is-pk) query-lst)) (my-smart-db/get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))))
+                        (recur it (conj lst-rs (MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-key row (filter #(-> % :is-pk) query-lst)) (my-smart-db/get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE)))))
                     lst-rs)))))
 
 (defn update-to-cache-no-authority [ignite group_id lst]
     (let [m-obj (my-update/my_update_obj-authority ignite group_id lst {})]
         (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} m-obj]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (if (my-lexical/is-eq? schema_name "MY_META")
-                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (my-smart-db/get-update-key row (filter #(-> % :is-pk) query-lst)) (my-smart-db/get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (my-smart-db/get-update-key row (filter #(-> % :is-pk) query-lst)) (my-smart-db/get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))))
+                        (recur it (conj lst-rs (MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-key row (filter #(-> % :is-pk) query-lst)) (my-smart-db/get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE)))))
                     lst-rs)))))
 
 (defn delete-to-cache [ignite group_id lst]
     (let [m-obj (my-delete/my_delete_obj ignite group_id lst {})]
         (let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} m-obj]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (if (my-lexical/is-eq? schema_name "MY_META")
-                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE))))
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE))))))
+                        (do
+                            (println m-obj)
+                            (println pk_lst)
+                            (println (MyLogCache. table_name schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE)))
+                            (println "**********************")
+                            (recur it (conj lst-rs (MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE)))))
+                        ;(recur it (conj lst-rs (MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE))))
+                        )
                     lst-rs))))
     )
 
 (defn delete-to-cache-no-authority [ignite group_id lst]
     (let [m-obj (my-delete/my_delete_obj-no-authority ignite group_id lst {})]
         (let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} m-obj]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
                     (if-let [row (.next it)]
-                        (if (my-lexical/is-eq? schema_name "MY_META")
-                            (recur it (conj lst-rs (MyLogCache. table_name schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE))))
-                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE))))))
+                        (recur it (conj lst-rs (MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE)))))
                     lst-rs)))))
 
 (defn query-sql-no-args [ignite group_id lst]

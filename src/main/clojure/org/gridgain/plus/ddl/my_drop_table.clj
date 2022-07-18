@@ -106,7 +106,10 @@
     (if-let [m (get_drop_table_obj sql_line)]
         (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
             (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (drop-table-obj ignite dataset_name sql_line)]
-                 (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql}))
+                (println dataset_name)
+                (println sql_line)
+                (println {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql})
+                (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql}))
             (throw (Exception. "没有执行语句的权限！")))
         ))
 

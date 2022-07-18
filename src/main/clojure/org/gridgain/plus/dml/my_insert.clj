@@ -79,7 +79,7 @@
                         (recur r (conj lst f))
                         (recur r lst))
                     lst))]
-        (let [my-lst (my-lexical/get-insert-code ignite schema_name table_name group_id)]
+        (if-let [my-lst (my-lexical/get-insert-code ignite schema_name table_name group_id)]
             (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest (rest my-lst)))]
                 (let [vs (get_insert_view_items vs-line #{})]
                     {:schema_name schema_name :table_name table_name :v-items vs})))))

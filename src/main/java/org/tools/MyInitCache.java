@@ -47,7 +47,7 @@ public class MyInitCache {
         cfg_my_update_view_ast.setCacheMode(CacheMode.REPLICATED);
         cfg_my_update_view_ast.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         //cfg_my_update_view_ast.setDataRegionName("40MB_Region_Eviction");
-        cfg_my_update_view_ast.setName("my_insert_view_ast");
+        cfg_my_update_view_ast.setName("my_update_view_ast");
         cfg_my_update_view_ast.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_my_update_view_ast);
 
@@ -55,7 +55,7 @@ public class MyInitCache {
         cfg_my_delete_view_ast.setCacheMode(CacheMode.REPLICATED);
         cfg_my_delete_view_ast.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         //cfg_my_delete_view_ast.setDataRegionName("40MB_Region_Eviction");
-        cfg_my_delete_view_ast.setName("my_insert_view_ast");
+        cfg_my_delete_view_ast.setName("my_delete_view_ast");
         cfg_my_delete_view_ast.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_my_delete_view_ast);
     }

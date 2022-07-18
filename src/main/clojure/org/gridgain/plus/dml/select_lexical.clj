@@ -143,8 +143,8 @@
 ; 剔除单括号或双括号
 (defn get_str_value [^String line]
     (cond (and (= (first line) \') (= (last line) \')) (str/join (concat ["\""] (drop-last (rest line)) ["\""]))
-          ;(and (= (first line) \") (= (last line) \")) (str/join (drop-last (rest line)))
-          (and (= (first line) \') (= (last line) \')) (str/join (concat ["\""] (drop-last (rest line)) ["\""]))
+          (and (= (first line) \") (= (last line) \")) (str/join (drop-last (rest line)))
+          ;(and (= (first line) \') (= (last line) \')) (str/join (concat ["\""] (drop-last (rest line)) ["\""]))
           ;(and (= (first line) \") (= (last line) \")) (str/join (drop-last (rest line)))
           :else
           line
@@ -595,6 +595,11 @@
 ;(defn my-concat [[f & r]]
 ;    (cond (string? (first f)) (MyFunction/concat lst)))
 
+(defn my-cache-name [^String schema_name ^String table_name]
+    (if (my-lexical/is-eq? schema_name "MY_META")
+        (str/lower-case table_name)
+        (format "f_%s_%s" (str/lower-case schema_name) (str/lower-case table_name))))
+
 (defn not-empty? [lst]
     (not (empty? lst)))
 
@@ -654,8 +659,8 @@
 
 (defn get-schema
     ([lst] (if-let [m (get-schema lst [] [])]
-               (cond (= (count m) 1) {:schema_name "" :table_name (first m)}
-                     (= (count m) 2) {:schema_name (first m) :table_name (second m)}
+               (cond (= (count m) 1) {:schema_name "" :table_name (str/trim (first m))}
+                     (= (count m) 2) {:schema_name (str/trim (first m)) :table_name (str/trim (second m))}
                      :else
                      (throw (Exception. "语句错误，表名不符合要求！"))
                      )

@@ -32,7 +32,7 @@ public class MyTableItem implements Serializable {
         this.column_type = column_type;
         this.not_null = not_null;
         this.pkid = pkid;
-        this.comment = comment;
+        this.comment = this.toComment(comment);
         //this.comment_len = comment_len;
         this.auto_increment = auto_increment;
         this.default_value = default_value;
@@ -50,7 +50,7 @@ public class MyTableItem implements Serializable {
         this.column_type = column_type;
         this.not_null = not_null;
         this.pkid = pkid;
-        this.comment = comment;
+        this.comment = this.toComment(comment);
         //this.comment_len = comment_len;
         this.auto_increment = auto_increment;
         this.default_value = default_value;
@@ -58,6 +58,36 @@ public class MyTableItem implements Serializable {
 
     public MyTableItem()
     {}
+
+    public String toComment(final String line)
+    {
+        char[] lst_chr = line.toCharArray();
+        if (lst_chr != null && lst_chr.length > 1)
+        {
+            int length = lst_chr.length;
+            if (lst_chr[0] == '"' && lst_chr[length - 1] == '"')
+            {
+                char[] lst = new char[length - 2];
+                for (int i = 1; i < length - 1; i++)
+                {
+                    lst[i - 1] = lst_chr[i];
+                }
+                String items = new String(lst);
+                return items;
+            }
+            else if (lst_chr[0] == '\'' && lst_chr[length - 1] == '\'')
+            {
+                char[] lst = new char[length - 2];
+                for (int i = 1; i < length - 1; i++)
+                {
+                    lst[i - 1] = lst_chr[i];
+                }
+                String items = new String(lst);
+                return items;
+            }
+        }
+        return line;
+    }
 
     public Boolean getNot_null() {
         return not_null;
@@ -114,7 +144,7 @@ public class MyTableItem implements Serializable {
     }
 
     public void setComment(String comment) {
-        this.comment = comment;
+        this.comment = this.toComment(comment);
     }
 
     /*

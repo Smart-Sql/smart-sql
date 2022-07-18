@@ -10,6 +10,7 @@
              (org.tools MyConvertUtil KvSql MyDbUtil)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType MyLog)
              (org.gridgain.dml.util MyCacheExUtil)
+             (cn.plus.model.ddl MySchemaTable)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (java.util List ArrayList Hashtable Date Iterator)
              )
@@ -49,9 +50,20 @@
 (defn my_view_db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
     (get_table_name (my-lexical/get-delete-code ignite schema_name table_name group_id)))
 
-(defn my_delete_query_sql [^Ignite ignite ^Long group_id obj]
+(defn my_delete_query_sql-0 [^Ignite ignite ^Long group_id obj]
     (if-let [{pk_line :line lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite group_id (str/lower-case (-> obj :schema_name)) (str/lower-case (-> obj :table_name)))]
         {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :args (-> obj :args) :sql (format "select %s from %s.%s where %s" pk_line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst (get_pk_lst lst_pk dic [])}))
+
+(defn my_delete_query_sql [^Ignite ignite ^Long group_id obj]
+    (if-let [{pk :pk data :data} (.get (.cache ignite "table_ast") (MySchemaTable. (-> obj :schema_name) (-> obj :table_name)))]
+        (letfn [(get_pk_line [[f & r] lst]
+                    (if (some? f)
+                        (recur r (conj lst (-> f :column_name)))
+                        (if-not (empty? lst)
+                            (str/join "," lst)
+                            "")))]
+            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :args (-> obj :args) :sql (format "select %s from %s.%s where %s" (get_pk_line pk []) (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst pk})))
+
 
 (defn my-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [{schema_name :schema_name table_name :table_name where_lst :where_lst} (get_table_name lst-sql)]

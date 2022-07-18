@@ -1,5 +1,7 @@
 package cn.plus.model.ddl;
 
+import com.google.common.base.Strings;
+
 import java.io.Serializable;
 
 public class MySchemaTable implements Serializable {
@@ -10,8 +12,13 @@ public class MySchemaTable implements Serializable {
 
     public MySchemaTable(final String schema_name, final String table_name)
     {
-        this.schema_name = schema_name;
-        this.table_name = table_name;
+        if (!Strings.isNullOrEmpty(schema_name)) {
+            this.schema_name = schema_name.toLowerCase();
+        }
+
+        if (!Strings.isNullOrEmpty(table_name)) {
+            this.table_name = table_name.toLowerCase();
+        }
     }
 
     public MySchemaTable()

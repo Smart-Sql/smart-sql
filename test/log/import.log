@@ -18,6 +18,7 @@
     '[org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
     '[org.gridgain.plus.sql.my-super-sql :as my-super-sql]
     '[org.gridgain.plus.dml.my-smart-db :as my-smart-db]
+    '[org.gridgain.plus.dml.my-smart-db-line :as my-smart-db-line]
     '[org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
@@ -27,8 +28,9 @@
         (org.gridgain.smart MyVar)
         (com.google.common.base Strings)
         (org.tools MyConvertUtil KvSql)
+        (org.gridgain.smart.view MyViewAstPK)
         (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
-        (cn.plus.model.ddl MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyUpdateViews)
+        (cn.plus.model.ddl MySchemaTable MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyUpdateViews)
         (org.gridgain.dml.util MyCacheExUtil)
         (cn.plus.model.db MyScenesCache MyScenesCachePk)
         (org.apache.ignite.configuration CacheConfiguration)
