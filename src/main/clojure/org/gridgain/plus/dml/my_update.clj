@@ -18,6 +18,51 @@
         ;:methods [^:static [my_update_run_log [org.apache.ignite.Ignite Long String] java.util.ArrayList]]
         ))
 
+(defn my-where-items [ps]
+    (letfn [(even-items [ps]
+                (let [my-count (count ps)]
+                    (loop [i 0 flag true]
+                        (if (< i (- my-count 1))
+                            (if (even? (+ i 1))
+                                (if-not (and (contains? (nth ps i) :and_or_symbol) (= (-> (nth ps i) :and_or_symbol) "and"))
+                                    (recur my-count false)
+                                    (recur (+ i 1) flag))
+                                (recur (+ i 1) flag))
+                            flag)))
+                )
+            (get-where-items [ps]
+                (cond (and (my-lexical/is-seq? ps) (= (count ps) 3) (contains? (second ps) :comparison_symbol) (= (-> (second ps) :comparison_symbol) "=") (contains? (first ps) :const) (false? (-> (first ps) :const))) [{:key (first ps) :value (last ps)}]
+                      (and (my-lexical/is-seq? ps) (my-lexical/is-seq? (first ps)) (even-items ps)) (loop [[f & r] ps lst []]
+                                                                                                        (if (some? f)
+                                                                                                            (if (my-lexical/is-seq? f)
+                                                                                                                (let [m-item (get-where-items f)]
+                                                                                                                    (recur r (conj lst m-item)))
+                                                                                                                (recur r lst)
+                                                                                                                )
+                                                                                                            lst))
+                      (and (map? ps) (contains? ps :parenthesis)) (get-where-items (-> ps :parenthesis)))
+                )]
+        (let [lst-ps (get-where-items ps)]
+            (if (empty? (filter #(nil? %) lst-ps))
+                lst-ps
+                nil))))
+
+(defn is-column_name [column_name where-items]
+    (loop [[f & r] where-items flag nil]
+        (if (some? f)
+            (if (my-lexical/is-eq? (-> f :key :item_name) column_name)
+                (recur nil f)
+                (recur r flag))
+            flag)))
+
+(defn get-k-v [pk where-items]
+    (loop [[f & r] pk lst []]
+        (if (some? f)
+            (if-let [m (is-column_name (-> f :column_name) where-items)]
+                (recur r (conj lst (assoc m :column_type (-> f :column_type))))
+                (recur nil nil))
+            lst)))
+
 (defn update-table
     ([lst] (update-table lst nil [] []))
     ([[f & r] my-set stack lst]
@@ -130,9 +175,10 @@
                   :else
                   (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
                       (if (nil? (my-has-authority-item items v_items))
-                          {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where-lst v_where_line) :args args}
-                          {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
-                      {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+                          (let [where-lst (merge_where where-lst v_where_line)]
+                              {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
+                          {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
+                      {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args}
                       )))
         ))
 
@@ -216,7 +262,7 @@
         (let [query-lst (my-query-lst my-obj lst-items)]
             {:query-line (my-query-line query-lst) :query-lst query-lst :dic (-> my-obj :dic)})))
 
-(defn my_update_query_sql [^Ignite ignite ^Long group_id obj]
+(defn my_update_query_sql-0 [^Ignite ignite ^Long group_id obj]
     (letfn [(get_items_type
                 ([items dic] (get_items_type items dic []))
                 ([[f & r] dic lst]
@@ -227,6 +273,35 @@
                      lst)))]
         (let [{query-line :query-line query-lst :query-lst dic :dic} (my-pk-def-map ignite group_id (-> obj :schema_name) (-> obj :table_name) obj)]
             {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst query-lst :sql (format "select %s from %s.%s where %s" query-line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) dic [])})))
+
+(defn my_update_query_sql [^Ignite ignite ^Long group_id obj]
+    (if-let [{pk :pk data :data} (.get (.cache ignite "table_ast") (MySchemaTable. (-> obj :schema_name) (-> obj :table_name)))]
+        (letfn [(get_pk_line [[f & r] lst]
+                    (if (some? f)
+                        (recur r (conj lst (-> f :column_name)))
+                        (if-not (empty? lst)
+                            (str/join "," lst)
+                            "")))
+                (pk-where [pk where-objs]
+                    (get-k-v pk (my-where-items where-objs)))
+                (get-column-type [item_name data]
+                    (loop [[f & r] data column-type nil]
+                        (if (some? f)
+                            (if (my-lexical/is-eq? (-> f :column_name) item_name)
+                                (recur nil (-> f :column_type))
+                                (recur r column-type))
+                            column-type)))
+                (get_items_type [items data]
+                    (loop [[f & r] items lst []]
+                        (if (some? f)
+                            (recur r (conj lst (assoc f :type (get-column-type (-> f :item_name) data))))
+                            lst)))
+                ]
+            (if-let [k-v (pk-where pk (-> obj :where-objs))]
+                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :k-v k-v :args (-> obj :args) :items (get_items_type (-> obj :items) data)}
+                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :sql (format "select %s from %s.%s where %s" (get_pk_line pk []) (-> obj :schema_name) (-> obj :table_name) (my-select-plus/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) data)})
+            ))
+    )
 
 (defn my_update_obj-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]

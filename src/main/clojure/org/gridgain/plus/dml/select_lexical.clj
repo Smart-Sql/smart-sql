@@ -596,7 +596,7 @@
 ;    (cond (string? (first f)) (MyFunction/concat lst)))
 
 (defn my-cache-name [^String schema_name ^String table_name]
-    (if (my-lexical/is-eq? schema_name "MY_META")
+    (if (is-eq? schema_name "MY_META")
         (str/lower-case table_name)
         (format "f_%s_%s" (str/lower-case schema_name) (str/lower-case table_name))))
 

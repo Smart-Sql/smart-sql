@@ -10,7 +10,6 @@
              (cn.plus.model.ddl MySchemaTable)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType MyLog)
              (org.gridgain.dml.util MyCacheExUtil)
-             (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.util List ArrayList)
              (org.log MyCljLogger))
     (:gen-class

@@ -11,7 +11,6 @@
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType MyLog)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.ddl MySchemaTable)
-             (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (java.util List ArrayList Hashtable Date Iterator)
              )
     (:gen-class
