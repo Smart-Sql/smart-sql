@@ -6,6 +6,7 @@
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
+             (cn.plus.model.ddl MySchemaTable MyDataSet)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              )
     (:gen-class
@@ -276,7 +277,32 @@
 
 (defn my_update_query_sql [^Ignite ignite ^Long group_id obj]
     (if-let [{pk :pk data :data} (.get (.cache ignite "table_ast") (MySchemaTable. (-> obj :schema_name) (-> obj :table_name)))]
-        (letfn [(get_pk_line [[f & r] lst]
+        (letfn [(get-column [[f & r] column_name]
+                    (if (some? f)
+                        (if (my-lexical/is-eq? (-> f :column_name) column_name)
+                            (-> f :column_type)
+                            (recur r column_name))
+                        nil))
+                (get-column_type [pk data column_name]
+                    (if-let [ct (get-column pk column_name)]
+                        ct
+                        (get-column data column_name)))
+                (merge-pk-where-items [pk data obj]
+                    (if-let [lst-items (my-items (-> obj :items))]
+                        (loop [[f & r] (concat pk lst-items) index 0 rs [] ht #{}]
+                            (if (some? f)
+                                (cond (and (map? f) (contains? f :column_name) (not (contains? ht (-> f :column_name)))) (recur r (+ index 1) (conj rs {:column_name (-> f :column_name) :column_type (-> f :column_type) :index index :is-pk true}) (conj ht (-> f :column_name)))
+                                      (and (string? f) (not (contains? ht f))) (recur r (+ index 1) (conj rs {:column_name f :column_type (get-column_type pk data f) :index index :is-pk false}) (conj ht f))
+                                      :else
+                                      (recur r (+ index 1) rs ht))
+                                rs))
+                        (loop [[f & r] pk index 0 rs [] ht #{}]
+                            (if (some? f)
+                                (if-not (contains? ht (-> f :column_name))
+                                    (recur r (+ index 1) (conj rs {:column_name (-> f :column_name) :column_type (-> f :column_type) :index index :is-pk true}) (conj ht (-> f :column_name)))
+                                    (recur r (+ index 1) rs ht))
+                                rs))))
+                (get_pk_line [[f & r] lst]
                     (if (some? f)
                         (recur r (conj lst (-> f :column_name)))
                         (if-not (empty? lst)
@@ -297,9 +323,10 @@
                             (recur r (conj lst (assoc f :type (get-column-type (-> f :item_name) data))))
                             lst)))
                 ]
-            (if-let [k-v (pk-where pk (-> obj :where-objs))]
-                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :k-v k-v :args (-> obj :args) :items (get_items_type (-> obj :items) data)}
-                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :sql (format "select %s from %s.%s where %s" (get_pk_line pk []) (-> obj :schema_name) (-> obj :table_name) (my-select-plus/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) data)})
+            (let [pk-where-item (merge-pk-where-items pk data obj)]
+                (if-let [k-v (pk-where pk (-> obj :where-objs))]
+                    {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :k-v k-v :args (-> obj :args) :query-lst pk-where-item :items (get_items_type (-> obj :items) data)}
+                    {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst pk-where-item :sql (format "select %s from %s.%s where %s" (get_pk_line pk-where-item []) (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) data)}))
             ))
     )
 

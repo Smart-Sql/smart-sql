@@ -98,6 +98,24 @@
             (if (some? f)
                 (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (.get row (-> f :index)))))
                 lst-rs))))
+
+(defn get-update-k-v-key [ignite group_id lst-key args-dic]
+    (if (= (count lst-key) 1)
+        (let [f (first lst-key)]
+            (if (true? (-> f :value :const))
+                (my-lexical/get_jave_vs (-> f :column_type) (-> f :value :item_name))
+                (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic))))
+        (loop [[f & r] lst-key lst-rs []]
+            (if (some? f)
+                (recur r (conj lst-rs (MyKeyValue. (-> f :key :item_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :value :item_value)) args-dic)))))
+                lst-rs))))
+
+(defn get-update-k-v-value [ignite group_id args-dic items]
+    (loop [[f & r] items lst []]
+        (if (some? f)
+            (recur r (conj lst (MyKeyValue. (-> f :item_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (-> f :item_obj) args-dic))))
+            lst)))
+
 (defn re-update-args-dic [row data-lst args-dic]
     (cond (empty? data-lst) args-dic
           :else
