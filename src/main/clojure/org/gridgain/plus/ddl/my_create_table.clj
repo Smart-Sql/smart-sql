@@ -346,8 +346,8 @@
         my_items))
 
 (defn get_template [^Ignite ignite ^String table_name ^String schema_name ^String data_set_name ^String template]
-    (cond (and (= schema_name "") (not (= data_set_name ""))) (format "%scache_name=f_%s_%s\"" (get_tmp_line ignite template) data_set_name table_name)
-          (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) (format "%scache_name=f_%s_%s\"" (get_tmp_line ignite template) schema_name table_name)
+    (cond (and (= schema_name "") (not (= data_set_name ""))) (format "%scache_name=f_%s_%s\"" (get_tmp_line ignite template) (str/lower-case data_set_name) (str/lower-case table_name))
+          (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) (format "%scache_name=f_%s_%s\"" (get_tmp_line ignite template) (str/lower-case schema_name) (str/lower-case table_name))
           :else
           (throw (Exception. "没有创建表语句的权限！"))
           )

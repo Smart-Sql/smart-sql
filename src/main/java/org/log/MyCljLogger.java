@@ -34,7 +34,7 @@ public class MyCljLogger {
         {}
     }
 
-    public static void showParams(Object... ps)
+    public static void showParams_obj(Object... ps)
     {
         System.out.println(ps);
     }

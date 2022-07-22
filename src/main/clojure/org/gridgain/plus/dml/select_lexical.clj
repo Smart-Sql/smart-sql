@@ -785,7 +785,8 @@
     (letfn [(get_str_value [line]
                 (if (string? line)
                     (cond (not (nil? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$" line))) (str/join (drop-last (rest line)))
-                          (re-find #"^\'\'$" line) ""
+                          (re-find #"^\'\'$" line) (str/join (drop-last (rest line)))
+                          (re-find #"^\"\"$" line) (str/join (drop-last (rest line)))
                           :else line
                           )
                     line)
@@ -795,10 +796,14 @@
               (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble (get_str_value column_value))
               (re-find #"^(?i)SMALLINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)SMALLINT\(\s*\d+\s*\)$|^(?i)SMALLINT$" column_type) (MyConvertUtil/ConvertToInt (get_str_value column_value))
               (re-find #"^(?i)TINYINT$" column_type) (MyConvertUtil/ConvertToInt (get_str_value column_value))
-              (re-find #"^(?i)varchar$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
-              (re-find #"^(?i)varchar\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
-              (re-find #"^(?i)char$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
-              (re-find #"^(?i)char\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
+              (re-find #"^(?i)varchar$" column_type) (let [vs (get_str_value column_value)]
+                                                         (MyConvertUtil/ConvertToString vs))
+              (re-find #"^(?i)varchar\(\d+\)$" column_type) (let [vs (get_str_value column_value)]
+                                                                (MyConvertUtil/ConvertToString vs))
+              (re-find #"^(?i)char$" column_type) (let [vs (get_str_value column_value)]
+                                                      (MyConvertUtil/ConvertToString vs))
+              (re-find #"^(?i)char\(\d+\)$" column_type) (let [vs (get_str_value column_value)]
+                                                             (MyConvertUtil/ConvertToString vs))
               (re-find #"^(?i)BOOLEAN$" column_type) (MyConvertUtil/ConvertToBoolean (get_str_value column_value))
               (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (MyConvertUtil/ConvertToLong (get_str_value column_value))
               (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (get_str_value column_value))

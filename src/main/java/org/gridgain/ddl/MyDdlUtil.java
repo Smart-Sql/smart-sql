@@ -4,6 +4,7 @@ import clojure.lang.Keyword;
 import clojure.lang.PersistentArrayMap;
 import cn.plus.model.MyCacheEx;
 import cn.plus.model.MyNoSqlCache;
+import cn.plus.model.ddl.MySchemaTable;
 import cn.smart.service.IMyLog;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
