@@ -36,7 +36,8 @@
 
 (defn get-item-line [[f & r]]
     (if (and (= f "(") (= (last r) ")"))
-        (reverse (rest (reverse r)))
+        ;(reverse (rest (reverse r)))
+        (drop-last r)
         (throw (Exception. "insert 语句错误！"))))
 
 (defn insert-body

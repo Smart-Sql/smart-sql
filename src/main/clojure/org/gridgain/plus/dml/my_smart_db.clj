@@ -104,10 +104,19 @@
         (let [f (first lst-key)]
             (if (true? (-> f :value :const))
                 (my-lexical/get_jave_vs (-> f :column_type) (-> f :value :item_name))
-                (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic))))
+                (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back (-> f :value :item_name))) args-dic))))
         (loop [[f & r] lst-key lst-rs []]
             (if (some? f)
-                (recur r (conj lst-rs (MyKeyValue. (-> f :key :item_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :value :item_value)) args-dic)))))
+                (do
+                    (println (my-select-plus/sql-to-ast (my-lexical/to-back (-> f :value :item_name))))
+                    (let [ms (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back (-> f :value :item_name))) args-dic)]
+                        (println (type ms))
+                        (println ms)
+                        (println (-> f :column_type))
+                        (println (my-lexical/get_jave_vs (-> f :column_type) ms))
+                        (println (type (my-lexical/get_jave_vs (-> f :column_type) ms)))
+                        (println "**********************"))
+                    (recur r (conj lst-rs (MyKeyValue. (-> f :key :item_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back (-> f :value :item_name))) args-dic))))))
                 lst-rs))))
 
 (defn get-update-k-v-value [ignite group_id args-dic items]

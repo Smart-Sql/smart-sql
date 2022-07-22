@@ -104,7 +104,9 @@
     (if (and (= (first name) \:) (contains? dic_paras (str/join (rest name))))
         (letfn [(str_item_value [item_value]
                     (if (or (and (= (first item_value) \') (= (last item_value) \')) (and (= (first item_value) \") (= (last item_value) \")))
-                        (str/join (reverse (rest (reverse (rest item_value)))))))]
+                        ;(str/join (reverse (rest (reverse (rest item_value)))))
+                        (str/join (drop-last (rest item_value)))
+                        ))]
             (let [{value :value type :type} (get dic_paras (str/join (rest name)))]
                 (cond (= Integer type) (MyConvertUtil/ConvertToInt value)
                       (= String type) (str_item_value value)
@@ -195,7 +197,8 @@
     ([[f & r] lst]
      (if (some? f)
          (if (and (= (first f) (last f)) (= (first f) \"))
-             (recur r (conj lst (format "'%s'" (str/join (reverse (rest (reverse (rest f))))))))
+             ;(recur r (conj lst (format "'%s'" (str/join (reverse (rest (reverse (rest f))))))))
+             (recur r (conj lst (format "'%s'" (str/join (drop-last (rest f))))))
              (recur r (conj lst f))
              )
          lst)))
@@ -206,7 +209,8 @@
     ([[f & r] lst]
      (if (some? f)
          (if (and (= (first f) (last f)) (= (first f) \'))
-             (recur r (conj lst (format "\"%s\"" (str/join (reverse (rest (reverse (rest f))))))))
+             ;(recur r (conj lst (format "\"%s\"" (str/join (reverse (rest (reverse (rest f))))))))
+             (recur r (conj lst (format "\"%s\"" (str/join (drop-last (rest f))))))
              (recur r (conj lst f))
              )
          lst)))
@@ -780,7 +784,7 @@
 (defn get_jave_vs [column_type column_value]
     (letfn [(get_str_value [line]
                 (if (string? line)
-                    (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (reverse (rest (reverse (rest line)))))
+                    (cond (not (nil? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$" line))) (str/join (drop-last (rest line)))
                           (re-find #"^\'\'$" line) ""
                           :else line
                           )
@@ -1246,10 +1250,12 @@
                            )
                      (if (= (count lst) 3)
                          (if (contains? #{";" "?"} (last lst_rs))
-                             {:userToken (peek lst) :url (str/join (reverse (rest (reverse lst_rs))))}
+                             ;{:userToken (peek lst) :url (str/join (reverse (rest (reverse lst_rs))))}
+                             {:userToken (peek lst) :url (str/join (drop-last lst_rs))}
                              {:userToken (peek lst) :url (str/join lst_rs)})
                          (if (contains? #{";" "?"} (last lst_rs))
-                             {:userToken "" :url (str/join (str/join (reverse (rest (reverse lst_rs)))))}
+                             ;{:userToken "" :url (str/join (str/join (reverse (rest (reverse lst_rs)))))}
+                             {:userToken "" :url (str/join (str/join (drop-last lst_rs)))}
                              {:userToken "" :url (str/join lst_rs)})))))]
         (loop [[f & r] (to-back url) lst []]
             (if (some? f)

@@ -61,7 +61,10 @@
                         (if-not (empty? lst)
                             (str/join "," lst)
                             "")))]
-            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :args (-> obj :args) :sql (format "select %s from %s.%s where %s" (get_pk_line pk []) (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst pk})))
+            (if-let [k-v (my-update/pk-where pk (my-select/sql-to-ast (-> obj :where_lst)))]
+                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :args (-> obj :args) :k-v k-v}
+                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :args (-> obj :args) :sql (format "select %s from %s.%s where %s" (get_pk_line pk []) (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst pk})
+            )))
 
 
 (defn my-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
