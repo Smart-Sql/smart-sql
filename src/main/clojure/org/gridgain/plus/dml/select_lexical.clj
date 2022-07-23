@@ -782,7 +782,7 @@
           ))
 
 (defn get_jave_vs [column_type column_value]
-    (letfn [(get_str_value [line]
+    (letfn [(get_inner_str_value [line]
                 (if (string? line)
                     (cond (not (nil? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$" line))) (str/join (drop-last (rest line)))
                           (re-find #"^\'\'$" line) (str/join (drop-last (rest line)))
@@ -791,26 +791,26 @@
                           )
                     line)
                 )]
-        (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) (MyConvertUtil/ConvertToInt (get_str_value column_value))
-              (re-find #"^(?i)float$" column_type) (MyConvertUtil/ConvertToDouble (get_str_value column_value))
-              (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble (get_str_value column_value))
-              (re-find #"^(?i)SMALLINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)SMALLINT\(\s*\d+\s*\)$|^(?i)SMALLINT$" column_type) (MyConvertUtil/ConvertToInt (get_str_value column_value))
-              (re-find #"^(?i)TINYINT$" column_type) (MyConvertUtil/ConvertToInt (get_str_value column_value))
-              (re-find #"^(?i)varchar$" column_type) (let [vs (get_str_value column_value)]
+        (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) (MyConvertUtil/ConvertToInt (get_inner_str_value column_value))
+              (re-find #"^(?i)float$" column_type) (MyConvertUtil/ConvertToDouble (get_inner_str_value column_value))
+              (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble (get_inner_str_value column_value))
+              (re-find #"^(?i)SMALLINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)SMALLINT\(\s*\d+\s*\)$|^(?i)SMALLINT$" column_type) (MyConvertUtil/ConvertToInt (get_inner_str_value column_value))
+              (re-find #"^(?i)TINYINT$" column_type) (MyConvertUtil/ConvertToInt (get_inner_str_value column_value))
+              (re-find #"^(?i)varchar$" column_type) (let [vs (get_inner_str_value column_value)]
                                                          (MyConvertUtil/ConvertToString vs))
-              (re-find #"^(?i)varchar\(\d+\)$" column_type) (let [vs (get_str_value column_value)]
+              (re-find #"^(?i)varchar\(\d+\)$" column_type) (let [vs (get_inner_str_value column_value)]
                                                                 (MyConvertUtil/ConvertToString vs))
-              (re-find #"^(?i)char$" column_type) (let [vs (get_str_value column_value)]
+              (re-find #"^(?i)char$" column_type) (let [vs (get_inner_str_value column_value)]
                                                       (MyConvertUtil/ConvertToString vs))
-              (re-find #"^(?i)char\(\d+\)$" column_type) (let [vs (get_str_value column_value)]
+              (re-find #"^(?i)char\(\d+\)$" column_type) (let [vs (get_inner_str_value column_value)]
                                                              (MyConvertUtil/ConvertToString vs))
-              (re-find #"^(?i)BOOLEAN$" column_type) (MyConvertUtil/ConvertToBoolean (get_str_value column_value))
-              (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (MyConvertUtil/ConvertToLong (get_str_value column_value))
-              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (get_str_value column_value))
-              (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_str_value column_value))
-              (re-find #"^(?i)DECIMAL\(\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_str_value column_value))
-              (re-find #"^(?i)DECIMAL$" column_type) (MyConvertUtil/ConvertToDecimal (get_str_value column_value))
-              (re-find #"^(?i)VARBINARY$" column_type) (get_str_value column_value)
+              (re-find #"^(?i)BOOLEAN$" column_type) (MyConvertUtil/ConvertToBoolean (get_inner_str_value column_value))
+              (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (MyConvertUtil/ConvertToLong (get_inner_str_value column_value))
+              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (get_inner_str_value column_value))
+              (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_inner_str_value column_value))
+              (re-find #"^(?i)DECIMAL\(\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_inner_str_value column_value))
+              (re-find #"^(?i)DECIMAL$" column_type) (MyConvertUtil/ConvertToDecimal (get_inner_str_value column_value))
+              (re-find #"^(?i)VARBINARY$" column_type) (get_inner_str_value column_value)
               :else
               (throw (Exception. (format "数据类型写法有误请确认正确的写法！%s %s" column_type column_value)))
               ))

@@ -20,6 +20,7 @@
     '[org.gridgain.plus.dml.my-smart-db :as my-smart-db]
     '[org.gridgain.plus.dml.my-smart-db-line :as my-smart-db-line]
     '[org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
+    '[org.gridgain.plus.dml.my-load-smart-sql :as my-load-smart-sql]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
     '[clojure.walk :as w])

@@ -1,0 +1,62 @@
+(def code "-- 输入 data set name 获取 data set 的 id\nfunction get_data_set_id(name:string)\n{\n    let id;\n    -- 使用 query_sql 访问数据库读取 id\n    for(r in query_sql(\"select m.id from my_dataset m where m.dataset_name = ?\", name))\n    {\n        -- 读取出来的为序列，因为只有一列，所以我们就只取第一个\n        id = r.first();\n    }\n    -- SmartSql 默认最后一条语句为返回值，所以必要有 id;\n    id;\n} \n\n-- 作者：陈飞\n-- 添加用户组\nfunction add_user_group(group_name:string, user_token:string, group_type:string, data_set_name:string)\n{\n    -- 通过 data set name 获取 data set 的 id\n    let data_set_id = get_data_set_id(data_set_name);\n    match {\n        has_user_token_type(group_type): match {\n                                            -- data set id 大于 0 时，插入到 my_users_group 表中\n                                            data_set_id > 0: query_sql(\"insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (auto_id(?), ?, ?, ?, ?)\", [\"my_users_group\", group_name, data_set_id, user_token, group_type]);\n                                            else false;\n                                        }\n        else \"group_type 只能是 DDL, DML，ALL。(ALL 的是意思包含 DDL 和 DML)\";\n    }\n}\n\nfunction add_user_group_1(group_name:string, user_token:string, group_type:string, data_set_name:string)\n{\n    -- 通过 data set name 获取 data set 的 id\n    let data_set_id = get_data_set_id(data_set_name);\n    match {\n       has_user_token_type(group_type): match {\n                                            -- data set id 大于 0 时，插入到 my_users_group 表中\n                                            data_set_id > 0: query_sql(\"insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (?, ?, ?, ?, ?)\", [auto_id(\"my_users_group\"), group_name, data_set_id, user_token, group_type]);\n                                            else false;\n                                        }\n    }\n}")
+;(def my-matcher (re-matcher #"(?i)\s*function\s+add_user_group\s*" code))
+(def my-line (format "(?i)\s*function\s+%s\s*" "add_user_group"))
+(def my-matcher (re-matcher (re-pattern my-line) code))
+(if (re-find my-matcher)
+    (let [start (.start my-matcher) end (.end my-matcher)]
+        (println start)
+        (println end)
+        (subs code start end)))
+
+;(defn get-forward-code [func-name code]
+;    (let [my-matcher (re-matcher #(format "(?i)\s*function\s+%s\s*" func-name) code)]
+;        (if (re-find my-matcher)
+;            (let [start (.start my-matcher) end (.end my-matcher)]
+;                (println start)
+;                (println end)
+;                (subs code start end))))
+;    )
+
+
+(defn get-forward-code [start code]
+    (subs code 0 start))
+
+(defn get-notes-single
+    ([lst] (get-notes-single lst [] nil [] 0 false))
+    ([[f & r] stack mid-small stack-lst index is-note]
+     (if (some? f)
+         (cond (and (not (= f \})) (not (= f \;)) (nil? mid-small)) (cond (not (= f \-)) (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note)
+                                                                          (and (= f \-) (not (empty? r)) (= (first r) \-)) (recur nil stack mid-small stack-lst index true)
+                                                                          (= f \') (recur r (conj stack f) "小" (conj stack-lst f) (+ index 1) is-note)
+                                                                          (= f \") (recur r (conj stack f) "大" (conj stack-lst f) (+ index 1) is-note)
+                                                                          )
+               (and (or (= f \}) (= f \;)) (nil? mid-small)) (recur nil stack mid-small stack-lst index is-note)
+               (= mid-small "小") (if (= f \')
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) (+ index 1) is-note)
+                                         (recur r (conj stack f) "小" (pop stack-lst) (+ index 1) is-note))
+                                     (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note))
+               (= mid-small "大") (if (= f \")
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) (+ index 1) is-note)
+                                         (recur r (conj stack f) "大" (pop stack-lst) (+ index 1) is-note))
+                                     (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note))
+               )
+         (if (true? is-note)
+             [(str/join stack) (+ index 2)]))))
+
+(defn get-notes
+    ([lst] (get-notes lst []))
+    ([lst rs]
+     (if-let [[note index] (get-notes-single lst)]
+         (if (= note "")
+             (str/join rs)
+             (str/join (get-notes (drop index lst) (concat [(str/join (reverse note))] rs))))
+         (str/join rs))))
+
+(def last-code (get-forward-code 350 code))
+;last-code
+;(reverse last-code)
+;(get-notes-single (drop 9 (reverse last-code)))
+(get-notes (reverse last-code))
+;

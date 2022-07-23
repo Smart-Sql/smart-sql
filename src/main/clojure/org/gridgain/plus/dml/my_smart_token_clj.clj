@@ -193,7 +193,7 @@
         (if (some? my-let)
             (format "(my-lexical/get-value %s)" (-> m :item_name))
             (cond (my-lexical/is-eq? (-> m :item_name) "null") "nil"
-                  (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (my-lexical/get_str_value (-> m :item_name))
+                  (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (my-lexical/my-str-value (-> m :item_name))
                   (and (not (= java.lang.String (-> m :java_item_type))) (true? (-> m :const))) (-> m :item_name)
                   :else
                   (-> m :item_name)))))
