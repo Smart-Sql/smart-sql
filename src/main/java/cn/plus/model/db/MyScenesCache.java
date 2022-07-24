@@ -40,6 +40,15 @@ public class MyScenesCache implements Serializable {
         this.smart_code = smart_code;
     }
 
+    public MyScenesCache(final Long group_id, final String scenes_name, final String sql_code, final String smart_code, final String descrip)
+    {
+        this.group_id = group_id;
+        this.scenes_name = scenes_name;
+        this.sql_code = sql_code;
+        this.smart_code = smart_code;
+        this.descrip = descrip;
+    }
+
     public MyScenesCache()
     {}
 

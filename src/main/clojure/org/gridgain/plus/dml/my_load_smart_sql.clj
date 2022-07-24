@@ -20,54 +20,153 @@
         ))
 
 (defn get-notes-single
-    ([lst] (get-notes-single lst [] nil [] 0 false))
-    ([[f & r] stack mid-small stack-lst index is-note]
+    ([lst] (get-notes-single lst [] nil [] 0 false []))
+    ([[f & r] stack mid-small stack-lst index is-note descript]
      (if (some? f)
-         (cond (and (not (= f \})) (not (= f \;)) (nil? mid-small)) (cond (not (= f \-)) (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note)
-                                                                          (and (= f \-) (not (empty? r)) (= (first r) \-)) (recur nil stack mid-small stack-lst index true)
-                                                                          (= f \') (recur r (conj stack f) "小" (conj stack-lst f) (+ index 1) is-note)
-                                                                          (= f \") (recur r (conj stack f) "大" (conj stack-lst f) (+ index 1) is-note)
+         (cond (and (not (= f \})) (not (= f \;)) (nil? mid-small)) (cond (and (= f \-) (not (empty? r)) (= (first r) \-)) (recur nil (conj stack \- \-) mid-small stack-lst index true descript)
+                                                                          (= f \') (recur r (conj stack f) "小" (conj stack-lst f) (+ index 1) is-note (conj descript f))
+                                                                          (= f \") (recur r (conj stack f) "大" (conj stack-lst f) (+ index 1) is-note (conj descript f))
+                                                                          :else
+                                                                          (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note (conj descript f))
                                                                           )
-               (and (or (= f \}) (= f \;)) (nil? mid-small)) (recur nil stack mid-small stack-lst index is-note)
+               (and (or (= f \}) (= f \;)) (nil? mid-small)) (recur nil stack mid-small stack-lst index is-note descript)
                (= mid-small "小") (if (= f \')
                                      (if (= (count stack-lst) 1)
-                                         (recur r (conj stack f) nil (pop stack-lst) (+ index 1) is-note)
-                                         (recur r (conj stack f) "小" (pop stack-lst) (+ index 1) is-note))
-                                     (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note))
+                                         (recur r (conj stack f) nil (pop stack-lst) (+ index 1) is-note descript)
+                                         (recur r (conj stack f) "小" (pop stack-lst) (+ index 1) is-note descript))
+                                     (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note descript))
                (= mid-small "大") (if (= f \")
                                      (if (= (count stack-lst) 1)
-                                         (recur r (conj stack f) nil (pop stack-lst) (+ index 1) is-note)
-                                         (recur r (conj stack f) "大" (pop stack-lst) (+ index 1) is-note))
-                                     (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note))
+                                         (recur r (conj stack f) nil (pop stack-lst) (+ index 1) is-note descript)
+                                         (recur r (conj stack f) "大" (pop stack-lst) (+ index 1) is-note descript))
+                                     (recur r (conj stack f) mid-small stack-lst (+ index 1) is-note descript))
                )
          (if (true? is-note)
-             [(str/join stack) (+ index 2)]))))
+             [(str/join (reverse stack)) (+ index 2) (str/join (reverse descript))]))))
+
+(defn get-notes-multi
+    ([lst] (get-notes-multi lst [] nil [] [] nil []))
+    ([[f & r] stack mid-small stack-lst stack-flag flag descript]
+     (if (some? f)
+         (cond (and (not (= f \})) (not (= f \;)) (nil? mid-small)) (cond (and (= f \/) (not (empty? r)) (= (first r) \*)) (recur (rest r) (conj stack \/ \*) mid-small stack-lst (conj stack-flag "(") "start" descript)
+                                                                          (and (= f \*) (not (empty? r)) (= (first r) \/)) (if (= (count stack-flag) 1)
+                                                                                                                             (recur (rest r) (conj stack \* \/) mid-small stack-lst (pop stack-flag) "end" descript)
+                                                                                                                             (recur (rest r) (conj stack \* \/) mid-small stack-lst (pop stack-flag) flag descript))
+                                                                          (= f \') (recur r (conj stack f) "小" (conj stack-lst f) stack-flag flag (conj descript f))
+                                                                          (= f \") (recur r (conj stack f) "大" (conj stack-lst f) stack-flag flag (conj descript f))
+                                                                          :else
+                                                                          (recur r (conj stack f) mid-small stack-lst stack-flag flag (conj descript f)))
+               (and (or (= f \}) (= f \;)) (nil? mid-small)) (recur nil stack mid-small stack-lst stack-flag flag descript)
+               (= mid-small "小") (if (= f \')
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) stack-flag flag descript)
+                                         (recur r (conj stack f) "小" (pop stack-lst) stack-flag flag descript))
+                                     (recur r (conj stack f) mid-small stack-lst stack-flag flag descript))
+               (= mid-small "大") (if (= f \")
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) stack-flag flag descript)
+                                         (recur r (conj stack f) "大" (pop stack-lst) stack-flag flag descript))
+                                     (recur r (conj stack f) mid-small stack-lst stack-flag flag descript))
+               )
+         (if (= flag "end")
+             [(str/join (reverse stack)) (str/trim (str/join (reverse descript)))]))))
 
 (defn get-notes
-    ([lst] (get-notes lst []))
-    ([lst rs]
-     (if-let [[note index] (get-notes-single lst)]
+    ([lst] (get-notes lst [] []))
+    ([lst rs rs-descript]
+     (if-let [[note index descript] (get-notes-single lst)]
          (if (= note "")
-             (str/join rs)
-             (str/join (get-notes (drop index lst) (concat [(str/join (reverse note))] rs))))
-         (str/join rs))))
+             [(str/join rs) (str/join rs-descript)]
+             (let [[my-notes my-descript] (get-notes (drop index lst))]
+                 [(str/join (concat [my-notes] (conj rs note))) (str/join (concat [my-descript] (conj rs-descript descript)))])
+             )
+         [(str/join rs) (str/join rs-descript)])))
 
-(defn get-forward-code [func-name code]
+(defn get-notes-multi
+    ([lst] (get-notes-multi lst [] nil [] [] nil []))
+    ([[f & r] stack mid-small stack-lst stack-flag flag descript]
+     (if (some? f)
+         (cond (and (not (= f \})) (not (= f \;)) (nil? mid-small)) (cond (and (= f \/) (not (empty? r)) (= (first r) \*)) (recur (rest r) (conj stack \/ \*) mid-small stack-lst (conj stack-flag "(") "start" descript)
+                                                                          (and (= f \*) (not (empty? r)) (= (first r) \/)) (if (= (count stack-flag) 1)
+                                                                                                                               (recur (rest r) (conj stack \* \/) mid-small stack-lst (pop stack-flag) "end" descript)
+                                                                                                                               (recur (rest r) (conj stack \* \/) mid-small stack-lst (pop stack-flag) flag descript))
+                                                                          (= f \') (recur r (conj stack f) "小" (conj stack-lst f) stack-flag flag (conj descript f))
+                                                                          (= f \") (recur r (conj stack f) "大" (conj stack-lst f) stack-flag flag (conj descript f))
+                                                                          :else
+                                                                          (recur r (conj stack f) mid-small stack-lst stack-flag flag (conj descript f)))
+               (and (or (= f \}) (= f \;)) (nil? mid-small)) (recur nil stack mid-small stack-lst stack-flag flag descript)
+               (= mid-small "小") (if (= f \')
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) stack-flag flag descript)
+                                         (recur r (conj stack f) "小" (pop stack-lst) stack-flag flag descript))
+                                     (recur r (conj stack f) mid-small stack-lst stack-flag flag descript))
+               (= mid-small "大") (if (= f \")
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) stack-flag flag descript)
+                                         (recur r (conj stack f) "大" (pop stack-lst) stack-flag flag descript))
+                                     (recur r (conj stack f) mid-small stack-lst stack-flag flag descript))
+               )
+         (if (= flag "end")
+             [(str/join (reverse stack)) (str/trim (str/join (reverse descript)))]))))
+
+(defn is-multi?
+    ([lst] (is-multi? lst nil))
+    ([[f & r] flag]
+     (if (some? f)
+         (cond (= f \newline) (recur r flag)
+               (= f \space) (recur r flag)
+               (and (= f \/) (not (empty? r)) (= (first r) \*)) (recur nil "mutil")
+               :else
+               (recur r flag)
+               )
+         (if (= flag "mutil")
+             true false))))
+
+(defn get-func-code
+    ([lst] (get-func-code lst [] nil [] [] nil))
+    ([[f & r] stack mid-small stack-lst stack-k flag]
+     (if (some? f)
+         (cond (and (nil? flag) (nil? mid-small) (not (= f \{))) (recur r (conj stack f) mid-small stack-lst stack-k flag)
+               (and (nil? flag) (nil? mid-small) (= f \{)) (recur r (conj stack f) mid-small stack-lst (conj stack-k f) "start")
+               (and (= f \') (nil? mid-small)) (recur r (conj stack f) "小" (conj stack-lst f) stack-k flag)
+               (and (= f \") (nil? mid-small)) (recur r (conj stack f) "大" (conj stack-lst f) stack-k flag)
+               (= mid-small "小") (if (= f \')
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) stack-k flag)
+                                         (recur r (conj stack f) "小" (pop stack-lst) stack-k flag))
+                                     (recur r (conj stack f) mid-small stack-lst stack-k flag))
+               (= mid-small "大") (if (= f \")
+                                     (if (= (count stack-lst) 1)
+                                         (recur r (conj stack f) nil (pop stack-lst) stack-k flag)
+                                         (recur r (conj stack f) "大" (pop stack-lst) stack-k flag))
+                                     (recur r (conj stack f) mid-small stack-lst stack-k flag))
+               (= f \{) (recur r (conj stack f) mid-small stack-lst (conj stack-k f) flag)
+               (= f \}) (if (= (count stack-k) 1)
+                            (recur nil (conj stack f) mid-small stack-lst [] "end")
+                            (recur r (conj stack f) mid-small stack-lst (pop stack-k) flag))
+               :else
+               (recur r (conj stack f) mid-small stack-lst stack-k flag)
+               )
+         (if (= flag "end")
+             (str/join stack)))))
+
+(defn get-forward-code [lst]
+    (if (is-multi? lst)
+        (get-notes-multi lst)
+        (get-notes lst)))
+
+(defn get-smart-func-code [func-name code]
     (let [my-matcher (re-matcher (re-pattern (str/join [#"(?i)\s*function\s+" func-name #"\s*"])) code)]
         (if (re-find my-matcher)
             (let [start (.start my-matcher) end (.end my-matcher)]
-                (get-notes (reverse (subs code 0 start)))
-                ;(println end)
-                ;(subs code start end)
-                )))
-    )
+                (let [[my-notes my-descript] (get-forward-code (reverse (subs code 0 (+ start 1)))) func-code (get-func-code (subs code end))]
+                    [(str/join [my-notes (subs code (+ start 1) end) func-code]) my-descript])
+                ))))
 
-;(get-forward-code "get_data_set_id" code)
-
-(defn save-to-cache [^Ignite ignite ^Long group_id ^String func-name ^String sql_code ^String smart_code]
+(defn save-to-cache [^Ignite ignite ^Long group_id ^String func-name ^String sql_code ^String smart_code ^String descrip]
     (let [pk (MyScenesCachePk. group_id func-name) cache (.cache ignite "my_scenes")]
         (if-not (.containsKey cache pk)
-            (.put cache pk (MyScenesCache. group_id func-name sql_code smart_code)))))
+            (.put cache pk (MyScenesCache. group_id func-name sql_code smart_code descrip)))))
 
 (defn load-smart-sql [^Ignite ignite ^Long group_id ^String code]
     (loop [[f & r] (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment (my-lexical/to-back code)))]
@@ -75,7 +174,8 @@
             (do
                 (cond (and (string? (first f)) (my-lexical/is-eq? (first f) "function")) (let [[sql func-name] (my-smart-clj/my-smart-to-clj-lower ignite group_id f)]
                                                                                              (eval (read-string sql))
-                                                                                             (save-to-cache ignite group_id func-name sql (first f)))
+                                                                                             (let [[func-code my-descript] (get-smart-func-code func-name code)]
+                                                                                                 (save-to-cache ignite group_id func-name sql func-code my-descript)))
                       (and (string? (first f)) (contains? #{"insert" "update" "delete" "select"} (str/lower-case (first f)))) (my-smart-db-line/query_sql ignite group_id f)
                       :else
                       (if (string? (first f))
