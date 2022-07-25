@@ -233,43 +233,39 @@ func_name: 表示查询出来后在处理，例如：脱敏
 
 DROP TABLE IF EXISTS my_select_views;
 CREATE TABLE IF NOT EXISTS my_select_views (
-                  id BIGINT,
-                  view_name VARCHAR(40),
+                  group_id BIGINT,
                   table_name VARCHAR(40),
                   data_set_id BIGINT DEFAULT 0,
                   code VARCHAR,
-                  PRIMARY KEY (id)
-                ) WITH "template=MyMeta_template,cache_name=my_select_views,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+                  PRIMARY KEY (group_id, table_name, data_set_id)
+                ) WITH "template=MyMeta_template,cache_name=my_select_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
 
 DROP TABLE IF EXISTS my_update_views;
 CREATE TABLE IF NOT EXISTS my_update_views (
-                  id BIGINT,
-                  view_name VARCHAR(40),
-                  table_name VARCHAR(40),
-                  data_set_id BIGINT DEFAULT 0,
-                  code VARCHAR,
-                  PRIMARY KEY (id)
-                ) WITH "template=MyMeta_template,cache_name=my_update_views,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+                    group_id BIGINT,
+                    table_name VARCHAR(40),
+                    data_set_id BIGINT DEFAULT 0,
+                    code VARCHAR,
+                    PRIMARY KEY (group_id, table_name, data_set_id)
+                ) WITH "template=MyMeta_template,cache_name=my_update_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
 
 DROP TABLE IF EXISTS my_insert_views;
 CREATE TABLE IF NOT EXISTS my_insert_views (
-                  id BIGINT,
-                  view_name VARCHAR(40),
-                  table_name VARCHAR(40),
-                  data_set_id BIGINT DEFAULT 0,
-                  code VARCHAR,
-                  PRIMARY KEY (id)
-                ) WITH "template=MyMeta_template,cache_name=my_insert_views,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+                    group_id BIGINT,
+                    table_name VARCHAR(40),
+                    data_set_id BIGINT DEFAULT 0,
+                    code VARCHAR,
+                    PRIMARY KEY (group_id, table_name, data_set_id)
+                ) WITH "template=MyMeta_template,cache_name=my_insert_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
 
 DROP TABLE IF EXISTS my_delete_views;
 CREATE TABLE IF NOT EXISTS my_delete_views (
-                id BIGINT,
-                view_name VARCHAR(40),
-                table_name VARCHAR(40),
-                data_set_id BIGINT DEFAULT 0,
-                code VARCHAR,
-                PRIMARY KEY (id)
-              ) WITH "template=MyMeta_template,cache_name=my_delete_views,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+                  group_id BIGINT,
+                  table_name VARCHAR(40),
+                  data_set_id BIGINT DEFAULT 0,
+                  code VARCHAR,
+                  PRIMARY KEY (group_id, table_name, data_set_id)
+              ) WITH "template=MyMeta_template,cache_name=my_delete_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
 
 /**
   数据集

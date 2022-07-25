@@ -9,14 +9,18 @@ public class MyDeleteViews implements Serializable {
 
     private static final long serialVersionUID = -3815963550401273521L;
 
-    private Long id;
+    /**
+     * 限定权限的 group_id
+     * */
+    private Long group_id;
     private String table_name;
     private Long data_set_id;
+
     private String code;
 
-    public MyDeleteViews(final Long id, final String table_name, final Long data_set_id, final String code)
+    public MyDeleteViews(final Long group_id, final String table_name, final Long data_set_id, final String code)
     {
-        this.id = id;
+        this.group_id = group_id;
         this.table_name = table_name;
         this.data_set_id = data_set_id;
         this.code = code;
@@ -25,12 +29,12 @@ public class MyDeleteViews implements Serializable {
     public MyDeleteViews()
     {}
 
-    public Long getId() {
-        return id;
+    public Long getGroup_id() {
+        return group_id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setGroup_id(Long group_id) {
+        this.group_id = group_id;
     }
 
     public String getTable_name() {
@@ -60,7 +64,7 @@ public class MyDeleteViews implements Serializable {
     @Override
     public String toString() {
         return "MyDeleteViews{" +
-                "id=" + id +
+                "group_id=" + group_id +
                 ", table_name='" + table_name + '\'' +
                 ", data_set_id=" + data_set_id +
                 ", code='" + code + '\'' +

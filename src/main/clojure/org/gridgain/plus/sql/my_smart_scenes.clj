@@ -154,6 +154,7 @@
             '[org.gridgain.plus.tools.my-java-util :as my-java-util]
             '[org.gridgain.plus.tools.my-util :as my-util]
             '[org.gridgain.plus.user.my-user :as my-user]
+            '[org.gridgain.plus.smart-func :as smart-func]
             '[clojure.core.reducers :as r]
             '[clojure.string :as str]
             '[clojure.walk :as w]

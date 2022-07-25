@@ -160,48 +160,48 @@
     DROP TABLE IF EXISTS my_select_views;
     */
     CREATE TABLE IF NOT EXISTS my_select_views (
-                    id BIGINT,
+                    group_id BIGINT,
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
-                    PRIMARY KEY (id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_select_views,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    PRIMARY KEY (group_id, table_name, data_set_id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_select_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     /**
     16、更新的权限视图：my_update_views
     DROP TABLE IF EXISTS my_update_views;
     */
     CREATE TABLE IF NOT EXISTS my_update_views (
-                    id BIGINT,
+                    group_id BIGINT,
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
-                    PRIMARY KEY (id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_update_views,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    PRIMARY KEY (group_id, table_name, data_set_id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_update_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     /**
     17、修改的权限视图：my_insert_views
     DROP TABLE IF EXISTS my_insert_views;
     */
     CREATE TABLE IF NOT EXISTS my_insert_views (
-                    id BIGINT,
+                    group_id BIGINT,
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
-                    PRIMARY KEY (id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_insert_views,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    PRIMARY KEY (group_id, table_name, data_set_id)
+                    ) WITH \"template=MyMeta_template,cache_name=my_insert_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     /**
     18、删除的权限视图：my_delete_views
     DROP TABLE IF EXISTS my_delete_views;
     */
     CREATE TABLE IF NOT EXISTS my_delete_views (
-                    id BIGINT,
+                    group_id BIGINT,
                     table_name VARCHAR(40),
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
-                    PRIMARY KEY (id)
-                ) WITH \"template=MyMeta_template,cache_name=my_delete_views,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    PRIMARY KEY (group_id, table_name, data_set_id)
+                ) WITH \"template=MyMeta_template,cache_name=my_delete_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     /**
     19、用户组的权限视图：my_group_view
@@ -211,6 +211,7 @@
     4：查
     DROP TABLE IF EXISTS my_group_view;
     */
+    /**
     CREATE TABLE IF NOT EXISTS my_group_view (
                     id BIGINT,
                     my_group_id BIGINT,
@@ -218,12 +219,14 @@
                     view_type VARCHAR(2),
                     PRIMARY KEY (id, my_group_id)
                     ) WITH \"template=MyMeta_template,affinityKey=my_group_id,cache_name=my_group_view,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    */
 
     /**
     20、记录操作的表：my_log
     DROP TABLE IF EXISTS my_log;
     DROP INDEX IF EXISTS my_log_idx;
     */
+    /**
     CREATE TABLE IF NOT EXISTS my_log (
                     id BIGINT,
                     table_name VARCHAR,
@@ -233,6 +236,7 @@
                     ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.MyLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=my_log,cache_group=my_meta_log\";
 
     CREATE INDEX IF NOT EXISTS my_log_idx ON my_log (table_name, create_date);
+    */
 
     /**
     23、定时任务
@@ -290,9 +294,9 @@
      "DROP TABLE IF EXISTS my_update_views"
      "DROP TABLE IF EXISTS my_insert_views"
      "DROP TABLE IF EXISTS my_delete_views"
-     "DROP TABLE IF EXISTS my_group_view"
-     "DROP TABLE IF EXISTS my_log"
-     "DROP INDEX IF EXISTS my_log_idx"
+     ;"DROP TABLE IF EXISTS my_group_view"
+     ;"DROP TABLE IF EXISTS my_log"
+     ;"DROP INDEX IF EXISTS my_log_idx"
      ])
 
 (def my-grid-tables-set #{"my_users_group"
@@ -307,6 +311,6 @@
                           "my_update_views"
                           "my_insert_views"
                           "my_delete_views"
-                          "my_group_view"
-                          "my_log"
+                          ;"my_group_view"
+                          ;"my_log"
                           })
