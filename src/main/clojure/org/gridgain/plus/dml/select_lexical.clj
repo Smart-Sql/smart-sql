@@ -781,6 +781,22 @@
           (throw (Exception. (format "数据类型写法有误请确认正确的写法！%s" column_type)))
           ))
 
+
+(defn get_inner_str_value [line]
+                     (if (string? line)
+                         (cond (not (nil? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$" line))) (str/join (drop-last (rest line)))
+                               (re-find #"^\'\'$" line) (str/join (drop-last (rest line)))
+                               (re-find #"^\"\"$" line) (str/join (drop-last (rest line)))
+                               :else line
+                               )
+                         line)
+                     )
+
+(defn get-java-items-vs [item]
+    (if (= java.lang.String (-> item :java_item_type))
+        (MyConvertUtil/ConvertToString (get_inner_str_value (-> item :item_name)))
+        (-> item :item_name)))
+
 (defn get_jave_vs [column_type column_value]
     (letfn [(get_inner_str_value [line]
                 (if (string? line)

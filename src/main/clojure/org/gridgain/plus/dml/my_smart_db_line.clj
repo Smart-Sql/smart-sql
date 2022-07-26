@@ -44,21 +44,21 @@
         (format "f_%s_%s" (str/lower-case schema_name) (str/lower-case table_name))))
 
 (defn insert-to-cache [ignite group_id lst]
-    (let [insert_obj (my-insert/my_insert_obj ignite group_id lst)]
+    (if-let [insert_obj (my-insert/my_insert_obj ignite group_id lst)]
         (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
             (MyLogCache. (my-cache-name (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))
             ))
     )
 
 (defn insert-to-cache-no-authority [ignite group_id lst]
-    (let [insert_obj (my-insert/my_insert_obj-no-authority ignite group_id lst)]
+    (if-let [insert_obj (my-insert/my_insert_obj-no-authority ignite group_id lst)]
         (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
             (MyLogCache. (my-cache-name (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (my-smart-db/get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT))
             ))
     )
 
 (defn update-to-cache [ignite group_id lst]
-    (let [m-obj (my-update/my_update_obj ignite group_id lst {})]
+    (if-let [m-obj (my-update/my_update_obj ignite group_id lst {})]
         (if (contains? m-obj :k-v)
             (let [{schema_name :schema_name table_name :table_name k-v :k-v items :items select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) (my-smart-db/get-update-k-v-value ignite group_id select-args items) (SqlType/UPDATE))])
@@ -73,7 +73,7 @@
         ))
 
 (defn update-to-cache-no-authority [ignite group_id lst]
-    (let [m-obj (my-update/my_update_obj-authority ignite group_id lst {})]
+    (if-let [m-obj (my-update/my_update_obj-authority ignite group_id lst {})]
         (if (contains? m-obj :k-v)
             (let [{schema_name :schema_name table_name :table_name k-v :k-v items :items select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) (my-smart-db/get-update-k-v-value ignite group_id select-args items) (SqlType/UPDATE))])
@@ -88,7 +88,7 @@
         ))
 
 (defn delete-to-cache [ignite group_id lst]
-    (let [m-obj (my-delete/my_delete_obj ignite group_id lst {})]
+    (if-let [m-obj (my-delete/my_delete_obj ignite group_id lst {})]
         (if (contains? m-obj :k-v)
             (let [{schema_name :schema_name table_name :table_name k-v :k-v select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) nil (SqlType/DELETE))])
@@ -111,7 +111,7 @@
     )
 
 (defn delete-to-cache-no-authority [ignite group_id lst]
-    (let [m-obj (my-delete/my_delete_obj-no-authority ignite group_id lst {})]
+    (if-let [m-obj (my-delete/my_delete_obj-no-authority ignite group_id lst {})]
         (if (contains? m-obj :k-v)
             (let [{schema_name :schema_name table_name :table_name k-v :k-v select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) nil (SqlType/DELETE))])

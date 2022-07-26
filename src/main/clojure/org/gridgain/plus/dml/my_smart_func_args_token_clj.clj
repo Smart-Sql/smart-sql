@@ -205,8 +205,8 @@
                                                                                                              )
                                        :else
                                        (format "(my-lexical/get-value %s)" (-> m :item_name)))
-          (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (get-const-vs (-> m :item_name))
-          (and (not (= java.lang.String (-> m :java_item_type))) (true? (-> m :const))) (get-const-vs (-> m :item_name))
+          (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (my-lexical/get-java-items-vs m)
+          (and (not (= java.lang.String (-> m :java_item_type))) (true? (-> m :const))) (my-lexical/get-java-items-vs m)
           ))
 
 ;(defn judge [ignite group_id lst args-dic]
@@ -315,7 +315,7 @@
           :else
           (if (my-lexical/is-eq? (-> m :item_name) "null")
               nil
-              (get-const-vs (-> m :item_name)))))
+              (my-lexical/get-java-items-vs m))))
 
 (defn get-const-vs [vs]
     (cond (and (= (first vs) \') (= (last vs) \')) (str/join (concat ["\""] (drop-last (rest vs)) ["\""])) ;(str/join (rest (drop-last 1 vs)))
