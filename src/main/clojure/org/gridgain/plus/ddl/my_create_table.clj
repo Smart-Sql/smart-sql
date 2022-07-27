@@ -220,7 +220,7 @@
     (if (some? f)
         (if-let [m (item_obj lst_table_item f)]
             (do
-                (.append sb (.concat (.getColumn_name m) "_pk"))
+                ;(.append sb (.concat (.getColumn_name m) "_pk"))
                 (.append sb (.concat " " (.getColumn_type m)))
                 (cond (and (not (nil? (.getColumn_len m))) (not (nil? (.getScale m))) (> (.getColumn_len m) 0) (> (.getScale m) 0)) (.append sb (str/join ["(" (.getColumn_len m) "," (.getScale m) ")"]))
                       (and (not (nil? (.getColumn_len m))) (> (.getColumn_len m) 0) ) (.append sb (str/join ["(" (.getColumn_len m) ")"]))
@@ -236,8 +236,8 @@
     ([pk_sets] (pk_line pk_sets (StringBuilder.)))
     ([[f & r] ^StringBuilder sb]
      (if (some? f)
-         (if (= (count r) 0) (recur r (doto sb (.append (.concat (str/lower-case f) "_pk"))))
-                             (recur r (doto sb (.append (.concat (str/lower-case f) "_pk,")))))
+         (if (= (count r) 0) (recur r (doto sb (.append (str/lower-case f))))
+                             (recur r (doto sb (.append (.concat (str/lower-case f) ",")))))
          (.toString sb))))
 
 (defn get_pk_name_vs [pk_items]
@@ -279,7 +279,8 @@
          lst)))
 
 (defn get_pk_index [pk_sets ^String schema_name ^String table_name ^String data_set_name]
-    (get_pk_index_ds pk_sets schema_name table_name data_set_name))
+    ;(get_pk_index_ds pk_sets schema_name table_name data_set_name)
+    nil)
 
 (defn table_items
     ([lst_table_item] (table_items lst_table_item []))
@@ -294,7 +295,7 @@
     ([items ^String schema_name ^String table_name ^String data_set_name] (if-let [{lst_table_item :lst_table_item code_sb :code_sb pk_sets :pk_sets} (get_obj_ds items (ArrayList.) (StringBuilder.) #{} data_set_name)]
                                                   (cond (= (count pk_sets) 1) {:lst_table_item (set_pk_set lst_table_item pk_sets) :code_sb (format "%s PRIMARY KEY (%s)" (.toString code_sb) (nth pk_sets 0))}
                                                         (> (count pk_sets) 1) (if-let [pk_set (set_pk_set lst_table_item pk_sets)]
-                                                                                  {:lst_table_item pk_set :code_sb (format "%s %s PRIMARY KEY (%s)" (.toString code_sb) (new_pk pk_sets pk_set (StringBuilder.)) (pk_line pk_sets))
+                                                                                  {:lst_table_item pk_set :code_sb (format "%s PRIMARY KEY (%s)" (.toString code_sb) (pk_line pk_sets))
                                                                                    :indexs (get_pk_index pk_sets schema_name table_name data_set_name)}
                                                                                   (throw (Exception. "主键设置错误！")))
                                                         :else

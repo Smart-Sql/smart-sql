@@ -80,11 +80,19 @@ public class MyDdlUtil implements Serializable {
     {
         if (map.containsKey(Keyword.intern("lst_cachex"))) {
             ArrayList lst_caches = (ArrayList) map.get(Keyword.intern("lst_cachex"));
+            if (lst_caches == null)
+            {
+                lst_caches = new ArrayList();
+            }
+            MyNoSqlCache noSqlCache = (MyNoSqlCache) map.get(Keyword.intern("nosql"));
 
-            if (lst_caches != null) {
-                MyNoSqlCache noSqlCache = (MyNoSqlCache) map.get(Keyword.intern("nosql"));
+            if (noSqlCache != null)
+            {
                 MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
                 lst_caches.add(kvCache);
+            }
+
+            if (lst_caches != null) {
 
                 IgniteTransactions transactions = ignite.transactions();
                 Transaction tx = null;

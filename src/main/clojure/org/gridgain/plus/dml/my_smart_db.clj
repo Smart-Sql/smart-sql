@@ -118,6 +118,7 @@
                 ;        (println (my-lexical/get_jave_vs (-> f :column_type) ms))
                 ;        (println (type (my-lexical/get_jave_vs (-> f :column_type) ms)))
                 ;        (println "**********************"))
+                ;    (recur r (conj lst-rs (MyKeyValue. (-> f :key :item_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back (-> f :value :item_name))) args-dic)))))
                 ;    )
                 (recur r (conj lst-rs (MyKeyValue. (-> f :key :item_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back (-> f :value :item_name))) args-dic)))))
                 lst-rs))))
@@ -126,7 +127,7 @@
     (loop [[f & r] items lst []]
         (if (some? f)
             (if-let [vs (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (-> f :item_obj) args-dic)]
-                (recur r (conj lst (MyKeyValue. (-> f :item_name) (my-lexical/get_jave_vs (-> f :column_type) vs))))
+                (recur r (conj lst (MyKeyValue. (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) vs))))
                 (recur r lst))
             lst)))
 

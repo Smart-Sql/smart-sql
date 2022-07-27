@@ -51,9 +51,12 @@
 (defn is-column_name [column_name where-items]
     (loop [[f & r] where-items flag nil]
         (if (some? f)
-            (if (my-lexical/is-eq? (-> (first f) :key :item_name) column_name)
-                (recur nil (first f))
-                (recur r flag))
+            (cond (map? f) (if (my-lexical/is-eq? (-> f :key :item_name) column_name)
+                               (recur nil f)
+                               (recur r flag))
+                  (my-lexical/is-seq? f) (if (my-lexical/is-eq? (-> (first f) :key :item_name) column_name)
+                                             (recur nil (first f))
+                                             (recur r flag)))
             flag)))
 
 (defn get-k-v [pk where-items]
@@ -62,7 +65,8 @@
             (if-let [m (is-column_name (-> f :column_name) where-items)]
                 (recur r (conj lst (assoc m :column_type (-> f :column_type))))
                 (recur nil nil))
-            lst)))
+            (if (and (not (nil? lst)) (= (count lst) (count where-items)))
+                lst))))
 
 (defn update-table
     ([lst] (update-table lst nil [] []))
@@ -287,6 +291,7 @@
     (if-let [ct (get-column pk column_name)]
         ct
         (get-column data column_name)))
+
 (defn merge-pk-where-items [pk data obj]
     (if-let [lst-items (my-items (-> obj :items))]
         (loop [[f & r] (concat pk lst-items) index 0 rs [] ht #{}]
@@ -302,6 +307,7 @@
                     (recur r (+ index 1) (conj rs {:column_name (-> f :column_name) :column_type (-> f :column_type) :index index :is-pk true}) (conj ht (-> f :column_name)))
                     (recur r (+ index 1) rs ht))
                 rs))))
+
 (defn get_pk_line [[f & r] lst]
     (if (some? f)
         (recur r (conj lst (-> f :column_name)))
@@ -327,7 +333,7 @@
     (if-let [{pk :pk data :data} (.get (.cache ignite "table_ast") (MySchemaTable. (-> obj :schema_name) (-> obj :table_name)))]
         (let [pk-where-item (merge-pk-where-items pk data obj)]
             (if-let [k-v (pk-where pk (-> obj :where-objs))]
-                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :k-v k-v :args (-> obj :args) :query-lst pk-where-item :items (get_items_type (-> obj :items) data)}
+                {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :k-v k-v :args (-> obj :args) :items (get_items_type (-> obj :items) data)}
                 {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst pk-where-item :sql (format "select %s from %s.%s where %s" (get_pk_line pk-where-item []) (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) data)})))
     )
 
