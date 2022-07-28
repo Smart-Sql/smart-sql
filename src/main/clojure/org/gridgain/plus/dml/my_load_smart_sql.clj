@@ -163,12 +163,12 @@
                     [(str/join [my-notes (subs code (+ start 1) end) func-code]) my-descript])
                 ))))
 
-(defn save-to-cache [^Ignite ignite ^Long group_id ^String func-name ^String sql_code ^String smart_code ^String descrip]
-    (let [pk (MyScenesCachePk. group_id func-name) cache (.cache ignite "my_scenes")]
+(defn save-to-cache [^Ignite ignite group_id ^String func-name ^String sql_code ^String smart_code ^String descrip]
+    (let [pk (MyScenesCachePk. (first group_id) func-name) cache (.cache ignite "my_scenes")]
         (if-not (.containsKey cache pk)
-            (.put cache pk (MyScenesCache. group_id func-name sql_code smart_code descrip)))))
+            (.put cache pk (MyScenesCache. (first group_id) func-name sql_code smart_code descrip)))))
 
-(defn load-smart-sql [^Ignite ignite ^Long group_id ^String code]
+(defn load-smart-sql [^Ignite ignite group_id ^String code]
     (loop [[f & r] (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment (my-lexical/to-back code)))]
         (if (some? f)
             (do
@@ -186,7 +186,7 @@
 
 
 (defn -loadSmartSql [this ^Ignite ignite ^Long group_id ^String code]
-    (load-smart-sql ignite group_id code))
+    (load-smart-sql ignite [group_id] code))
 
 
 

@@ -14,6 +14,7 @@
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
+             (org.tools MyGson)
              (java.util List ArrayList Hashtable Date Iterator)
              )
     (:gen-class
@@ -73,8 +74,8 @@
         ))
 
 (defn calculate
-    ([^Ignite ignite ^Long group_id lst args-dic] (calculate ignite group_id lst [] [] args-dic))
-    ([^Ignite ignite ^Long group_id [f & r] stack_number stack_symbol args-dic]
+    ([^Ignite ignite group_id lst args-dic] (calculate ignite group_id lst [] [] args-dic))
+    ([^Ignite ignite group_id [f & r] stack_number stack_symbol args-dic]
      (if (some? f)
          (cond (contains? f :operation_symbol) (cond
                                                    ; 若符号栈为空，则符号直接压入符号栈
@@ -122,8 +123,8 @@
     (.containsKey (.cache ignite "my_func") (str/lower-case func-name)))
 
 ; 判断 scenes
-(defn is-scenes? [^Ignite ignite ^Long group_id ^String scenes-name]
-    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. group_id (str/lower-case scenes-name))))
+(defn is-scenes? [^Ignite ignite group_id ^String scenes-name]
+    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. (first group_id) (str/lower-case scenes-name))))
 
 ; 判断是否有函数
 (defn has-func? [let-obj func-name]

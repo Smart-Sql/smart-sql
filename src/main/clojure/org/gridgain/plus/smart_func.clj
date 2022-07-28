@@ -103,8 +103,8 @@
         ))
 
 ; 输入用户组和 code 名称添加 权限视图
-(defn smart-view [^Ignite ignite ^Long group_id ^String group_name ^String code]
-    (if (= group_id 0)
+(defn smart-view [^Ignite ignite group_id ^String group_name ^String code]
+    (if (= (first group_id) 0)
         (let [lst (my-lexical/to-back code)]
             (cond (my-lexical/is-eq? (first lst) "insert") (smart-view-insert ignite group_name lst code)
                   (my-lexical/is-eq? (first lst) "update") (smart-view-update ignite group_name lst code)
@@ -115,7 +115,7 @@
     )
 
 ; 添加 job
-(defn add-job [^Ignite ignite ^Long group_id ^String job-name ^Object ps ^String cron]
+(defn add-job [^Ignite ignite group_id ^String job-name ^Object ps ^String cron]
     (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
         (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
             (if (.containsKey scheduledFutures job-name)
@@ -133,7 +133,7 @@
                 ))))
 
 ; 删除 job
-(defn remove-job [^Ignite ignite ^Long group_id ^String job-name]
+(defn remove-job [^Ignite ignite group_id ^String job-name]
     (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
         (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
             (let [job-cache (.cache ignite "my_cron")]
@@ -150,7 +150,7 @@
             )))
 
 (defn _smart_view [^Ignite ignite ^Long group_id ^String group_name ^String code]
-    (smart-view ignite group_id group_name code))
+    (smart-view ignite [group_id] group_name code))
 
 
 

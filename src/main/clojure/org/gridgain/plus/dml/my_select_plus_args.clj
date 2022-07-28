@@ -11,6 +11,7 @@
              (com.google.common.base Strings)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
+             (org.tools MyGson)
              (java.util List ArrayList Hashtable Date Iterator)
              )
     (:gen-class
@@ -288,8 +289,8 @@
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args}
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args})
                               (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] sql [")" " as"] [(-> m :alias)]) :args args}
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] sql [")" " as"] [(-> m :alias)]) :args args})
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")" " as"] [(-> m :alias)]) :args args}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")" " as"] [(-> m :alias)]) :args args})
                               :else
                               {:sql (concat [(-> m :func-name) "("] sql [")" " as"] [(-> m :alias)]) :args args}
                               )
@@ -299,8 +300,8 @@
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args}
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args})
                               (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] sql [")"] [(-> m :alias)]) :args args}
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] sql [")"] [(-> m :alias)]) :args args})
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")"] [(-> m :alias)]) :args args}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")"] [(-> m :alias)]) :args args})
                               :else
                               {:sql (concat [(-> m :func-name) "("] sql [")"]) :args args}
                               )
@@ -308,7 +309,7 @@
                     ))
             (func-link-to-line [ignite group_id dic-args m]
                 (let [{sql :sql args :args} (my-lexical/my-func-line-code m)]
-                    (loop [[f & r] args lst-ps [group_id] lst-args []]
+                    (loop [[f & r] args lst-ps [(MyGson/groupObjToLine group_id)] lst-args []]
                         (if (some? f)
                             (if (contains? (-> dic-args :dic) f)
                                 (recur r (conj lst-ps "?") (conj lst-args (first (get (-> dic-args :dic) f))))
@@ -331,7 +332,7 @@
                             (if (Strings/isNullOrEmpty table_alias)
                                 {:sql (format "%s.%s" schema_name table_name) :args nil}
                                 {:sql (str/join [(format "%s.%s" schema_name table_name) " " table_alias]) :args nil})
-                            (if (= group_id 0)
+                            (if (= (first group_id) 0)
                                 (if (Strings/isNullOrEmpty table_alias)
                                     {:sql (format "MY_META.%s" table_name) :args nil}
                                     {:sql (str/join [(format "MY_META.%s" table_name) " " table_alias]) :args nil})
@@ -342,8 +343,10 @@
                         )))
             ; 获取 data_set 的名字和对应的表
             (get_data_set_name [^Ignite ignite ^Long group_id]
-                (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name from my_users_group as g JOIN my_dataset as m ON m.id = g.data_set_id where g.id = ?") (to-array [group_id])))))]
-                    (first m)))
+                ;(when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name from my_users_group as g JOIN my_dataset as m ON m.id = g.data_set_id where g.id = ?") (to-array [group_id])))))]
+                ;    (first m))
+                (second group_id)
+                )
             (select-to-sql
                 ([ignite group_id dic-args ast]
                  (cond (and (some? ast) (instance? clojure.lang.LazySeq ast)) (let [{sql :sql args :args} (select-to-sql ignite group_id dic-args ast [] [])]

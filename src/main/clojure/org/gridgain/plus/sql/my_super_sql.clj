@@ -160,25 +160,25 @@
                                                                                                                                          (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                          ))
                    ; alter table
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-alter-table/alter_table ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-alter-table/alter_table ignite group_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                     (if (nil? rs)
                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                         ))
                    ; drop table
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-drop-table/drop_table ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-drop-table/drop_table ignite group_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                    (if (nil? rs)
                                                                                                                                        (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
                                                                                                                                        (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                        ))
                    ; create index
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-create-index/create_index ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-create-index/create_index ignite group_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                      (if (nil? rs)
                                                                                                                                          (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
                                                                                                                                          (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                          ))
                    ; drop index
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                    (if (nil? rs)
                                                                                                                                        (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
                                                                                                                                        (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))

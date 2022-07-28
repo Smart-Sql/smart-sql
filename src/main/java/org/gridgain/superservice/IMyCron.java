@@ -7,8 +7,8 @@ import org.apache.ignite.Ignite;
  * */
 public interface IMyCron {
 
-    public Object addJob(Ignite ignite, Long group_id, clojure.lang.PersistentArrayMap ast);
+    public Object addJob(Ignite ignite, Object group_id, clojure.lang.PersistentArrayMap ast);
 
-    public Object removeJob(Ignite ignite, Long group_id, String name);
+    public Object removeJob(Ignite ignite, Object group_id, String name);
 
 }

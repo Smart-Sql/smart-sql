@@ -31,10 +31,10 @@
         ;          ^:static [myInit [] void]
         ;          ^:static [myShowCode [org.apache.ignite.Ignite Long String] String]
         ;          ^:static [invokeScenesLink [org.apache.ignite.Ignite Long String java.util.List] Object]]
-        :methods [[invokeScenes [org.apache.ignite.Ignite Long String java.util.List] Object]
+        :methods [[invokeScenes [org.apache.ignite.Ignite java.util.List String java.util.List] Object]
                   [myInvokeScenes [org.apache.ignite.Ignite Long Long] Object]
                   [myShowCode [org.apache.ignite.Ignite Long String] String]
-                  [invokeScenesLink [org.apache.ignite.Ignite Long String java.util.List] Object]]
+                  [invokeScenesLink [org.apache.ignite.Ignite java.util.List String java.util.List] Object]]
         ))
 
 ; 调用 func
@@ -55,16 +55,16 @@
 ; 获取真实的 clj
 (defn get-code-by-scenes [m]
     (let [sql-code (.getSql_code m) scenes_name (.getScenes_name m) [ps-line ps-line-ex] (get-params (.getParams m))]
-        [sql-code (format "(defn %s-ex [^Ignite ignite ^Long group_id %s]\n    (%s ignite group_id %s))" scenes_name ps-line scenes_name ps-line-ex)]
+        [sql-code (format "(defn %s-ex [^Ignite ignite group_id %s]\n    (%s ignite group_id %s))" scenes_name ps-line scenes_name ps-line-ex)]
         ))
 
 ; 调用 scenes
-(defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name ps]
+(defn my-invoke-scenes [^Ignite ignite group_id ^String method-name ps]
     (let [my-method-name (str/lower-case method-name)]
         (try
             (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))
             (catch Exception e
-                (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. group_id my-method-name))]
+                (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. (first group_id) my-method-name))]
                     (let [sql-code (.getSql_code m)]
                         (eval (read-string sql-code))
                         (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))
@@ -86,16 +86,16 @@
 ;    (let [my-method-name (str/lower-case method-name)]
 ;        (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))))
 
-(defn my-invoke-scenes-link [^Ignite ignite ^Long group_id ^String method-code ps]
+(defn my-invoke-scenes-link [^Ignite ignite group_id ^String method-code ps]
     (let [[code args] (my-smart-token-clj/func-link-clj ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back method-code)))]
         (apply (eval (read-string code)) ignite group_id ps)))
 
 ; 首先调用方法，如果不存在，在从 cache 中读取数据在执行
-(defn -invokeScenes [this ^Ignite ignite ^Long group_id ^String method-name ^List ps]
+(defn -invokeScenes [this ^Ignite ignite group_id ^String method-name ^List ps]
     (my-invoke-scenes ignite group_id method-name ps))
 
 (defn -invokeScenesLink [this ^Ignite ignite ^Long group_id ^String method-name ^List ps]
-    (my-invoke-scenes-link ignite group_id method-name ps))
+    (my-invoke-scenes-link ignite [group_id] method-name ps))
 
 (defn -myInvokeScenes [this ^Ignite ignite ^Long a ^Long b]
     (my-lexical/get-value (apply (eval (read-string "(defn add [ignite a b]\n    (+ a b))")) [nil a b])))

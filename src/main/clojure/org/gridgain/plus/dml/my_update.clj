@@ -136,7 +136,7 @@
                 (recur r (conj where-lst f) args))
             [where-lst args])))
 
-(defn my-view-db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+(defn my-view-db [^Ignite ignite group_id ^String schema_name ^String table_name]
     (if-let [code (my-lexical/get-update-code ignite schema_name table_name group_id)]
         (let [rs-lst (-> (update-table (rest code)) :rs_lst)]
             (let [{items_line :items_line where_line :where_line} (get_items rs-lst)]
@@ -160,23 +160,10 @@
           (and (some? where_line) (some? v_where_line)) (concat ["("] where_line [") and ("] v_where_line [")"])
           ))
 
-(defn my-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
-    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
-        (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
-            true
-            (let [[where-lst args] (my-where-line where_line args-dic)]
-                (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
-                    (if (nil? (my-has-authority-item items v_items))
-                        {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where-lst v_where_line) :args args}
-                        {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
-                    {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
-                    )))
-        ))
-
-(defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my-authority [^Ignite ignite group_id lst-sql args-dic]
     (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (let [[where-lst args] (my-where-line where_line args-dic)]
-            (cond (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0)) {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+            (cond (and (my-lexical/is-eq? schema_name "my_meta") (= (first group_id) 0)) {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
                   :else
                   (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
                       (if (nil? (my-has-authority-item items v_items))
@@ -187,15 +174,7 @@
                       )))
         ))
 
-(defn my-no-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
-    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
-        (if (and (my-lexical/is-eq? schema_name "my_meta") (= group_id 0))
-            true
-            (let [[where-lst args] (my-where-line where_line args-dic)]
-                {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}))
-        ))
-
-(defn my-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my-no-authority [^Ignite ignite group_id lst-sql args-dic]
     (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (let [[where-lst args] (my-where-line where_line args-dic)]
             {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
@@ -211,17 +190,17 @@
          (recur r (concat lst (my-lexical/my-ast-items (-> f :item_obj))))
          lst)))
 
-(defn get-rows [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+(defn get-rows [^Ignite ignite group_id ^String schema_name ^String table_name]
     (cond (my-lexical/is-eq? schema_name "public") (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m INNER JOIN my_meta_tables AS o ON m.table_id = o.id WHERE o.table_name = ?")
                                                                                                          (.setArgs (to-array [table_name])))))
-          (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0)) (throw (Exception. "没有修改权限！"))
+          (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "没有修改权限！"))
           :else
           (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m, my_meta_tables AS o, my_dataset as ds WHERE m.table_id = o.id and ds.id = o.data_set_id and o.table_name = ? and ds.dataset_name = ?")
                                                                 (.setArgs (to-array [table_name schema_name])))))
           ))
 
 ; 1、获取表的 PK 定义
-(defn get_pk_def [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+(defn get_pk_def [^Ignite ignite group_id ^String schema_name ^String table_name]
     (when-let [rows (get-rows ignite group_id schema_name table_name)]
         (loop [[f & r] rows lst [] lst_pk [] dic {}]
             (if (some? f)
@@ -229,7 +208,7 @@
                                         (recur r (conj lst (.get f 0)) lst_pk (assoc dic (.get f 0) (.get f 2))))
                 {:lst lst :lst_pk lst_pk :dic dic}))))
 
-(defn get_pk_def_map [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+(defn get_pk_def_map [^Ignite ignite group_id ^String schema_name ^String table_name]
     (when-let [{lst :lst lst_pk :lst_pk dic :dic} (get_pk_def ignite group_id schema_name table_name)]
         (if (> (count lst_pk) 1)
             (loop [[f & r] lst_pk sb (StringBuilder.)]
@@ -262,7 +241,7 @@
             (recur r (conj rs (-> f :column_name)))
             (str/join "," rs))))
 
-(defn my-pk-def-map [^Ignite ignite ^Long group_id ^String schema_name ^String table_name update-obj]
+(defn my-pk-def-map [^Ignite ignite group_id ^String schema_name ^String table_name update-obj]
     (let [my-obj (get_pk_def ignite group_id schema_name table_name) lst-items (my-items (-> update-obj :items))]
         (let [query-lst (my-query-lst my-obj lst-items)]
             {:query-line (my-query-line query-lst) :query-lst query-lst :dic (-> my-obj :dic)})))
@@ -329,7 +308,7 @@
             (recur r (conj lst (assoc f :type (get-column-type (-> f :item_name) data))))
             lst)))
 
-(defn my_update_query_sql [^Ignite ignite ^Long group_id obj]
+(defn my_update_query_sql [^Ignite ignite group_id obj]
     (if-let [{pk :pk data :data} (.get (.cache ignite "table_ast") (MySchemaTable. (-> obj :schema_name) (-> obj :table_name)))]
         (let [pk-where-item (merge-pk-where-items pk data obj)]
             (if-let [k-v (pk-where pk (-> obj :where-objs))]
@@ -337,7 +316,7 @@
                 {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst pk-where-item :sql (format "select %s from %s.%s where %s" (get_pk_line pk-where-item []) (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) data)})))
     )
 
-(defn my_update_obj-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my_update_obj-0 [^Ignite ignite group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
         (if (and (boolean? m) (true? m))
             true
@@ -346,14 +325,14 @@
                 (throw (Exception. "更新语句字符串错误！"))))
         (throw (Exception. "更新语句字符串错误！"))))
 
-(defn my_update_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my_update_obj [^Ignite ignite group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
         (if-let [us (my_update_query_sql ignite group_id m)]
             us
             (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))
 
-(defn my_update_obj-authority-0 [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my_update_obj-authority-0 [^Ignite ignite group_id lst-sql args-dic]
     (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
         (if (and (boolean? m) (true? m))
             true
@@ -362,7 +341,7 @@
                 (throw (Exception. "更新语句字符串错误！"))))
         (throw (Exception. "更新语句字符串错误！"))))
 
-(defn my_update_obj-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+(defn my_update_obj-authority [^Ignite ignite group_id lst-sql args-dic]
     (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
         (if-let [us (my_update_query_sql ignite group_id m)]
             us

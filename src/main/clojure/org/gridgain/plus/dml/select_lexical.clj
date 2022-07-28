@@ -42,15 +42,15 @@
         params))
 
 ; 添加参数
-(defn add-scenes-ps [^Ignite ignite ^Long group_id my-method-name index ps-type]
-    (let [pk-id (MyScenesCachePk. group_id my-method-name)]
+(defn add-scenes-ps [^Ignite ignite group_id my-method-name index ps-type]
+    (let [pk-id (MyScenesCachePk. (first group_id) my-method-name)]
         (let [m (.get (.cache ignite "my_scenes") pk-id)]
             (let [params (doto (get-scenes-params (.getParams m))
                              (.add (MyScenesParams. ps-type (MyConvertUtil/ConvertToInt index))))]
                 (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams params)))))))
 
 ; 删除参数
-(defn remove-scenes-ps [^Ignite ignite ^Long group_id my-method-name index]
+(defn remove-scenes-ps [^Ignite ignite group_id my-method-name index]
     (letfn [(remove-params-index [params index]
                 (if (or (nil? params) (= (count params) 0))
                     (throw (Exception. "没有参数！"))
@@ -61,13 +61,13 @@
                                 (recur r (doto lst (.add f))))
                             lst)))
                 )]
-        (let [pk-id (MyScenesCachePk. group_id my-method-name)]
+        (let [pk-id (MyScenesCachePk. (first group_id) my-method-name)]
             (let [m (.get (.cache ignite "my_scenes") pk-id)]
                 (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (remove-params-index (.getParams m) (MyConvertUtil/ConvertToInt index))))))))
     )
 
 ; 替换参数
-(defn replace-scenes-ps [^Ignite ignite ^Long group_id my-method-name index ps-type]
+(defn replace-scenes-ps [^Ignite ignite group_id my-method-name index ps-type]
     (letfn [(replace-params-index [params index ps-type]
                 (if (or (nil? params) (= (count params) 0))
                     (throw (Exception. "没有参数！"))
@@ -78,7 +78,7 @@
                                 (recur r (doto lst (.add f))))
                             lst)))
                 )]
-        (let [pk-id (MyScenesCachePk. group_id my-method-name)]
+        (let [pk-id (MyScenesCachePk. (first group_id) my-method-name)]
             (let [m (.get (.cache ignite "my_scenes") pk-id)]
                 (.put (.cache ignite "my_scenes") pk-id (doto m (.setParams (replace-params-index (.getParams m) (MyConvertUtil/ConvertToInt index) ps-type))))))))
 
@@ -125,21 +125,22 @@
         (.getVar m)
         m))
 
-(defn get_group_schema_name [^Ignite ignite ^Long group_id]
-    (if (= group_id 0)
+(defn get_group_schema_name [^Ignite ignite group_id]
+    (if (= (first group_id) 0)
         ["MY_META" "ALL"]
-        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [group_id])))))]
+        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [(first group_id)])))))]
             m))
     )
 
 (def my_group_schema_name (memoize get_group_schema_name))
 
-(defn get_obj_schema_name [^Ignite ignite ^Long group_id my-obj]
+(defn get_obj_schema_name [^Ignite ignite group_id my-obj]
     (if-let [vs-obj (get-value my-obj)]
         (if (contains? vs-obj "table_name")
             (let [{schema_name :schema_name table_name :table_name} (get-schema (get vs-obj "table_name"))]
                 (if (= schema_name "")
-                    {:schema_name (first (my_group_schema_name ignite group_id)) :table_name table_name}
+                    ;{:schema_name (first (my_group_schema_name ignite group_id)) :table_name table_name}
+                    {:schema_name (second group_id) :table_name table_name}
                     {:schema_name schema_name :table_name table_name})))))
 
 ; 剔除单括号或双括号

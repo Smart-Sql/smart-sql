@@ -183,7 +183,7 @@
         ))
 
 (defn -my_query_sql [^Ignite ignite ^Long group_id ^List lst]
-    (query_sql ignite group_id lst))
+    (query_sql ignite [group_id] lst))
 
 
 

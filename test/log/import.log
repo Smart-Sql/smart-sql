@@ -43,6 +43,8 @@
         (java.util List ArrayList Date Iterator)
         (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
         (java.math BigDecimal)
+        (com.google.gson Gson)
+        (org.tools MyGson)
         (org.gridgain.plus.dml MySmartSql)
         (org.tools MyTools)
         )

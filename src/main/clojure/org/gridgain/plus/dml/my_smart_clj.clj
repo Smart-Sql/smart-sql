@@ -364,14 +364,14 @@
                     (body-to-clj ignite group_id body-lst func-context))
                 ))))
 
-(defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
+(defn smart-to-clj [^Ignite ignite group_id ^String smart-sql]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast smart-sql)) nil)]
         (if (re-find #"^\(defn\s*" code)
             code
             (str/replace code #"^\(\s*" "(defn "))
         ))
 
-(defn my-smart-to-clj [^Ignite ignite ^Long group_id smart-lst]
+(defn my-smart-to-clj [^Ignite ignite group_id smart-lst]
     (let [ast (first (my-smart-sql/my-get-ast-lst smart-lst))]
         (let [code (ast-to-clj ignite group_id ast nil)]
             (if (re-find #"^\(defn\s*" code)
@@ -379,7 +379,7 @@
                 [(str/replace code #"^\(\s*" "(defn ") (-> ast :func-name)])
             )))
 
-(defn my-smart-to-clj-lower [^Ignite ignite ^Long group_id smart-lst]
+(defn my-smart-to-clj-lower [^Ignite ignite group_id smart-lst]
     (let [ast-0 (first (my-smart-sql/my-get-ast-lst smart-lst))]
         (let [ast (assoc ast-0 :func-name (str/lower-case (-> ast-0 :func-name)))]
             (let [code (ast-to-clj ignite group_id ast nil)]
@@ -390,7 +390,7 @@
         ))
 
 ; smart-lst: (my-lexical/to-back smart-sql)
-(defn my-smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq smart-lst]
+(defn my-smart-lst-to-clj [^Ignite ignite group_id ^clojure.lang.LazySeq smart-lst]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
         (if (re-find #"^\(defn\s*" code)
             code
@@ -485,14 +485,14 @@
                 (concat ["function" "cnc-cf-fn" "(" ")" "{"] (apply concat (get-fn-body lst)) ["}"]))]
         (get-fn lst)))
 
-(defn has-func [^Ignite ignite ^Long group_id ast]
+(defn has-func [^Ignite ignite group_id ast]
     (let [func-lst (get-funcs ast)]
         (cond (nil? func-lst) true
               (empty? func-lst) true
               :else
               (loop [[f & r] func-lst]
                   (if (some? f)
-                      (cond (some? (.get (.cache ignite "my_scenes") (MyScenesCachePk. group_id (str/lower-case f)))) (throw (Exception. (format "已经存在方法：%s 不能在新建" f)))
+                      (cond (some? (.get (.cache ignite "my_scenes") (MyScenesCachePk. (first group_id) (str/lower-case f)))) (throw (Exception. (format "已经存在方法：%s 不能在新建" f)))
                             (some? (.get (.cache ignite "my_func") (str/lower-case f))) (throw (Exception. (format "已经存在方法：%s 不能在新建" f)))
                             :else
                             (recur r)
@@ -500,7 +500,7 @@
                       true))
               )))
 
-(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
+(defn smart-lst-to-clj [^Ignite ignite group_id ^clojure.lang.LazySeq lst]
     (let [smart-lst (re-fn lst)]
         (let [ast (first (my-smart-sql/my-get-ast-lst smart-lst))]
             (println lst)
