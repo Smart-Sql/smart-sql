@@ -113,7 +113,7 @@
             (recur (+ index 1) my-count (conj rs (nth lst index)))
             (my-lexical/get_str_value (str/join " " rs)))))
 
-(defn my_plus_sql [^Ignite ignite ^Long group_id lst-sql]
+(defn my_plus_sql [^Ignite ignite group_id lst-sql]
     (if-let [ast (my-select/sql-to-ast lst-sql)]
         (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
         (throw (Exception. (format "查询字符串 %s 错误！" (str/join " " lst-sql))))))
@@ -130,148 +130,68 @@
 ;          ))
 
 ; smart-code-lst = (my-lexical/to-back sql)
-(defn my-smart-sql [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq smart-code-lst]
+(defn my-smart-sql [^Ignite ignite group_id ^clojure.lang.LazySeq smart-code-lst]
     (my-smart-clj/smart-lst-to-clj ignite group_id smart-code-lst))
 
-(defn super-sql-lst-0 [^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type ^Long dataset_id [lst & r] ^StringBuilder sb]
-    (if (some? lst)
-        (do
-            (if-not (nil? (first lst))
-                (cond (and (string? (first lst)) (contains? #{"insert" "update" "delete" "select"} (str/lower-case (first lst)))) (my-smart-db-line/query_sql ignite group_id lst)
-                      ;(my-lexical/is-eq? (first lst) "insert") (let [rs (my-insert/insert_run ignite group_id lst sql)]
-                      ;                                             (if-not (nil? rs)
-                      ;                                                 (.append sb (format "select show_msg('%s') as tip;" (first (first rs))))
-                      ;                                                 (.append sb "select show_msg('true') as tip;")))
-                      ;(my-lexical/is-eq? (first lst) "update") (let [rs (my-update/update_run ignite group_id lst sql)]
-                      ;                                             (if-not (nil? rs)
-                      ;                                                 (.append sb (format "select show_msg('%s') as tip;" (first (first rs))))
-                      ;                                                 (.append sb "select show_msg('true') as tip;")))
-                      ;(my-lexical/is-eq? (first lst) "delete") (let [rs (my-delete/delete_run ignite group_id lst sql)]
-                      ;                                             (if-not (nil? rs)
-                      ;                                                 (.append sb (format "select show_msg('%s') as tip;" (first (first rs))))
-                      ;                                                 (.append sb "select show_msg('true') as tip;")))
-                      ;(my-lexical/is-eq? (first lst) "select") (if (has-from? (rest lst))
-                      ;                                             (.append sb (str (my_plus_sql ignite group_id lst) ";"))
-                      ;                                             (.append sb (str sql ";")))
-
-                      ; ddl
-                      ; create dataset
-                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-create-dataset/create_data_set ignite group_id (str/join " " lst))]
-                                                                                                                                          (if (nil? rs)
-                                                                                                                                              (.append sb "select show_msg('true') as tip;")
-                                                                                                                                              (.append sb "select show_msg('false') as tip;")))
-                      ; alert dataset
-                      ;(and (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-alter-dataset/alter_data_set ignite group_id sql)]
-                      ;                                                                                             (if (nil? rs)
-                      ;                                                                                                 "select show_msg('true') as tip"
-                      ;                                                                                                 "select show_msg('false') as tip"))
-                      ; drop dataset
-                      (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id lst)]
-                                                                                                                  (if (nil? rs)
-                                                                                                                      "select show_msg('false') as tip"
-                                                                                                                      "select show_msg('true') as tip"))
-                      ; create table
-                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/create-table ignite group_id dataset_name group_type dataset_id "" (str/join " " lst))]
-                                                                                                                                        (if (nil? rs)
-                                                                                                                                            (.append sb "select show_msg('true') as tip;")
-                                                                                                                                            (.append sb "select show_msg('false') as tip;")))
-                      ; alter table
-                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-alter-table/alter_table ignite group_id dataset_name group_type dataset_id (str/join " " lst))]
-                                                                                                                                       (if (nil? rs)
-                                                                                                                                           (.append sb "select show_msg('true') as tip;")
-                                                                                                                                           (.append sb "select show_msg('false') as tip;")))
-                      ; drop table
-                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-drop-table/drop_table ignite group_id dataset_name group_type dataset_id (str/join " " lst))]
-                                                                                                                                      (if (nil? rs)
-                                                                                                                                          (.append sb "select show_msg('true') as tip;")
-                                                                                                                                          (.append sb "select show_msg('false') as tip;")))
-                      ; create index
-                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-create-index/create_index ignite group_id dataset_name group_type dataset_id (str/join " " lst))]
-                                                                                                                                        (if (nil? rs)
-                                                                                                                                            (.append sb "select show_msg('true') as tip;")
-                                                                                                                                            (.append sb "select show_msg('false') as tip;")))
-                      ; drop index
-                      (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id dataset_name group_type dataset_id (str/join " " lst))]
-                                                                                                                                      (if (nil? rs)
-                                                                                                                                          (.append sb "select show_msg('true') as tip;")
-                                                                                                                                          (.append sb "select show_msg('false') as tip;")))
-                      ; update dataset
-                      ;(and (my-lexical/is-eq? (first lst) "update") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-update-dataset/update_dataset ignite group_id sql)]
-                      ;                                                                                              (if (nil? rs)
-                      ;                                                                                                  "select show_msg('true') as tip"
-                      ;                                                                                                  "select show_msg('false') as tip"))
-                      ; no sql
-                      ;(contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst))) (.append sb (str (my-super-cache/my-no-lst ignite group_id lst (str/join " " lst)) ";"))
-                      (and (string? (first lst)) (contains? #{"noSqlInsert" "noSqlUpdate" "noSqlDelete" "noSqlDrop"} (str/lower-case (first lst)))) (let [my-code (my-smart-clj/token-to-clj ignite group_id (my-select/sql-to-ast lst) nil)]
-                                                                                                                                                        (.append sb (str (eval (read-string my-code)))))
-                      :else
-                      (if (string? (first lst))
-                          (my-smart-sql ignite group_id [lst])
-                          (my-smart-sql ignite group_id (apply concat lst)))
-                      ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
-                      ))
-            (recur ignite group_id userToken dataset_name group_type dataset_id r sb))
-        (.toString sb)))
-
 (defn super-sql-lst
-    ([^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type ^Long dataset_id lst] (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id lst []))
-    ([^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type ^Long dataset_id [lst & r] lst-rs]
+    ([^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type ^Long dataset_id lst] (super-sql-lst ignite [group_id dataset_name group_type dataset_id] lst []))
+    ([^Ignite ignite group_id [lst & r] lst-rs]
      (if (some? lst)
          (if-not (nil? (first lst))
-             (cond (and (string? (first lst)) (my-lexical/is-eq? (first lst) "insert")) (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "update")) (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "delete")) (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "select")) (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
+             (cond (and (string? (first lst)) (my-lexical/is-eq? (first lst) "insert")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "update")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "delete")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "select")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
                    ; create dataset
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-create-dataset/create_data_set ignite group_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                        (if (nil? rs)
-                                                                                                                                           (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('true') as tip;"))
-                                                                                                                                           (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('false') as tip;"))
+                                                                                                                                           (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
+                                                                                                                                           (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                            ))
                    ; drop dataset
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (cull-semicolon lst))]
-                                                                                                               (if (nil? rs)
-                                                                                                                   "select show_msg('true') as tip"
-                                                                                                                   "select show_msg('false') as tip"))
-                   ; create table
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/my_create_table_lst ignite group_id dataset_name group_type dataset_id "" (cull-semicolon lst))]
                                                                                                                                      (if (nil? rs)
-                                                                                                                                         (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('true') as tip;"))
-                                                                                                                                         (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('false') as tip;"))
+                                                                                                                                         "select show_msg('true') as tip"
+                                                                                                                                         "select show_msg('false') as tip"))
+                   ; create table
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/my_create_table_lst ignite group_id "" (cull-semicolon lst))]
+                                                                                                                                     (if (nil? rs)
+                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
+                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                          ))
                    ; alter table
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-alter-table/alter_table ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                     (if (nil? rs)
-                                                                                                                                        (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('true') as tip;"))
-                                                                                                                                        (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('false') as tip;"))
+                                                                                                                                        (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
+                                                                                                                                        (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                         ))
                    ; drop table
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-drop-table/drop_table ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                    (if (nil? rs)
-                                                                                                                                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('true') as tip;"))
-                                                                                                                                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('false') as tip;"))
+                                                                                                                                       (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
+                                                                                                                                       (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                        ))
                    ; create index
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-create-index/create_index ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                      (if (nil? rs)
-                                                                                                                                         (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('true') as tip;"))
-                                                                                                                                         (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('false') as tip;"))
+                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
+                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                          ))
                    ; drop index
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id dataset_name group_type dataset_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                    (if (nil? rs)
-                                                                                                                                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('true') as tip;"))
-                                                                                                                                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs "select show_msg('false') as tip;"))
+                                                                                                                                       (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
+                                                                                                                                       (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                        ))
                    ; no sql
                    ;(contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst))) (.append sb (str (my-super-cache/my-no-lst ignite group_id lst (str/join " " lst)) ";"))
                    (and (string? (first lst)) (contains? #{"noSqlInsert" "noSqlUpdate" "noSqlDelete" "noSqlDrop"} (str/lower-case (first lst)))) (let [my-code (my-smart-clj/token-to-clj ignite group_id (my-select/sql-to-ast (cull-semicolon lst)) nil)]
-                                                                                                                                                     (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (str (eval (read-string my-code))))))
+                                                                                                                                                     (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" (str (eval (read-string my-code))))))
                                                                                                                                                      )
                    :else
                    (if (string? (first lst))
-                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id lst))))
-                       (recur ignite group_id userToken dataset_name group_type dataset_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id (apply concat lst)))))
+                       (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id lst))))
+                       (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id (apply concat lst)))))
                        )
                    ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                    ))

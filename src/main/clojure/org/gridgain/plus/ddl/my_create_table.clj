@@ -521,18 +521,19 @@
 (defn run_ddl_dml [^Ignite ignite lst_ddl lst_dml_table no-sql-cache]
     (MyCreateTableUtil/run_ddl_dml ignite (my-lexical/to_arryList lst_ddl) lst_dml_table no-sql-cache))
 
-(defn my_create_table_lst [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String descrip lst]
-    (if (= group_id 0)
-        (if-let [{schema_name :schema_name table_name :table_name pk-data :pk-data lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lsts ignite lst (str/lower-case dataset_name))]
+; group_id序列： group_id dataset_name group_type dataset_id
+(defn my_create_table_lst [^Ignite ignite group_id ^String descrip lst]
+    (if (= (first group_id) 0)
+        (if-let [{schema_name :schema_name table_name :table_name pk-data :pk-data lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lsts ignite lst (str/lower-case (second group_id)))]
             (if-let [lst_dml_table (to_mycachex ignite (get_my_table_lst ignite table_name descrip lst lst_table_item 0))]
                 (if (true? (.isMultiUserGroup (.configuration ignite)))
                     (run_ddl_dml ignite lst_ddl lst_dml_table (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) pk-data (SqlType/INSERT))))
                 (throw (Exception. "创建表的语句错误！")))
             (throw (Exception. "创建表的语句错误！")))
-        (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
-            (if-let [{schema_name :schema_name table_name :table_name pk-data :pk-data lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lsts ignite lst (str/lower-case dataset_name))]
-                (if (and (not (my-lexical/is-eq? schema_name "my_meta")) (my-lexical/is-eq? schema_name dataset_name))
-                    (if-let [lst_dml_table (to_mycachex ignite (get_my_table_lst ignite table_name descrip lst lst_table_item dataset_id))]
+        (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+            (if-let [{schema_name :schema_name table_name :table_name pk-data :pk-data lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lsts ignite lst (str/lower-case (second group_id)))]
+                (if (and (not (my-lexical/is-eq? schema_name "my_meta")) (my-lexical/is-eq? schema_name (second group_id)))
+                    (if-let [lst_dml_table (to_mycachex ignite (get_my_table_lst ignite table_name descrip lst lst_table_item (last group_id)))]
                         (if (true? (.isMultiUserGroup (.configuration ignite)))
                             (run_ddl_dml ignite lst_ddl lst_dml_table (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) pk-data (SqlType/INSERT))))
                         (throw (Exception. "创建表的语句错误！"))
@@ -541,8 +542,9 @@
                 (throw (Exception. "创建表的语句错误！")))
             (throw (Exception. "该用户组没有创建表的权限！")))))
 
-(defn create-table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String descrip sql-line]
-    (my_create_table_lst ignite group_id dataset_name group_type dataset_id descrip (my-lexical/to-back sql-line)))
+; group_id 列表： group_id dataset_name group_type dataset_id
+(defn create-table [^Ignite ignite group_id ^String descrip sql-line]
+    (my_create_table_lst ignite group_id descrip (my-lexical/to-back sql-line)))
 
 ; 用户 meta table 获取 ast
 (defn get-meta-pk-data [^String sql]

@@ -49,12 +49,12 @@
     (.containsKey (.cache ignite "my_func") (str/lower-case func-name)))
 
 ; 判断 scenes
-(defn is-scenes? [^Ignite ignite ^Long group_id ^String scenes-name]
-    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. group_id (str/lower-case scenes-name))))
+(defn is-scenes? [^Ignite ignite group_id ^String scenes-name]
+    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. (first group_id) (str/lower-case scenes-name))))
 
 (defn -isFunc [^Ignite ignite ^String func-name]
     (is-func? ignite func-name))
 
 (defn -isScenes [^Ignite ignite ^Long group_id ^String scenes-name]
-    (is-scenes? ignite group_id scenes-name))
+    (is-scenes? ignite [group_id] scenes-name))
 

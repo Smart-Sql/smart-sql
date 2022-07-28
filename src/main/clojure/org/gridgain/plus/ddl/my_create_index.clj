@@ -174,12 +174,13 @@
         ))
 
 ; 新增 index
-(defn create_index [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String sql_line]
+; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+(defn create_index [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
-        (if (= group_id 0)
-            (run_ddl_real_time ignite dataset_name sql_code)
-            (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
-                (run_ddl_real_time ignite dataset_name sql_code)
+        (if (= (first group_id) 0)
+            (run_ddl_real_time ignite (second group_id) sql_code)
+            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+                (run_ddl_real_time ignite (second group_id) sql_code)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))
             )))
 

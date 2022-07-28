@@ -72,7 +72,7 @@
                )
          (if (and (> (count stack) 0) (> (count lst) 0)) [lst stack]))))
 
-(defn my-authority [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+(defn my-authority [^Ignite ignite group_id ^String schema_name ^String table_name]
     (letfn [(get_insert_view_items [[f & r] lst]
                 (if (some? f)
                     (if (not (or (= f "(") (= f ")") (= f ",")))
@@ -89,10 +89,10 @@
           :else (throw (Exception. "没有 %s 字段的插入权限！" (-> f :item_name)))
           ))
 
-(defn my_insert_obj [^Ignite ignite ^Long group_id [f & r]]
+(defn my_insert_obj [^Ignite ignite group_id [f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
-            (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= group_id 0))
+            (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= (first group_id) 0))
                 {:schema_name "MY_META" :table_name table_name :values (get-insert-items vs-line)}
                 (if-let [items (get-insert-items vs-line)]
                     (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
@@ -102,10 +102,10 @@
                     (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))))
         ))
 
-(defn my_insert_obj-no-authority [^Ignite ignite ^Long group_id [f & r]]
+(defn my_insert_obj-no-authority [^Ignite ignite group_id [f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
-            (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= group_id 0))
+            (if (and (or (my-lexical/is-eq? schema_name "my_meta") (= schema_name "")) (= (first group_id) 0))
                 {:schema_name "MY_META" :table_name table_name :values (get-insert-items vs-line)}
                 (if-let [items (get-insert-items vs-line)]
                     {:schema_name schema_name :table_name table_name :values items}

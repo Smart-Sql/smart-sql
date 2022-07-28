@@ -148,8 +148,8 @@
         ))
 
 ; 执行实时数据集中的 ddl
-(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id ^String dataset_name]
-    (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (alter-table-obj ignite dataset_name sql_line)]
+(defn run_ddl_real_time [^Ignite ignite ^String sql_line group_id]
+    (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (alter-table-obj ignite (second group_id) sql_line)]
         (if-not (nil? lst_cachex)
             (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql})
             ;(if (true? (.isMultiUserGroup (.configuration ignite)))
@@ -162,12 +162,13 @@
 ; 1、如果要修改的是实时数据集，则修改实时数据集的时候要同步修改在其它数据集中的表
 ; 2、判断要修改的表是否是实时数据集映射到，批处理数据集中的，如果是就不能修改，如果不是就可以修改
 ; 执行 alter table
-(defn alter_table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String sql_line]
+; group_id: ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+(defn alter_table [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
-        (if (= group_id 0)
-            (run_ddl_real_time ignite sql_code -1 group_id dataset_name)
-            (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
-                (run_ddl_real_time ignite sql_code dataset_id group_id dataset_name)
+        (if (= (first group_id) 0)
+            (run_ddl_real_time ignite sql_code group_id)
+            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+                (run_ddl_real_time ignite sql_code group_id)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 

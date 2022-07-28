@@ -114,12 +114,13 @@
         ))
 
 ; 删除表
-(defn drop_table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String sql_line]
+; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+(defn drop_table [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
-        (if (= group_id 0)
-            (run_ddl_real_time ignite sql_code dataset_name)
-            (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
-                (run_ddl_real_time ignite sql_code dataset_name)
+        (if (= (first group_id) 0)
+            (run_ddl_real_time ignite sql_code (second group_id))
+            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+                (run_ddl_real_time ignite sql_code (second group_id))
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 ;(defn drop_table [^Ignite ignite ^Long group_id ^String sql_line]

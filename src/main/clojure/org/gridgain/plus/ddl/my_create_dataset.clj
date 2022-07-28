@@ -26,8 +26,8 @@
               )))
 
 ; CREATE DATASET CRM_DATA_SET
-(defn create_data_set [^Ignite ignite ^Long group_id ^String sql]
-    (if (= group_id 0)
+(defn create_data_set [^Ignite ignite group_id ^String sql]
+    (if (= (first group_id) 0)
         (if-let [data_set_name (get-dataset-name sql)]
             (let [ds-cache (.cache ignite "my_dataset")]
                 (let [data_set_name_u (str/lower-case data_set_name)]
