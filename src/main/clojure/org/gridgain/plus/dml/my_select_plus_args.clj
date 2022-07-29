@@ -37,7 +37,8 @@
                         ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
                         (get_select_view [ignite group_id schema_name talbe_name]
                             (cond (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-empty? schema_name)) (= (first group_id) 0)) nil
-                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！删除数据！"))
+                                  (= (first group_id) 0) nil
+                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！查询数据！"))
                                   (and (my-lexical/is-empty? schema_name) (my-lexical/is-not-empty? (second group_id))) (if-let [sql_objs (my-lexical/get-select-code ignite (second group_id) talbe_name group_id)]
                                                                                                                             (if (= (count sql_objs) 1)
                                                                                                                                 (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]

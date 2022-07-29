@@ -23,7 +23,8 @@
         :methods [[getMetaCache [] org.apache.ignite.IgniteCache]
                   [getPublicCache [] org.apache.ignite.IgniteCache]
                   ^:static [isFunc [org.apache.ignite.Ignite String] Boolean]
-                  ^:static [isScenes [org.apache.ignite.Ignite Long String] Boolean]]
+                  ;^:static [isScenes [org.apache.ignite.Ignite Long String] Boolean]
+                  ]
         ))
 
 ; 构造函数
@@ -55,6 +56,6 @@
 (defn -isFunc [^Ignite ignite ^String func-name]
     (is-func? ignite func-name))
 
-(defn -isScenes [^Ignite ignite ^Long group_id ^String scenes-name]
-    (is-scenes? ignite [group_id] scenes-name))
+;(defn -isScenes [^Ignite ignite ^Long group_id ^String scenes-name]
+;    (is-scenes? ignite [group_id] scenes-name))
 

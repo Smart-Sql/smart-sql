@@ -33,7 +33,7 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [my_query_sql [org.apache.ignite.Ignite Long java.util.List] Object]]
+        :methods [^:static [my_query_sql [org.apache.ignite.Ignite Object java.util.List] Object]]
         ))
 
 ; 在类似 DBeaver 这种工具中开发用的，一条，几条语句一起执行
@@ -182,8 +182,8 @@
         (my-log-no-authority ignite group_id lst)
         ))
 
-(defn -my_query_sql [^Ignite ignite ^Long group_id ^List lst]
-    (query_sql ignite [group_id] lst))
+(defn -my_query_sql [^Ignite ignite group_id ^List lst]
+    (query_sql ignite group_id lst))
 
 
 

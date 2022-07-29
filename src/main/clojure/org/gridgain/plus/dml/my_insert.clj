@@ -106,7 +106,10 @@
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
             (cond (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-empty? schema_name)) (= (first group_id) 0)) {:schema_name "MY_META" :table_name table_name :values (get-insert-items vs-line)}
-                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！删除数据！"))
+                  (= (first group_id) 0) (if (my-lexical/is-not-empty? schema_name)
+                                             {:schema_name schema_name :table_name table_name :values (get-insert-items vs-line)}
+                                             {:schema_name (second group_id) :table_name table_name :values (get-insert-items vs-line)})
+                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！添加数据！"))
                   (and (my-lexical/is-empty? schema_name) (my-lexical/is-not-empty? (second group_id))) (if-let [items (get-insert-items vs-line)]
                                                                                                             (if-let [{v-items :v-items} (my-authority ignite group_id (second group_id) table_name)]
                                                                                                                 (if (nil? (has-my-authority items v-items))

@@ -31,10 +31,10 @@
         ;          ^:static [myInit [] void]
         ;          ^:static [myShowCode [org.apache.ignite.Ignite Long String] String]
         ;          ^:static [invokeScenesLink [org.apache.ignite.Ignite Long String java.util.List] Object]]
-        :methods [[invokeScenes [org.apache.ignite.Ignite java.util.List String java.util.List] Object]
+        :methods [[invokeScenes [org.apache.ignite.Ignite Object String java.util.List] Object]
                   [myInvokeScenes [org.apache.ignite.Ignite Long Long] Object]
                   [myShowCode [org.apache.ignite.Ignite Long String] String]
-                  [invokeScenesLink [org.apache.ignite.Ignite java.util.List String java.util.List] Object]]
+                  [invokeScenesLink [org.apache.ignite.Ignite Object String java.util.List] Object]]
         ))
 
 ; 调用 func
@@ -94,8 +94,8 @@
 (defn -invokeScenes [this ^Ignite ignite group_id ^String method-name ^List ps]
     (my-invoke-scenes ignite group_id method-name ps))
 
-(defn -invokeScenesLink [this ^Ignite ignite ^Long group_id ^String method-name ^List ps]
-    (my-invoke-scenes-link ignite [group_id] method-name ps))
+(defn -invokeScenesLink [this ^Ignite ignite group_id ^String method-name ^List ps]
+    (my-invoke-scenes-link ignite group_id method-name ps))
 
 (defn -myInvokeScenes [this ^Ignite ignite ^Long a ^Long b]
     (my-lexical/get-value (apply (eval (read-string "(defn add [ignite a b]\n    (+ a b))")) [nil a b])))

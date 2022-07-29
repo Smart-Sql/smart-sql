@@ -27,7 +27,7 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [smart_view [org.apache.ignite.Ignite Long String String] String]]
+        :methods [^:static [smart_view [org.apache.ignite.Ignite Object String String] String]]
         ))
 
 (defn cron-to-str
@@ -149,8 +149,8 @@
                 )
             )))
 
-(defn _smart_view [^Ignite ignite ^Long group_id ^String group_name ^String code]
-    (smart-view ignite [group_id] group_name code))
+(defn -smart_view [^Ignite ignite group_id ^String group_name ^String code]
+    (smart-view ignite group_id group_name code))
 
 
 

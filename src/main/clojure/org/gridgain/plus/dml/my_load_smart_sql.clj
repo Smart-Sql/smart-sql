@@ -185,8 +185,8 @@
                 (recur r)))))
 
 
-(defn -loadSmartSql [this ^Ignite ignite ^Long group_id ^String code]
-    (load-smart-sql ignite [group_id] code))
+(defn -loadSmartSql [this ^Ignite ignite ^Object group_id ^String code]
+    (load-smart-sql ignite group_id code))
 
 
 
