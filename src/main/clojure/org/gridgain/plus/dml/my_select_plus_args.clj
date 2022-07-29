@@ -36,13 +36,31 @@
                         ; 重新生成新的 ast
                         ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
                         (get_select_view [ignite group_id schema_name talbe_name]
-                            (if-let [sql_objs (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
-                                (if (= (count sql_objs) 1)
-                                    (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
-                                        (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
-                                            {:query-items nil :where-items where-items}
-                                            {:query-items (get_query_view query-items) :where-items where-items})
-                                        ))))
+                            (cond (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-empty? schema_name)) (= (first group_id) 0)) nil
+                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！删除数据！"))
+                                  (and (my-lexical/is-empty? schema_name) (my-lexical/is-not-empty? (second group_id))) (if-let [sql_objs (my-lexical/get-select-code ignite (second group_id) talbe_name group_id)]
+                                                                                                                            (if (= (count sql_objs) 1)
+                                                                                                                                (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                                                                                                                    (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                                                                                                                        {:query-items nil :where-items where-items}
+                                                                                                                                        {:query-items (get_query_view query-items) :where-items where-items})
+                                                                                                                                    )))
+                                  (and (my-lexical/is-eq? schema_name (second group_id)) (my-lexical/is-not-empty? (second group_id))) (if-let [sql_objs (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
+                                                                                                                                           (if (= (count sql_objs) 1)
+                                                                                                                                               (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                                                                                                                                   (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                                                                                                                                       {:query-items nil :where-items where-items}
+                                                                                                                                                       {:query-items (get_query_view query-items) :where-items where-items})
+                                                                                                                                                   )))
+                                  (and (not (my-lexical/is-eq? schema_name (second group_id))) (my-lexical/is-not-empty? schema_name) (my-lexical/is-not-empty? (second group_id))) (if-let [sql_objs (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
+                                                                                                                                                                                        (if (= (count sql_objs) 1)
+                                                                                                                                                                                            (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                                                                                                                                                                                (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                                                                                                                                                                                    {:query-items nil :where-items where-items}
+                                                                                                                                                                                                    {:query-items (get_query_view query-items) :where-items where-items})
+                                                                                                                                                                                                ))
+                                                                                                                                                                                        (throw (Exception. "用户不存在或者没有权限！查询数据！")))
+                                  ))
                         (get_query_view
                             ([query-items] (get_query_view query-items {}))
                             ([[f & r] dic]
@@ -56,13 +74,13 @@
                     (loop [[f & r] (-> sql-obj :table-items) dic {}]
                         (if (some? f)
                             (if (contains? f :table_name)
-                                (let [table_ast (get_select_view ignite group_id (get f :schema_name) (get f :table_name))]
+                                (if-let [table_ast (get_select_view ignite group_id (get f :schema_name) (get f :table_name))]
                                     (if-not (Strings/isNullOrEmpty (-> f :table_alias))
                                         (recur r (assoc dic (-> f :table_alias) table_ast))
                                         (if-not (nil? r)
                                             (throw (Exception. "两个表以上要给表取别名"))
                                             (recur r (assoc dic "" table_ast))))
-                                    )
+                                    (recur r dic))
                                 (recur r dic))
                             (if (= dic {})
                                 nil dic))))

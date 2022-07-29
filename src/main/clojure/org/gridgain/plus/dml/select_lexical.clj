@@ -41,6 +41,15 @@
         (ArrayList.)
         params))
 
+
+; 判断字符串不为空
+(defn is-not-empty? [^String line]
+    (if-not (Strings/isNullOrEmpty line)
+        true false))
+
+(defn is-empty? [^String line]
+    (Strings/isNullOrEmpty line))
+
 ; 添加参数
 (defn add-scenes-ps [^Ignite ignite group_id my-method-name index ps-type]
     (let [pk-id (MyScenesCachePk. (first group_id) my-method-name)]

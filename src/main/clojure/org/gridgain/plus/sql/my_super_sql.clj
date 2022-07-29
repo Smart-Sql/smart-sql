@@ -150,7 +150,7 @@
                                                                                                                                            ))
                    ; drop dataset
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (cull-semicolon lst))]
-                                                                                                                                     (if (nil? rs)
+                                                                                                                                     (if-not (nil? rs)
                                                                                                                                          "select show_msg('true') as tip"
                                                                                                                                          "select show_msg('false') as tip"))
                    ; create table
