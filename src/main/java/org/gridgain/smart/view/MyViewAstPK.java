@@ -51,6 +51,15 @@ public class MyViewAstPK implements Serializable {
     public void setMy_group_id(Long my_group_id) {
         this.my_group_id = my_group_id;
     }
+
+    @Override
+    public String toString() {
+        return "MyViewAstPK{" +
+                "schema_name='" + schema_name + '\'' +
+                ", table_name='" + table_name + '\'' +
+                ", my_group_id=" + my_group_id +
+                '}';
+    }
 }
 
 

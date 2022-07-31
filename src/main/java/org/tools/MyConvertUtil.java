@@ -59,8 +59,36 @@ public class MyConvertUtil {
 
     public static Boolean ConvertToBoolean(Object t)
     {
-        if (t != null && (((int)t == 1) || ((String)t).toLowerCase().equals("true")))
-            return true;
+        if (t != null)
+        {
+            if (t instanceof Boolean)
+            {
+                return (Boolean)t;
+            }
+            else if (t instanceof String)
+            {
+                if (((String)t).toLowerCase().equals("true"))
+                {
+                    return true;
+                }
+                else if (((String)t).equals("1"))
+                {
+                    return true;
+                }
+            }
+            else if ((t instanceof Integer) && ((int)t == 1))
+            {
+                return true;
+            }
+            else if ((t instanceof Long) && ((long)t == 1L))
+            {
+                return true;
+            }
+            else if ((int)t == 1)
+            {
+                return true;
+            }
+        }
         return false;
     }
 
