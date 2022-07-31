@@ -143,6 +143,7 @@
     (let [{func-name :func-name lst_ps :lst_ps} m]
         (cond (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "my_view") (format "(smart-func/smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+              (my-lexical/is-eq? func-name "rm_view") (format "(smart-func/rm-smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add_job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? func-name "remove_job") (format "(smart-func/remove-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))

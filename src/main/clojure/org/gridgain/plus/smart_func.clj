@@ -50,22 +50,32 @@
             (first rs)))
     )
 
+;(defn smart-view-select [^Ignite ignite ^String group_name lst code]
+;    (let [ast (my-select-plus/sql-to-ast lst)]
+;        (if (= (count ast) 1)
+;            (let [{table-items :table-items} (-> (first ast) :table-items) [data_set_id user_group_id] (get-data-set-id-by-group-id ignite group_name)]
+;                (if (= (count table-items) 1)
+;                    (let [schema_name (str/lower-case (-> (first table-items) :schema_name)) table_name (str/lower-case (-> (first table-items) :table_name))]
+;                        (if-not (Strings/isNullOrEmpty schema_name)
+;                            (if-let [my_data_set_id (get-data-set-id-by-ds-name ignite schema_name)]
+;                                (MyCacheExUtil/transLogCache ignite [(MyNoSqlCache. "my_select_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) (MyInsertViews. user_group_id table_name my_data_set_id code) (SqlType/INSERT)) (MyNoSqlCache. "my_select_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) (my-lexical/to-back code) (SqlType/INSERT))]))
+;                            (throw (Exception. "在设置权限视图中，必须有数据集的名字！必须是：数据集.表名"))))
+;                    )))))
+
 (defn smart-view-select [^Ignite ignite ^String group_name lst code]
     (let [ast (my-select-plus/sql-to-ast lst)]
         (if (= (count ast) 1)
-            (let [{table-items :table-items} (-> (first ast) :table-items) [data_set_id user_group_id] (get-data-set-id-by-group-id ignite group_name)]
+            (let [table-items (-> (first ast) :sql_obj :table-items) [data_set_id user_group_id] (get-data-set-id-by-group-id ignite group_name)]
                 (if (= (count table-items) 1)
                     (let [schema_name (str/lower-case (-> (first table-items) :schema_name)) table_name (str/lower-case (-> (first table-items) :table_name))]
                         (if-not (Strings/isNullOrEmpty schema_name)
                             (if-let [my_data_set_id (get-data-set-id-by-ds-name ignite schema_name)]
-                                (MyCacheExUtil/transLogCache ignite [(MyNoSqlCache. "my_select_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) (MyInsertViews. user_group_id table_name my_data_set_id code) (SqlType/INSERT)) (MyNoSqlCache. "my_select_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) (my-lexical/to-back code) (SqlType/INSERT))]))
+                                (let [select-view (MyNoSqlCache. "my_select_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) (MySelectViews. user_group_id table_name my_data_set_id code) (SqlType/INSERT)) select-view-ast (MyNoSqlCache. "my_select_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) ast (SqlType/INSERT))]
+                                    (MyCacheExUtil/transLogCache ignite [select-view select-view-ast])
+                                    )
+                                )
                             (throw (Exception. "在设置权限视图中，必须有数据集的名字！必须是：数据集.表名"))))
-                    ;(if (Strings/isNullOrEmpty (-> (first table-items) :schema_name))
-                    ;    (let [id (.incrementAndGet (.atomicSequence ignite "my_select_views" 0 true)) schema_name (-> (first table-items) :schema_name) table_name (-> (first table-items) :table_name)]
-                    ;        (MyCacheExUtil/transLogCache ignite [(MyNoSqlCache. "my_select_views" schema_name table_name id (MySelectViews. id table_name data_set_id code) (SqlType/INSERT)) (MyNoSqlCache. "my_select_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) (my-select-plus/sql-to-ast (my-lexical/to-back code)) (SqlType/INSERT))]))
-                    ;    (let [id (.incrementAndGet (.atomicSequence ignite "my_select_views" 0 true)) schema_name (-> (first table-items) :schema_name) table_name (-> (first table-items) :table_name) my_data_set_id (get-data-set-id-by-ds-name ignite (-> (first table-items) :schema_name))]
-                    ;        (MyCacheExUtil/transLogCache ignite [(MyNoSqlCache. "my_select_views" schema_name table_name id (MySelectViews. id table_name my_data_set_id code) (SqlType/INSERT)) (MyNoSqlCache. "my_select_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) (my-select-plus/sql-to-ast (my-lexical/to-back code)) (SqlType/INSERT))]))
-                    ;    )
+
                     )))))
 
 ;(defn smart-view-insert [^Ignite ignite ^String group_name lst code]
@@ -104,7 +114,9 @@
         (if-not (Strings/isNullOrEmpty schema_name_v)
             (let [schema_name (str/lower-case schema_name_v) table_name (str/lower-case table_name_v)]
                 (let [my_data_set_id (get-data-set-id-by-ds-name ignite schema_name)]
-                    (MyCacheExUtil/transLogCache ignite [(MyNoSqlCache. "my_delete_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) (MyUpdateViews. user_group_id table_name my_data_set_id code) (SqlType/INSERT)) (MyNoSqlCache. "my_delete_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) (my-lexical/to-back code) (SqlType/INSERT))])))
+                    (let [delete-view (MyNoSqlCache. "my_delete_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) (MyDeleteViews. user_group_id table_name my_data_set_id code) (SqlType/INSERT)) delete-view-ast (MyNoSqlCache. "my_delete_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) (my-lexical/to-back code) (SqlType/INSERT))]
+                        (MyCacheExUtil/transLogCache ignite [delete-view delete-view-ast]))
+                    ))
             (throw (Exception. "在设置权限视图中，必须有数据集的名字！必须是：数据集.表名")))
         ))
 
@@ -118,6 +130,38 @@
                   (my-lexical/is-eq? (first lst) "select") (smart-view-select ignite group_name lst code)
                   ))
         (throw (Exception. "只有 root 用户才能对用户组设置权限！")))
+    )
+
+(defn rm-smart-view-insert [ignite group_name schema_name table_name]
+    (let [[data_set_id user_group_id] (get-data-set-id-by-group-id ignite group_name) my_data_set_id (get-data-set-id-by-ds-name ignite schema_name)]
+        (MyCacheExUtil/transLogCache ignite [(MyNoSqlCache. "my_insert_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) nil (SqlType/DELETE)) (MyNoSqlCache. "my_insert_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) nil (SqlType/DELETE))])))
+
+(defn rm-smart-view-update [ignite group_name schema_name table_name]
+    (let [[data_set_id user_group_id] (get-data-set-id-by-group-id ignite group_name) my_data_set_id (get-data-set-id-by-ds-name ignite schema_name)]
+        (MyCacheExUtil/transLogCache ignite [(MyNoSqlCache. "my_update_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) nil (SqlType/DELETE)) (MyNoSqlCache. "my_update_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) nil (SqlType/DELETE))])))
+
+(defn rm-smart-view-delete [ignite group_name schema_name table_name]
+    (let [[data_set_id user_group_id] (get-data-set-id-by-group-id ignite group_name) my_data_set_id (get-data-set-id-by-ds-name ignite schema_name)]
+        (let [delete-view (MyNoSqlCache. "my_delete_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) nil (SqlType/DELETE)) delete-view-ast (MyNoSqlCache. "my_delete_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) nil (SqlType/DELETE))]
+            (MyCacheExUtil/transLogCache ignite [delete-view delete-view-ast]))))
+
+(defn rm-smart-view-select [ignite group_name schema_name table_name]
+    (let [[data_set_id user_group_id] (get-data-set-id-by-group-id ignite group_name) my_data_set_id (get-data-set-id-by-ds-name ignite schema_name)]
+        (let [select-view (MyNoSqlCache. "my_select_views" schema_name table_name (MyViewsPk. user_group_id table_name my_data_set_id) nil (SqlType/DELETE)) select-view-ast (MyNoSqlCache. "my_select_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) nil (SqlType/DELETE))]
+            (MyCacheExUtil/transLogCache ignite [select-view select-view-ast])
+            )))
+
+(defn rm-smart-view [^Ignite ignite group_id ^String group_name ^String schema_name-table_name ^String rm-type]
+    (if (= (first group_id) 0)
+        (let [lst (my-lexical/to-back schema_name-table_name)]
+            (if (and (= (count lst) 3) (= (second lst) "."))
+                (let [schema_name (first lst) table_name (last lst)]
+                    (cond (my-lexical/is-eq? rm-type "insert") (rm-smart-view-insert ignite group_name schema_name table_name)
+                          (my-lexical/is-eq? rm-type "update") (rm-smart-view-update ignite group_name schema_name table_name)
+                          (my-lexical/is-eq? rm-type "delete") (rm-smart-view-delete ignite group_name schema_name table_name)
+                          (my-lexical/is-eq? rm-type "select") (rm-smart-view-select ignite group_name schema_name table_name)
+                          ))))
+        (throw (Exception. "只有 root 用户才能对删除用户组权限！")))
     )
 
 ; 添加 job
