@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: com.zaxxer/HikariCP-java7:2.4.13">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/com/zaxxer/HikariCP-java7/2.4.13/HikariCP-java7-2.4.13.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

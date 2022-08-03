@@ -1,11 +1,11 @@
 package org.tools;
 
 import com.google.common.base.Strings;
-import org.h2.api.ErrorCode;
-import org.h2.message.DbException;
-import org.h2.util.StringUtils;
-import org.h2.value.ValueDouble;
-import org.h2.value.ValueString;
+import org.gridgain.internal.h2.api.ErrorCode;
+import org.gridgain.internal.h2.message.DbException;
+import org.gridgain.internal.h2.util.StringUtils;
+import org.gridgain.internal.h2.value.ValueDouble;
+import org.gridgain.internal.h2.value.ValueString;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;

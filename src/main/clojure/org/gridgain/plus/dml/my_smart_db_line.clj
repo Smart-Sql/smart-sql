@@ -25,7 +25,6 @@
              (java.util ArrayList List Date Iterator Hashtable)
              (java.sql Timestamp)
              (java.math BigDecimal)
-             (cn.log MyLogger)
              )
     (:gen-class
         ; 生成 class 的类名

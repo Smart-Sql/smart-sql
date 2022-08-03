@@ -22,24 +22,20 @@
     <orderEntry type="library" name="Leiningen: com.google.errorprone/error_prone_annotations:2.1.3" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.guava/guava:25.1-jre" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.j2objc/j2objc-annotations:1.1" level="project" />
-    <orderEntry type="library" name="Leiningen: com.mchange/c3p0:0.9.5.4" level="project" />
-    <orderEntry type="library" name="Leiningen: com.mchange/mchange-commons-java:0.2.15" level="project" />
-    <orderEntry type="library" name="Leiningen: com.zaxxer/HikariCP-java7:2.4.13" level="project" />
-    <orderEntry type="library" name="Leiningen: commons-codec:1.12" level="project" />
+    <orderEntry type="library" name="Leiningen: commons-codec:1.15" level="project" />
     <orderEntry type="library" name="Leiningen: commons-logging:1.1.1" level="project" />
     <orderEntry type="library" name="Leiningen: it.sauronsoftware.cron4j/cron4j:2.2.5" level="project" />
     <orderEntry type="library" name="Leiningen: javax.cache/cache-api:1.0.0" level="project" />
     <orderEntry type="library" name="Leiningen: javax.servlet/javax.servlet-api:3.1.0" level="project" />
     <orderEntry type="library" name="Leiningen: junit:4.11" level="project" />
-    <orderEntry type="library" name="Leiningen: log4j:1.2.17" level="project" />
     <orderEntry type="library" name="Leiningen: nrepl:0.6.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.httpcomponents/httpclient:4.5.6" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.httpcomponents/httpcore:4.4.1" level="project" />
-    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-analyzers-common:7.4.0" level="project" />
-    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-core:7.4.0" level="project" />
-    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-queries:7.4.0" level="project" />
-    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-queryparser:7.4.0" level="project" />
-    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-sandbox:7.4.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-analyzers-common:8.11.1" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-core:8.11.1" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-queries:8.11.1" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-queryparser:8.11.1" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-sandbox:8.11.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.thrift/libthrift:0.12.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.checkerframework/checker-qual:2.0.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/clojure:1.10.1" level="project" />
@@ -53,17 +49,16 @@
     <orderEntry type="library" name="Leiningen: org.clojure/tools.analyzer:1.0.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/tools.reader:1.3.2" level="project" />
     <orderEntry type="library" name="Leiningen: org.codehaus.mojo/animal-sniffer-annotations:1.14" level="project" />
-    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-core:8.7.24" level="project" />
-    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-h2:8.7.24" level="project" />
-    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-indexing:8.7.24" level="project" />
-    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-schedule:8.7.24" level="project" />
+    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-core:8.8.20" level="project" />
+    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-h2:8.8.20" level="project" />
+    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-indexing:8.8.20" level="project" />
+    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-schedule:8.8.20" level="project" />
     <orderEntry type="library" name="Leiningen: org.gridgain/ignite-shmem:8.7.3" level="project" />
-    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-spring:8.7.24" level="project" />
+    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-spring:8.8.20" level="project" />
     <orderEntry type="library" name="Leiningen: org.hamcrest/hamcrest-core:1.3" level="project" />
     <orderEntry type="library" name="Leiningen: org.jetbrains/annotations:16.0.3" level="project" />
     <orderEntry type="library" name="Leiningen: org.locationtech.jts/jts-core:1.15.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.ow2.asm/asm:5.2" level="project" />
-    <orderEntry type="library" name="Leiningen: org.quartz-scheduler/quartz:2.3.2" level="project" />
     <orderEntry type="library" name="Leiningen: org.slf4j/slf4j-api:1.6.4" level="project" />
     <orderEntry type="library" name="Leiningen: org.springframework/spring-aop:4.3.25.RELEASE" level="project" />
     <orderEntry type="library" name="Leiningen: org.springframework/spring-beans:4.3.25.RELEASE" level="project" />

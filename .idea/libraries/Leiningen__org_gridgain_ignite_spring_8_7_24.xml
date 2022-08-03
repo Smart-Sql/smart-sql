@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: org.gridgain/ignite-spring:8.7.24">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/gridgain/ignite-spring/8.7.24/ignite-spring-8.7.24.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
