@@ -13,7 +13,7 @@
              (org.gridgain.smart MyVar)
              (org.tools MyPlusUtil)
              (org.gridgain.dml.util MyCacheExUtil)
-             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
+             (cn.plus.model.db MyCallScenesPk MyCallScenes MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
@@ -58,19 +58,28 @@
         [sql-code (format "(defn %s-ex [^Ignite ignite group_id %s]\n    (%s ignite group_id %s))" scenes_name ps-line scenes_name ps-line-ex)]
         ))
 
+(defn scenes-run [^Ignite ignite group_id ^String my-method-name ps]
+    (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. (first group_id) my-method-name))]
+        (if-not (nil? m)
+            (let [sql-code (.getSql_code m)]
+                (eval (read-string sql-code))
+                (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))
+            )
+        (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))))
+
+(defn get-call-group-id [^Ignite ignite group_id my-method-name]
+    (.get (.cache ignite "call_scenes") (MyCallScenesPk. group_id my-method-name)))
+
 ; 调用 scenes
 (defn my-invoke-scenes [^Ignite ignite group_id ^String method-name ps]
     (let [my-method-name (str/lower-case method-name)]
         (try
             (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))
             (catch Exception e
-                (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. (first group_id) my-method-name))]
-                    (if-not (nil? m)
-                        (let [sql-code (.getSql_code m)]
-                            (eval (read-string sql-code))
-                            (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))
-                        )
-                    (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))))))
+                (if-let [my-group (get-call-group-id ignite (first group_id) my-method-name)]
+                    (my-invoke-scenes ignite (.getGroup_id_obj my-group) method-name ps)
+                    (scenes-run ignite group_id my-method-name ps))
+                ))))
 
 ;(defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name ps]
 ;    (let [my-method-name (str/lower-case method-name)]

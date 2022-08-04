@@ -13,6 +13,16 @@ public class MyCallScenes implements Serializable {
     private Long to_group_id;
     private String scenes_name;
 
+    private Object group_id_obj;
+
+    public MyCallScenes(final Long group_id, final Long to_group_id, final String scenes_name, final Object group_id_obj)
+    {
+        this.group_id = group_id;
+        this.to_group_id = to_group_id;
+        this.scenes_name = scenes_name;
+        this.group_id_obj = group_id_obj;
+    }
+
     public MyCallScenes(final Long group_id, final Long to_group_id, final String scenes_name)
     {
         this.group_id = group_id;
@@ -45,6 +55,14 @@ public class MyCallScenes implements Serializable {
 
     public void setScenes_name(String scenes_name) {
         this.scenes_name = scenes_name;
+    }
+
+    public Object getGroup_id_obj() {
+        return group_id_obj;
+    }
+
+    public void setGroup_id_obj(Object group_id_obj) {
+        this.group_id_obj = group_id_obj;
     }
 
     @Override

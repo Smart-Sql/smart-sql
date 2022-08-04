@@ -11,7 +11,7 @@ public class MyCallScenesPk implements Serializable {
     public MyCallScenesPk(final Long to_group_id, final String scenes_name)
     {
         this.to_group_id = to_group_id;
-        this.scenes_name = scenes_name;
+        this.scenes_name = scenes_name.toLowerCase();
     }
 
     public MyCallScenesPk()
