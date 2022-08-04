@@ -147,13 +147,11 @@
     DROP INDEX IF EXISTS call_scenes_idx;
     */
     CREATE TABLE IF NOT EXISTS call_scenes (
-                    id BIGINT,
                     group_id BIGINT,
                     to_group_id BIGINT,
                     scenes_name VARCHAR(40),
-                    PRIMARY KEY (id)
-                    ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.db.MyCallScenes,cache_name=call_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
-    CREATE INDEX IF NOT EXISTS call_scenes_idx ON call_scenes (to_group_id, scenes_name);
+                    PRIMARY KEY (to_group_id, scenes_name)
+                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyCallScenesPk,VALUE_TYPE=cn.plus.model.db.MyCallScenes,cache_name=call_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
     /**
     15、查询的权限视图：my_select_views

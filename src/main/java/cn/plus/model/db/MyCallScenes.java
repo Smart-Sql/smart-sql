@@ -9,14 +9,12 @@ import java.io.Serializable;
 public class MyCallScenes implements Serializable {
     private static final long serialVersionUID = 7695989946243125451L;
 
-    private Long id;
     private Long group_id;
     private Long to_group_id;
     private String scenes_name;
 
-    public MyCallScenes(final Long id, final Long group_id, final Long to_group_id, final String scenes_name)
+    public MyCallScenes(final Long group_id, final Long to_group_id, final String scenes_name)
     {
-        this.id = id;
         this.group_id = group_id;
         this.to_group_id = to_group_id;
         this.scenes_name = scenes_name;
@@ -24,14 +22,6 @@ public class MyCallScenes implements Serializable {
 
     public MyCallScenes()
     {}
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public Long getGroup_id() {
         return group_id;
@@ -60,8 +50,7 @@ public class MyCallScenes implements Serializable {
     @Override
     public String toString() {
         return "MyCallScenes{" +
-                "id=" + id +
-                ", group_id=" + group_id +
+                "group_id=" + group_id +
                 ", to_group_id=" + to_group_id +
                 ", scenes_name='" + scenes_name + '\'' +
                 '}';

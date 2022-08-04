@@ -102,15 +102,15 @@
     )
 
 ; 实时数据集
-(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^String dataset_name]
+(defn run_ddl_real_time [^Ignite ignite group_id ^String sql_line ^String dataset_name]
     (if-let [m (get_drop_table_obj sql_line)]
-        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
-            (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (drop-table-obj ignite dataset_name sql_line)]
-                (println dataset_name)
-                (println sql_line)
-                (println {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql})
-                (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql}))
-            (throw (Exception. "没有执行语句的权限！")))
+        (cond (= (first group_id) 0) (let [schema_name (str/lower-case (-> m :schema_name)) table_name (str/lower-case (-> m :table_name))]
+                                         (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql_line)) :lst_cachex nil :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))}))
+              (not (my-lexical/is-eq? (-> m :schema_name) "my_meta")) (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (drop-table-obj ignite dataset_name sql_line)]
+                                                                          (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql}))
+              :else
+              (throw (Exception. "没有执行语句的权限！"))
+              )
         ))
 
 ; 删除表
@@ -118,9 +118,9 @@
 (defn drop_table [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= (first group_id) 0)
-            (run_ddl_real_time ignite sql_code (second group_id))
+            (run_ddl_real_time ignite group_id sql_code (second group_id))
             (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
-                (run_ddl_real_time ignite sql_code (second group_id))
+                (run_ddl_real_time ignite group_id sql_code (second group_id))
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 ;(defn drop_table [^Ignite ignite ^Long group_id ^String sql_line]
