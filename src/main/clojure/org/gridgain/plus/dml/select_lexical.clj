@@ -496,6 +496,12 @@
 (defn my-add-months [ps num]
     (MyFunction/add_months (MyConvertUtil/ConvertToTimestamp ps) (MyConvertUtil/ConvertToInt num)))
 
+(defn no-sql-create [ignite group_id m]
+    (.myCreate (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-get-vs [ignite group_id m]
+    (.myGetValue (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
 (defn no-sql-insert-tran [ignite group_id m]
     (.myInsertTran (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
 

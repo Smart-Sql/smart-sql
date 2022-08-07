@@ -13,11 +13,12 @@
              (org.tools MyConvertUtil MyPlusUtil KvSql MyDbUtil)
              (com.google.common.base Strings)
              (org.gridgain.dml.util MyCacheExUtil)
-             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
+             (cn.plus.model.db MyCallScenesPk MyCallScenes MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (cn.plus.model MyNoSqlCache MyCacheEx MyKeyValue MyLogCache MCron SqlType)
              (cn.plus.model.ddl MyViewsPk MyInsertViews MySelectViews MyUpdateViews MyDeleteViews)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (org.gridgain.smart.view MyViewAstPK)
+             (org.gridgain.nosql MyNoSqlUtil)
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
              )
@@ -163,6 +164,15 @@
                           ))))
         (throw (Exception. "只有 root 用户才能对删除用户组权限！")))
     )
+
+; 添加场景到用户组
+(defn add-scenes-to [^Ignite ignite group_id belong-group-id method-name to-group-id]
+    (cond (= (first group_id) belong-group-id) (MyNoSqlUtil/runCache ignite (MyNoSqlCache. "call_scenes" nil nil (MyCallScenesPk. belong-group-id method-name) (MyCallScenes. ) (SqlType/INSERT)))
+          ))
+
+; 删除场景到用户组
+(defn rm-scenes-from [^Ignite ignite group_id belong-group-id method-name to-group-id]
+    ())
 
 ; 添加 job
 (defn add-job [^Ignite ignite group_id ^String job-name ^Object ps ^String cron]
