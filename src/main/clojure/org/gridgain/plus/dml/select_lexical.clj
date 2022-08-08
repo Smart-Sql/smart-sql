@@ -608,8 +608,6 @@
           (is-eq? func-name "toUpperCase") "str/upper-case"
           (is-eq? func-name "uppercase") "str/upper-case"
           (is-eq? func-name "show_msg") "my-lexical/my-show-msg"
-          :else
-          (str/lower-case func-name)
           ))
 
 ;(defn my-concat [[f & r]]

@@ -165,14 +165,29 @@
         (throw (Exception. "只有 root 用户才能对删除用户组权限！")))
     )
 
+; 通过 userToken 获取 group_id
+(defn get_group_id [^Ignite ignite ^Long group_id]
+    (if (= group_id 0)
+        [0 "MY_META" "ALL" -1]
+        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [group_id])))))]
+            (cons group_id m)))
+    )
+
 ; 添加场景到用户组
 (defn add-scenes-to [^Ignite ignite group_id belong-group-id method-name to-group-id]
-    (cond (= (first group_id) belong-group-id) (MyNoSqlUtil/runCache ignite (MyNoSqlCache. "call_scenes" nil nil (MyCallScenesPk. belong-group-id method-name) (MyCallScenes. ) (SqlType/INSERT)))
+    (cond (= (first group_id) belong-group-id) (MyNoSqlUtil/runCache ignite (MyNoSqlCache. "call_scenes" nil nil (MyCallScenesPk. to-group-id method-name) (MyCallScenes. belong-group-id to-group-id method-name (get_group_id ignite belong-group-id)) (SqlType/INSERT)))
+          (= (first group_id) 0) (MyNoSqlUtil/runCache ignite (MyNoSqlCache. "call_scenes" nil nil (MyCallScenesPk. to-group-id method-name) (MyCallScenes. belong-group-id to-group-id method-name (get_group_id ignite belong-group-id)) (SqlType/INSERT)))
+          :else
+          (throw (Exception. (format "没有为用户组 id：%s 添加 %s 的权限" to-group-id method-name)))
           ))
 
 ; 删除场景到用户组
 (defn rm-scenes-from [^Ignite ignite group_id belong-group-id method-name to-group-id]
-    ())
+    (cond (= (first group_id) belong-group-id) (MyNoSqlUtil/runCache ignite (MyNoSqlCache. "call_scenes" nil nil (MyCallScenesPk. to-group-id method-name) nil (SqlType/DELETE)))
+          (= (first group_id) 0) (MyNoSqlUtil/runCache ignite (MyNoSqlCache. "call_scenes" nil nil (MyCallScenesPk. to-group-id method-name) nil (SqlType/DELETE)))
+          :else
+          (throw (Exception. (format "没有为用户组 id：%s 添加 %s 的权限" to-group-id method-name)))
+          ))
 
 ; 添加 job
 (defn add-job [^Ignite ignite group_id ^String job-name ^Object ps ^String cron]

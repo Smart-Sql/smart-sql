@@ -381,7 +381,7 @@
 
 (defn my-drop [ignite group_id my-obj]
     (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id (my-lexical/get-value my-obj))]
-        (MyNoSqlCache/dropCache ignite (format "c_%s_%s" schema_name table_name))))
+        (MyNoSqlUtil/dropCache ignite (format "c_%s_%s" schema_name table_name))))
 
 (defn query-sql-no-args [ignite group_id sql]
     (cond (re-find #"^(?i)select\s+" sql) (if-let [ast (my-select-plus/sql-to-ast (my-lexical/to-back sql))]

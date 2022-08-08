@@ -4,7 +4,7 @@ import cn.plus.model.CacheDllType;
 import cn.plus.model.MyCacheEx;
 import cn.plus.model.MyNoSqlCache;
 import cn.plus.model.MySmartCache;
-import cn.smart.service.IMyLog;
+import cn.smart.service.IMyLogTransaction;
 import com.google.common.base.Strings;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,7 +26,7 @@ import java.util.List;
  * */
 public class MyNoSqlUtil {
 
-    private static IMyLog myLog = MyLogService.getInstance().getMyLog();
+    private static IMyLogTransaction myLog = MyLogService.getInstance().getMyLog();
 
     public static CacheConfiguration getCfg(final String cacheName)
     {

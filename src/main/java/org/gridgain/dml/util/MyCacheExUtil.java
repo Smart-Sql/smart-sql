@@ -2,7 +2,7 @@ package org.gridgain.dml.util;
 
 import clojure.lang.*;
 import cn.plus.model.*;
-import cn.smart.service.IMyLog;
+import cn.smart.service.IMyLogTransaction;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class MyCacheExUtil implements Serializable {
     private static final long serialVersionUID = 7714300623488330841L;
 
-    private static IMyLog myLog = MyLogService.getInstance().getMyLog();
+    private static IMyLogTransaction myLog = MyLogService.getInstance().getMyLog();
 
 //    public static void transLogCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
 //    {
@@ -72,55 +72,85 @@ public class MyCacheExUtil implements Serializable {
     private static void transMyCache(final Ignite ignite, final List<MyCacheEx> lstCache) {
         //List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
 
-        IgniteTransactions transactions = ignite.transactions();
-        Transaction tx = null;
-        try {
-            tx = transactions.txStart();
+        if (myLog != null)
+        {
+            IgniteTransactions transactions = ignite.transactions();
+            Transaction tx = null;
+            try {
+                tx = transactions.txStart();
+                myLog.begin();
 
-            for (MyCacheEx m : lstCache)
-            {
-                switch (m.getSqlType()) {
-                    case UPDATE:
-                        m.getCache().replace(m.getKey(), m.getValue());
-                        if (myLog != null)
-                        {
+                for (MyCacheEx m : lstCache)
+                {
+                    switch (m.getSqlType()) {
+                        case UPDATE:
+                            m.getCache().replace(m.getKey(), m.getValue());
                             if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
                             {
                                 throw new Exception("log 保存失败！");
                             }
-                        }
-                        break;
-                    case INSERT:
-                        m.getCache().put(m.getKey(), m.getValue());
-                        if (myLog != null)
-                        {
+                            break;
+                        case INSERT:
+                            m.getCache().put(m.getKey(), m.getValue());
                             if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
                             {
                                 throw new Exception("log 保存失败！");
                             }
-                        }
-                        break;
-                    case DELETE:
-                        m.getCache().remove(m.getKey());
-                        if (myLog != null)
-                        {
+                            break;
+                        case DELETE:
+                            m.getCache().remove(m.getKey());
                             if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
                             {
                                 throw new Exception("log 保存失败！");
                             }
-                        }
-                        break;
+                            break;
+                    }
+                }
+
+                myLog.commit();
+                tx.commit();
+            } catch (Exception ex) {
+                if (tx != null) {
+                    myLog.rollback();
+                    tx.rollback();
+                }
+            } finally {
+                if (tx != null) {
+                    tx.close();
                 }
             }
+        }
+        else
+        {
+            IgniteTransactions transactions = ignite.transactions();
+            Transaction tx = null;
+            try {
+                tx = transactions.txStart();
 
-            tx.commit();
-        } catch (Exception ex) {
-            if (tx != null) {
-                tx.rollback();
-            }
-        } finally {
-            if (tx != null) {
-                tx.close();
+                for (MyCacheEx m : lstCache)
+                {
+                    switch (m.getSqlType()) {
+                        case UPDATE:
+                            m.getCache().replace(m.getKey(), m.getValue());
+                            break;
+                        case INSERT:
+                            m.getCache().put(m.getKey(), m.getValue());
+                            break;
+                        case DELETE:
+                            m.getCache().remove(m.getKey());
+                            break;
+                    }
+                }
+
+                tx.commit();
+            } catch (Exception ex) {
+                if (tx != null) {
+                    tx.rollback();
+                }
+            } finally {
+                if (tx != null) {
+                    tx.close();
+                }
             }
         }
     }

@@ -399,11 +399,11 @@ rm_view('wudafu_group', 'public.Categories', 'select');
 **用于两地三中心，这种高可用场景。这个程序需要用户自己来实现。因为不同的用户对这个问题有不同的需求。**
 
 #### 3.1、具体的实现过程：
->1、实现接口 cn.smart.service.IMyLog
+>1、实现接口 cn.smart.service.IMyLogTransaction
 >2、打包这个程序，将 jar 包放到集群中，各个安装文件的 cls 文件夹中即可
 >
 
-**SmartSql 是分布式数据库，程序可能在每台机器上运行，所以必须在每台机器，SmartSql 安装文件的 cls 文件夹中，放入实现了 IMyLog 接口的自定义 Log 程序。这个程序的作用是将 insert、update、delete、ddl 的操作数据转换为二进制，根据自定义的程序来保存起来。在 SmartSql 运维中，我们会给出一个例子。**
+**SmartSql 是分布式数据库，程序可能在每台机器上运行，所以必须在每台机器，SmartSql 安装文件的 cls 文件夹中，放入实现了 IMyLogTransaction 接口的自定义 Log 程序。这个程序的作用是将 insert、update、delete、ddl 的操作数据转换为二进制，根据自定义的程序来保存起来。在 SmartSql 运维中，我们会给出一个例子。**
 
 ## Smart Sql
 ### Smart Sql 函数的定义：

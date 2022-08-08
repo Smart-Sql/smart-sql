@@ -3,7 +3,8 @@ package org.gridgain.ddl;
 import clojure.lang.*;
 import cn.plus.model.MyCacheEx;
 import cn.plus.model.MyNoSqlCache;
-import cn.smart.service.IMyLog;
+import cn.plus.model.MySmartDll;
+import cn.smart.service.IMyLogTransaction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 public class MyCreateTableUtil implements Serializable {
     private static final long serialVersionUID = 1484107803014288212L;
 
-    private static IMyLog myLog = MyLogService.getInstance().getMyLog();
+    private static IMyLogTransaction myLog = MyLogService.getInstance().getMyLog();
 
     public static CacheConfiguration getCfg()
     {
@@ -55,62 +56,101 @@ public class MyCreateTableUtil implements Serializable {
 
     private static void saveCache(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table, final MyNoSqlCache noSqlCache)
     {
-        MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
-        lst_dml_table.add(kvCache);
-        IgniteTransactions transactions = ignite.transactions();
-        Transaction tx = null;
-        try {
-            tx = transactions.txStart();
-            for (int i = 0; i < lst_dml_table.size(); i++)
-            {
-                MyCacheEx myCacheEx = (MyCacheEx) lst_dml_table.get(i);
-                switch (myCacheEx.getSqlType())
+        if (myLog != null) {
+            MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
+            lst_dml_table.add(kvCache);
+            IgniteTransactions transactions = ignite.transactions();
+            Transaction tx = null;
+            try {
+                tx = transactions.txStart();
+                myLog.begin();
+
+                lst_ddl.stream().forEach(map ->
                 {
-                    case UPDATE:
-                        myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
-                        if (myLog != null)
-                        {
-                            if(myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false)
-                            {
+                    PersistentArrayMap pmap = ((PersistentArrayMap) map);
+                    String sql = pmap.get(Keyword.intern("sql")).toString();
+                    MySmartDll mySmartDll = new MySmartDll(sql);
+                    if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartDll)) == false)
+                    {
+                        try {
+                            throw new Exception("log 保存失败！");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+                for (int i = 0; i < lst_dml_table.size(); i++) {
+                    MyCacheEx myCacheEx = (MyCacheEx) lst_dml_table.get(i);
+                    switch (myCacheEx.getSqlType()) {
+                        case UPDATE:
+                            myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                            if (myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false) {
                                 throw new Exception("log 保存失败！");
                             }
-                        }
-                        break;
-                    case INSERT:
-                        myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
-                        if (myLog != null)
-                        {
-                            if(myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false)
-                            {
+                            break;
+                        case INSERT:
+                            myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                            if (myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false) {
                                 throw new Exception("log 保存失败！");
                             }
-                        }
-                        break;
-                    case DELETE:
-                        myCacheEx.getCache().remove(myCacheEx.getKey());
-                        if (myLog != null)
-                        {
-                            if(myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false)
-                            {
+                            break;
+                        case DELETE:
+                            myCacheEx.getCache().remove(myCacheEx.getKey());
+                            if (myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false) {
                                 throw new Exception("log 保存失败！");
                             }
-                        }
-                        break;
+                            break;
+                    }
+                }
+
+                myLog.commit();
+                tx.commit();
+            } catch (Exception ex) {
+                if (tx != null) {
+                    myLog.rollback();
+                    tx.rollback();
+
+                    lst_ddl.stream().forEach(map -> ignite.getOrCreateCache(new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META")).query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
+                }
+            } finally {
+                if (tx != null) {
+                    tx.close();
                 }
             }
-            tx.commit();
-        } catch (Exception ex)
-        {
-            if (tx != null)
-            {
-                tx.rollback();
-
-                lst_ddl.stream().forEach(map -> ignite.getOrCreateCache(new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META")).query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
-            }
         }
-        finally {
-            if (tx != null) {
-                tx.close();
+        else {
+            MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
+            lst_dml_table.add(kvCache);
+            IgniteTransactions transactions = ignite.transactions();
+            Transaction tx = null;
+            try {
+                tx = transactions.txStart();
+                for (int i = 0; i < lst_dml_table.size(); i++) {
+                    MyCacheEx myCacheEx = (MyCacheEx) lst_dml_table.get(i);
+                    switch (myCacheEx.getSqlType()) {
+                        case UPDATE:
+                            myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                            break;
+                        case INSERT:
+                            myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                            break;
+                        case DELETE:
+                            myCacheEx.getCache().remove(myCacheEx.getKey());
+                            break;
+                    }
+                }
+                tx.commit();
+            } catch (Exception ex) {
+                if (tx != null) {
+                    tx.rollback();
+
+                    lst_ddl.stream().forEach(map -> ignite.getOrCreateCache(new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META")).query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
+                }
+            } finally {
+                if (tx != null) {
+                    tx.close();
+                }
             }
         }
     }
