@@ -21,7 +21,7 @@ public class MyInitCache {
         CacheConfiguration<MySchemaTable, PersistentArrayMap> cfg = new CacheConfiguration<>();
         cfg.setCacheMode(CacheMode.REPLICATED);
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        //cfg.setDataRegionName("40MB_Region_Eviction");
+        //cfg.setDataRegionName("Near_Caches_Region_Eviction");
         cfg.setName("table_ast");
         cfg.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg);
@@ -30,7 +30,7 @@ public class MyInitCache {
         CacheConfiguration<MyViewAstPK, PersistentArrayMap> cfg_my_select_view_ast = new CacheConfiguration<>();
         cfg_my_select_view_ast.setCacheMode(CacheMode.REPLICATED);
         cfg_my_select_view_ast.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        //cfg_my_select_view_ast.setDataRegionName("40MB_Region_Eviction");
+        //cfg_my_select_view_ast.setDataRegionName("Near_Caches_Region_Eviction");
         cfg_my_select_view_ast.setName("my_select_view_ast");
         cfg_my_select_view_ast.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_my_select_view_ast);
@@ -38,7 +38,7 @@ public class MyInitCache {
         CacheConfiguration<MySchemaTable, LazySeq> cfg_my_insert_view_ast = new CacheConfiguration<>();
         cfg_my_insert_view_ast.setCacheMode(CacheMode.REPLICATED);
         cfg_my_insert_view_ast.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        //cfg_my_insert_view_ast.setDataRegionName("40MB_Region_Eviction");
+        //cfg_my_insert_view_ast.setDataRegionName("Near_Caches_Region_Eviction");
         cfg_my_insert_view_ast.setName("my_insert_view_ast");
         cfg_my_insert_view_ast.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_my_insert_view_ast);
@@ -46,7 +46,7 @@ public class MyInitCache {
         CacheConfiguration<MySchemaTable, LazySeq> cfg_my_update_view_ast = new CacheConfiguration<>();
         cfg_my_update_view_ast.setCacheMode(CacheMode.REPLICATED);
         cfg_my_update_view_ast.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        //cfg_my_update_view_ast.setDataRegionName("40MB_Region_Eviction");
+        //cfg_my_update_view_ast.setDataRegionName("Near_Caches_Region_Eviction");
         cfg_my_update_view_ast.setName("my_update_view_ast");
         cfg_my_update_view_ast.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_my_update_view_ast);
@@ -54,7 +54,7 @@ public class MyInitCache {
         CacheConfiguration<MySchemaTable, LazySeq> cfg_my_delete_view_ast = new CacheConfiguration<>();
         cfg_my_delete_view_ast.setCacheMode(CacheMode.REPLICATED);
         cfg_my_delete_view_ast.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        //cfg_my_delete_view_ast.setDataRegionName("40MB_Region_Eviction");
+        //cfg_my_delete_view_ast.setDataRegionName("Near_Caches_Region_Eviction");
         cfg_my_delete_view_ast.setName("my_delete_view_ast");
         cfg_my_delete_view_ast.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_my_delete_view_ast);

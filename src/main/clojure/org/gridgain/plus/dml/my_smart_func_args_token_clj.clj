@@ -171,7 +171,7 @@
                   (my-lexical/is-eq? func-name "noSqlInsertTran") (format "(my-lexical/no-sql-insert-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "noSqlUpdateTran") (format "(my-lexical/no-sql-update-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "noSqlDeleteTran") (format "(my-lexical/no-sql-delete-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
-                  (my-lexical/is-eq? func-name "myDrop") (format "(my-lexical/no-sql-drop ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  (my-lexical/is-eq? func-name "noSqlDrop") (format "(my-lexical/no-sql-drop ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "noSqlInsert") (format "(my-lexical/no-sql-insert ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "noSqlUpdate") (format "(my-lexical/no-sql-update ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "noSqlDelete") (format "(my-lexical/no-sql-delete ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))

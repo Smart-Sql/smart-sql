@@ -1,3 +1,6 @@
+-- 创建一个 Cache
+noSqlCreate({"table_name": "user_group_cache", "is_cache": true, "mode": "replicated", "maxSize": 10000});
+
 -- 输入 data set name 获取 data set 的 id
 function get_data_set_id(name:string)
 {

@@ -20,7 +20,7 @@
              (java.math BigDecimal)
              (com.google.common.base Strings))
     (:gen-class
-        :implements [org.gridgain.superservice.INoSqlFun]
+        ;:implements [org.gridgain.superservice.INoSqlFun]
         ; 生成 class 的类名
         :name org.gridgain.plus.dml.MyLexical
         ; 是否生成 class 的 main 方法

@@ -67,8 +67,8 @@ public class MyNoSqlUtil {
         {
             cfg.setCacheMode(CacheMode.PARTITIONED);
         }
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-        cfg.setDataRegionName("40MB_Region_Eviction");
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cfg.setDataRegionName("Near_Caches_Region_Eviction");
         cfg.setName(cacheName);
         cfg.setReadFromBackup(true);
         cfg.setNearConfiguration(nearCfg);
@@ -87,7 +87,7 @@ public class MyNoSqlUtil {
         {
             cfg.setCacheMode(CacheMode.PARTITIONED);
         }
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cfg.setName(cacheName);
         cfg.setReadFromBackup(true);
 

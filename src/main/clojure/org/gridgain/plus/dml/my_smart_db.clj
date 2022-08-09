@@ -281,7 +281,7 @@
 ; no sql
 (defn my-create-cache [ignite group_id schema_name table_name is_cache mode maxSize]
     (if (contains? #{"all" "ddl"} (str/lower-case (nth group_id 2)))
-        (MyNoSqlUtil/createCache ignite (format "c_%_%" schema_name table_name) is_cache mode maxSize)
+        (MyNoSqlUtil/createCache ignite (format "c_%s_%s" schema_name table_name) is_cache mode maxSize)
         (throw (Exception. "该用户组没有添加 cache 的权限！"))))
 
 (defn my-create [ignite group_id my-obj]
