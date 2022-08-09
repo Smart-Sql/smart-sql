@@ -8,20 +8,39 @@
     group_type: DDL, DML, DDL和DML
     DROP TABLE IF EXISTS my_users_group;
     */
-    CREATE TABLE IF NOT EXISTS my_users_group (
-                    id BIGINT,
-                    -- 用户组名称
-                    group_name VARCHAR(40),
-                    -- 数据集
-                    data_set_id BIGINT DEFAULT 0,
-                    -- userToken
-                    user_token VARCHAR,
-                    -- 用户组类型
-                    group_type VARCHAR(8),
-                    PRIMARY KEY (id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_users_group,VALUE_TYPE=cn.plus.model.MyUsersGroup,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    CREATE TABLE IF NOT EXISTS my_caches (
+                    dataset_name VARCHAR,
+                    -- cache 表名
+                    table_name VARCHAR(40),
+                    -- 是否是纯的 cache
+                    is_cache BOOLEAN DEFAULT false,
+                    -- mode
+                    mode VARCHAR,
+                    -- 最大的量
+                    maxSize int,
+                    PRIMARY KEY (dataset_name, table_name)
+                    ) WITH \"template=MyMeta_template,cache_name=my_caches,KEY_TYPE=cn.plus.model.ddl.MyCachePK,VALUE_TYPE=cn.plus.model.ddl.MyCaches,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+
+        /**
+         1、用户组中添加 数据集 id
+         group_type: DDL, DML, DDL和DML
+         DROP TABLE IF EXISTS my_users_group;
+         */
+         CREATE TABLE IF NOT EXISTS my_users_group (
+                         id BIGINT,
+                         -- 用户组名称
+                         group_name VARCHAR(40),
+                         -- 数据集
+                         data_set_id BIGINT DEFAULT 0,
+                         -- userToken
+                         user_token VARCHAR,
+                         -- 用户组类型
+                         group_type VARCHAR(8),
+                         PRIMARY KEY (id)
+                         ) WITH \"template=MyMeta_template,cache_name=my_users_group,VALUE_TYPE=cn.plus.model.MyUsersGroup,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     CREATE INDEX IF NOT EXISTS my_users_group_user_token_idx ON my_users_group (user_token);
+
     
     /**
     2、数据集：my_dataset
@@ -31,7 +50,7 @@
                     id BIGINT,
                     dataset_name VARCHAR,
                     PRIMARY KEY (id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
     CREATE INDEX IF NOT EXISTS my_dataset_idx ON my_dataset (dataset_name);
 
     /**
@@ -46,7 +65,7 @@
                     --code VARCHAR,
                     data_set_id BIGINT,
                     PRIMARY KEY (id)
-    ) WITH \"template=MyMeta_template,cache_name=my_meta_tables,VALUE_TYPE=cn.plus.model.ddl.MyTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    ) WITH \"template=MyMeta_template,cache_name=my_meta_tables,VALUE_TYPE=cn.plus.model.ddl.MyTable,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     6、元表中记录表字段的表：table_item
@@ -64,7 +83,7 @@
                     auto_increment BOOLEAN DEFAULT false,
                     table_id BIGINT,
                     PRIMARY KEY (id, table_id)
-    ) WITH \"template=MyMeta_template,cache_name=table_item,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableItem,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    ) WITH \"template=MyMeta_template,cache_name=table_item,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableItem,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     7、元表中记录表索引的表：table_index
@@ -77,7 +96,7 @@
                     table_id BIGINT,
                     --ex_table_id_ BIGINT,
                     PRIMARY KEY (id, table_id)
-    ) WITH \"template=MyMeta_template,cache_name=table_index,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableIndex,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    ) WITH \"template=MyMeta_template,cache_name=table_index,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableIndex,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     8、元表中记录表索引字段的表：table_index_item
@@ -90,7 +109,7 @@
                     index_no BIGINT,
                     -- table_id BIGINT,
                     PRIMARY KEY (id, index_no)
-    ) WITH \"template=MyMeta_template,cache_name=table_index_item,affinityKey=index_no,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableIndexItem,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    ) WITH \"template=MyMeta_template,cache_name=table_index_item,affinityKey=index_no,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableIndexItem,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     9、元表中预先要建的索引
@@ -132,7 +151,7 @@
                     descrip VARCHAR,
                     --is_batch BOOLEAN DEFAULT false,
                     PRIMARY KEY (scenes_name, group_id)
-                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyScenesCachePk,VALUE_TYPE=cn.plus.model.db.MyScenesCache,cache_name=my_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyScenesCachePk,VALUE_TYPE=cn.plus.model.db.MyScenesCache,cache_name=my_scenes,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     CREATE INDEX IF NOT EXISTS scenes_group_id_idx ON my_scenes (scenes_name, group_id);
 
@@ -151,7 +170,7 @@
                     to_group_id BIGINT,
                     scenes_name VARCHAR(40),
                     PRIMARY KEY (to_group_id, scenes_name)
-                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyCallScenesPk,VALUE_TYPE=cn.plus.model.db.MyCallScenes,cache_name=call_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyCallScenesPk,VALUE_TYPE=cn.plus.model.db.MyCallScenes,cache_name=call_scenes,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     15、查询的权限视图：my_select_views
@@ -163,7 +182,7 @@
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
                     PRIMARY KEY (group_id, table_name, data_set_id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_select_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,cache_name=my_select_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     16、更新的权限视图：my_update_views
@@ -175,7 +194,7 @@
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
                     PRIMARY KEY (group_id, table_name, data_set_id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_update_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,cache_name=my_update_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     17、修改的权限视图：my_insert_views
@@ -187,7 +206,7 @@
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
                     PRIMARY KEY (group_id, table_name, data_set_id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_insert_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,cache_name=my_insert_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     18、删除的权限视图：my_delete_views
@@ -199,7 +218,7 @@
                     data_set_id BIGINT DEFAULT 0,
                     code VARCHAR,
                     PRIMARY KEY (group_id, table_name, data_set_id)
-                ) WITH \"template=MyMeta_template,cache_name=my_delete_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                ) WITH \"template=MyMeta_template,cache_name=my_delete_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     19、用户组的权限视图：my_group_view
@@ -216,7 +235,7 @@
                     view_id BIGINT,
                     view_type VARCHAR(2),
                     PRIMARY KEY (id, my_group_id)
-                    ) WITH \"template=MyMeta_template,affinityKey=my_group_id,cache_name=my_group_view,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,affinityKey=my_group_id,cache_name=my_group_view,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
     */
 
     /**
@@ -231,7 +250,7 @@
                     mycacheex VARBINARY,
                     create_date TIMESTAMP,
                     PRIMARY KEY (id)
-                    ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.MyLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=my_log,cache_group=my_meta_log\";
+                    ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.MyLog,ATOMICITY=TRANSACTIONAL,cache_name=my_log,cache_group=my_meta_log\";
 
     CREATE INDEX IF NOT EXISTS my_log_idx ON my_log (table_name, create_date);
     */
@@ -246,7 +265,7 @@
                       ps VARBINARY,
                       descrip VARCHAR,
                       PRIMARY KEY (cron_name)
-                      ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.MyCron,cache_name=my_cron,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                      ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.MyCron,cache_name=my_cron,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     24、自定义方法
@@ -258,14 +277,14 @@
                     return_type VARCHAR(20),
                     descrip VARCHAR,
                     PRIMARY KEY (method_name)
-                    ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.ddl.MyFunc,cache_name=my_func,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.ddl.MyFunc,cache_name=my_func,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     CREATE TABLE IF NOT EXISTS my_func_ps (
                     method_name VARCHAR(30),
                     ps_index INTEGER,
                     ps_type VARCHAR(20),
                     PRIMARY KEY (method_name, ps_index)
-                    ) WITH \"template=MyMeta_template,affinityKey=method_name,VALUE_TYPE=cn.plus.model.ddl.MyFuncPs,cache_name=my_func_ps,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+                    ) WITH \"template=MyMeta_template,affinityKey=method_name,VALUE_TYPE=cn.plus.model.ddl.MyFuncPs,cache_name=my_func_ps,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
 ")
 
