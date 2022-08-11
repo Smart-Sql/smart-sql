@@ -203,6 +203,7 @@ query_sql("INSERT INTO public.Categories (CategoryID, CategoryName, Description,
 ```
 
 #### 2、trans(Sql或者NoSql 的序列) 事务函数
+
 ```sql
 -- trans 接收一个序列，使得执行序列中的语句拥有事务性
 -- 要么全部执行正确，要么不执行

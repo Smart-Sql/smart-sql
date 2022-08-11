@@ -4,6 +4,8 @@ import cn.plus.model.CacheDllType;
 import cn.plus.model.MyCacheEx;
 import cn.plus.model.MyNoSqlCache;
 import cn.plus.model.MySmartCache;
+import cn.plus.model.ddl.MyCachePK;
+import cn.plus.model.ddl.MyCaches;
 import cn.smart.service.IMyLogTransaction;
 import com.google.common.base.Strings;
 import org.apache.ignite.Ignite;
@@ -12,13 +14,16 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.smart.service.MyLogService;
 import org.apache.ignite.transactions.Transaction;
 import org.gridgain.dml.util.MyCacheExUtil;
+import org.tools.MyConvertUtil;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -145,7 +150,88 @@ public class MyNoSqlUtil {
         }
     }
 
+    public static void createCacheSave(final Ignite ignite, final String data_set_name, final String table_name, final Boolean is_cache, final String mode, final int maxSize)
+    {
+        String cacheName = "c_" + data_set_name + "_" + table_name;
+        CacheConfiguration configuration;
+        if (is_cache == true)
+        {
+            configuration = getNearCfg(cacheName, mode, maxSize);
+        }
+        else
+        {
+            configuration = getCacheCfg(cacheName, mode);
+        }
+
+        if (myLog != null)
+        {
+            IgniteTransactions transactions = ignite.transactions();
+            Transaction tx = null;
+            try {
+                tx = transactions.txStart();
+
+                ignite.getOrCreateCache(configuration);
+
+                MySmartCache mySmartCache = new MySmartCache();
+                mySmartCache.setCacheDllType(CacheDllType.CREATE);
+                mySmartCache.setIs_cache(is_cache);
+                mySmartCache.setMode(mode);
+                mySmartCache.setMaxSize(maxSize);
+                mySmartCache.setTable_name(cacheName);
+
+                if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartCache)) == false)
+                {
+                    throw new Exception("log 保存失败！");
+                }
+
+                IgniteCache<MyCachePK, MyCaches> my_caches = ignite.cache("my_caches");
+                my_caches.put(new MyCachePK(data_set_name, table_name), new MyCaches(data_set_name, table_name, is_cache, mode, maxSize));
+
+                tx.commit();
+            } catch (Exception ex) {
+                if (tx != null) {
+                    ignite.destroyCache(cacheName);
+                    tx.rollback();
+                }
+            } finally {
+                if (tx != null) {
+                    tx.close();
+                }
+            }
+        }
+        else
+        {
+            ignite.getOrCreateCache(configuration);
+
+            IgniteCache<MyCachePK, MyCaches> my_caches = ignite.cache("my_caches");
+            my_caches.put(new MyCachePK(data_set_name, table_name), new MyCaches(data_set_name, table_name, is_cache, mode, maxSize));
+        }
+    }
+
     public static void dropCache(final Ignite ignite, final String cacheName) throws Exception {
+        if (myLog != null)
+        {
+            MySmartCache mySmartCache = new MySmartCache();
+            mySmartCache.setCacheDllType(CacheDllType.DROP);
+            mySmartCache.setTable_name(cacheName);
+
+            if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartCache)) == false)
+            {
+                throw new Exception("log 保存失败！");
+            }
+            else
+            {
+                ignite.destroyCache(cacheName);
+            }
+        }
+        else
+        {
+            ignite.destroyCache(cacheName);
+        }
+    }
+
+    public static void dropCacheSave(final Ignite ignite, final String data_set_name, final String table_name) throws Exception {
+        String cacheName = "c_" + data_set_name + "_" + table_name;
         if (myLog != null)
         {
             MySmartCache mySmartCache = new MySmartCache();
@@ -172,6 +258,20 @@ public class MyNoSqlUtil {
         List<MyNoSqlCache> lst = new ArrayList<>();
         lst.add(myNoSqlCache);
         MyCacheExUtil.transLogCache(ignite, lst);
+    }
+
+    public static void initCaches(final Ignite ignite)
+    {
+        SqlFieldsQuery sqlFieldsQuery = new SqlFieldsQuery("select m.dataset_name, m.table_name, m.is_cache, m.mode, m.maxSize from MY_META.my_caches m");
+        sqlFieldsQuery.setLazy(true);
+        Iterator<List<?>> iterator = ignite.cache("my_caches").query(sqlFieldsQuery).iterator();
+        while (iterator.hasNext())
+        {
+            List<?> row = iterator.next();
+            String cache_name = "c_" + row.get(0).toString() + "_" + row.get(1).toString();
+            MyNoSqlUtil.createCache(ignite, cache_name, MyConvertUtil.ConvertToBoolean(row.get(2)), row.get(3).toString(), MyConvertUtil.ConvertToInt(row.get(4)));
+            System.out.println(cache_name + " 初始化成功！");
+        }
     }
 
 //    public static void defineCache(final Ignite ignite, final Long group_id, final String cacheName, final String dataRegin, final String line)

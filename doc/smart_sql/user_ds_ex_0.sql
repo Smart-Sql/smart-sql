@@ -1,9 +1,6 @@
 -- 扩展新的需求，对 user_group 添加缓存。当用 user_token 查询的时候，首先查询缓存，如果缓存不存在，才查询数据库，并将数据库中的缓存放入缓存
 -- 1、创建查询用户组的方法 get_user_group
 -- 4、在添加 add_user_group_ex 用户组的程序中，给这个用户赋予访问 get_user_group 的权限
--- 1、创建查询用户组的方法 get_user_group
--- 首先、查询缓存，如果缓存中存在，则返回
--- 如果没有查询到，就查询数据库并将查询的结果保存到，缓存中
 
 -- 创建一个 Cache
 --noSqlCreate({"table_name": "user_group_cache", "is_cache": true, "mode": "replicated", "maxSize": 10000});

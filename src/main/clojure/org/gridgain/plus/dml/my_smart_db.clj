@@ -281,7 +281,8 @@
 ; no sql
 (defn my-create-cache [ignite group_id schema_name table_name is_cache mode maxSize]
     (if (contains? #{"all" "ddl"} (str/lower-case (nth group_id 2)))
-        (MyNoSqlUtil/createCache ignite (format "c_%s_%s" schema_name table_name) is_cache mode maxSize)
+        ;(MyNoSqlUtil/createCache ignite (format "c_%s_%s" schema_name table_name) is_cache mode maxSize)
+        (MyNoSqlUtil/createCacheSave ignite schema_name table_name is_cache mode maxSize)
         (throw (Exception. "该用户组没有添加 cache 的权限！"))))
 
 (defn my-create [ignite group_id my-obj]
@@ -381,7 +382,9 @@
 
 (defn my-drop [ignite group_id my-obj]
     (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id (my-lexical/get-value my-obj))]
-        (MyNoSqlUtil/dropCache ignite (format "c_%s_%s" schema_name table_name))))
+        ;(MyNoSqlUtil/dropCache ignite (format "c_%s_%s" schema_name table_name))
+        (MyNoSqlUtil/dropCacheSave ignite schema_name table_name)
+        ))
 
 (defn query-sql-no-args [ignite group_id sql]
     (cond (re-find #"^(?i)select\s+" sql) (if-let [ast (my-select-plus/sql-to-ast (my-lexical/to-back sql))]
