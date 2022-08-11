@@ -306,6 +306,25 @@ Smart Sql 完全支持标准 SQL。同时它还支持对 函数的联级调用�
 select * from person where id = get_range_id(1, 5).first();
 ```
 ### 5、对 noSql 的支持
+noSql 的数据结构为 key-value 形式的 hash map。<br/>
+它分为两种类型：<br/>
+1、纯内存 cahe，它有缓存大小的现在，有缓存退出的策略。默认我们选择 RANDOM_2_LRU 作为退出策略。相应的参数可以在配置文件中配置<br/>
+
+![cache_lru](/Users/chenfei/Documents/资料/SupperSql/SmartSql/smart_sql_img/cache_lru.jpg)
+
+2、可持久化的 cache。这种 cache 一部分在内存中，全部数据在磁盘上。
+
+**二者的区别：1、纯内存 cache 如果在数据超过最大的限度，它就直接通过过期策略直接抛弃。而可持久化就不会。2、纯内存 cache 的性能更高一些**
+
+#### 5.1、创建 cache
+```sql
+-- 创建一个纯 cache
+noSqlCreate({"table_name": "user_group_cache", "is_cache": true, "mode": "replicated", "maxSize": 10000});
+
+-- 创建一个分布式缓存带持久化的
+noSqlCreate({"table_name": "my_cache", "is_cache": false, "mode": "partitioned"});
+```
+
 ### 6、高性能程序的开发
 
 

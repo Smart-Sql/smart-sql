@@ -278,15 +278,29 @@
                         (recur it (conj lst-rs (MyLogCache. (my-lexical/my-cache-name schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE)))))
                     lst-rs)))))
 
+(defn re-ht [ht]
+    (cond (not (contains? ht "table_name")) (throw (Exception. "创建 cache 时 table_name 不能为空！"))
+          (and (not (contains? ht "is_cache")) (not (contains? ht "mode")) (not (contains? ht "maxSize"))) (doto ht (.put "is_cache" false) (.put "mode" "partitioned") (.put "maxSize" "0"))
+          (and (contains? ht "is_cache") (true? (.get ht "is_cache"))) (cond (not (contains? ht "maxSize")) (throw (Exception. "is_cache 为 true，必须设置 maxSize 参数，且必须为正数！"))
+                                                                             (and (contains? ht "maxSize") (<= (.get ht "maxSize") 0)) (throw (Exception. "is_cache 为 true，必须设置 maxSize 参数，且必须为正数！"))
+                                                                             (not (contains? ht "mode")) (doto ht (.put "mode" "partitioned"))
+                                                                             :else
+                                                                             ht
+                                                                             )
+          (and (contains? ht "is_cache") (false? (.get ht "is_cache")) (not (contains? ht "mode"))) (doto ht (.put "mode" "partitioned") (.put "maxSize" "0"))
+          (and (contains? ht "is_cache") (false? (.get ht "is_cache"))) (doto ht (.put "maxSize" "0"))
+          :else
+          ht
+          ))
+
 ; no sql
 (defn my-create-cache [ignite group_id schema_name table_name is_cache mode maxSize]
     (if (contains? #{"all" "ddl"} (str/lower-case (nth group_id 2)))
-        ;(MyNoSqlUtil/createCache ignite (format "c_%s_%s" schema_name table_name) is_cache mode maxSize)
         (MyNoSqlUtil/createCacheSave ignite schema_name table_name is_cache mode maxSize)
         (throw (Exception. "该用户组没有添加 cache 的权限！"))))
 
 (defn my-create [ignite group_id my-obj]
-    (let [{table_name "table_name" is_cache "is_cache" mode "mode" maxSize "maxSize"} (my-lexical/get-value my-obj)]
+    (let [{table_name "table_name" is_cache "is_cache" mode "mode" maxSize "maxSize"} (re-ht (my-lexical/get-value my-obj))]
         (if-let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema table_name)]
             (if (= schema_name "")
                 (my-create-cache ignite group_id (nth group_id 1) table_name is_cache mode maxSize)
