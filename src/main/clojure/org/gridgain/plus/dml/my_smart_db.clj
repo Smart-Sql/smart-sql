@@ -280,15 +280,15 @@
 
 (defn re-ht [ht]
     (cond (not (contains? ht "table_name")) (throw (Exception. "创建 cache 时 table_name 不能为空！"))
-          (and (not (contains? ht "is_cache")) (not (contains? ht "mode")) (not (contains? ht "maxSize"))) (doto ht (.put "is_cache" false) (.put "mode" "partitioned") (.put "maxSize" "0"))
+          (and (not (contains? ht "is_cache")) (not (contains? ht "mode")) (not (contains? ht "maxSize"))) (doto ht (.put "is_cache" false) (.put "mode" "partitioned") (.put "maxSize" 0))
           (and (contains? ht "is_cache") (true? (.get ht "is_cache"))) (cond (not (contains? ht "maxSize")) (throw (Exception. "is_cache 为 true，必须设置 maxSize 参数，且必须为正数！"))
                                                                              (and (contains? ht "maxSize") (<= (.get ht "maxSize") 0)) (throw (Exception. "is_cache 为 true，必须设置 maxSize 参数，且必须为正数！"))
                                                                              (not (contains? ht "mode")) (doto ht (.put "mode" "partitioned"))
                                                                              :else
                                                                              ht
                                                                              )
-          (and (contains? ht "is_cache") (false? (.get ht "is_cache")) (not (contains? ht "mode"))) (doto ht (.put "mode" "partitioned") (.put "maxSize" "0"))
-          (and (contains? ht "is_cache") (false? (.get ht "is_cache"))) (doto ht (.put "maxSize" "0"))
+          (and (contains? ht "is_cache") (false? (.get ht "is_cache")) (not (contains? ht "mode")) (not (contains? ht "maxSize"))) (doto ht (.put "mode" "partitioned") (.put "maxSize" 0))
+          (and (contains? ht "is_cache") (false? (.get ht "is_cache")) (not (contains? ht "maxSize"))) (doto ht (.put "maxSize" 0))
           :else
           ht
           ))

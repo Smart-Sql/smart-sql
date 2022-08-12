@@ -325,6 +325,18 @@ noSqlCreate({"table_name": "user_group_cache", "is_cache": true, "mode": "replic
 noSqlCreate({"table_name": "my_cache", "is_cache": false, "mode": "partitioned"});
 ```
 
+#### 5.2、删除 cache
+```sql
+-- 删除 cache
+noSqlDrop({"table_name": "my_cache"});
+```
+
+#### 5.3、插入数据  cache
+```sql
+-- 插入数据  cache
+noSqlInsert({"table_name": "my_cache", "key": "000A", "value": {"name": "吴大富", "age": 100}});
+```
+
 ### 6、高性能程序的开发
 
 

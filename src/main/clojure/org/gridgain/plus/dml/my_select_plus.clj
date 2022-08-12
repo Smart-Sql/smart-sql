@@ -196,7 +196,7 @@
                         lst-kv)))
             (to-token [vs]
                 (cond (and (= (first vs) "[") (= (last vs) "]")) {:seq-obj (get-item-tokens (my-lexical/get-contain-lst vs))}
-                      (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens (my-lexical/get-contain-lst vs))}
+                      (and (= (first vs) "{") (= (last vs) "}")) (get-item-tokens vs) ;{:map-obj (get-item-tokens (my-lexical/get-contain-lst vs))}
                       :else
                       (get-token vs)
                       ))
