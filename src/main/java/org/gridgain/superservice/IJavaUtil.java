@@ -5,7 +5,7 @@ import java.util.Hashtable;
 
 public interface IJavaUtil {
 
-    public Object toArray(final Object m);
+    public Object toArrayOrHashtable(final Object m);
 
     public Boolean isSeq(final Object m);
 

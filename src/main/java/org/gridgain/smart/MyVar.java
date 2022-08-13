@@ -25,7 +25,7 @@ public class MyVar implements Serializable {
             this.varType = "List";
         }
 
-        this.var = myJavaUtilService.getJavaUtil().toArray(var);
+        this.var = myJavaUtilService.getJavaUtil().toArrayOrHashtable(var);
     }
 
     public MyVar(final Object var, final String varType)

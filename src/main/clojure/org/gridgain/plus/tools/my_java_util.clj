@@ -46,7 +46,7 @@
           :else m
           ))
 
-(defn -toArray [this lst]
+(defn -toArrayOrHashtable [this lst]
     (to-my-val lst))
 
 (defn -isSeq [this m]

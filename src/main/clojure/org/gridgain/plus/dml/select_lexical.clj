@@ -131,7 +131,7 @@
 
 (defn get-value [m]
     (if (instance? MyVar m)
-        (.getVar m)
+        (get-value (.getVar m))
         m))
 
 (defn get_group_schema_name [^Ignite ignite group_id]
@@ -225,14 +225,6 @@
              )
          lst)))
 
-; 是否已经存在
-(defn is-contains?
-    ([lst item] (is-contains? lst item false))
-    ([[f & rs] item flag]
-     (if (some? f)
-         (if (= (is-eq? f item) true) true
-                                      (recur rs item flag)) flag)))
-
 ; 是否是序列
 (defn is-seq? [m]
     (or (vector? m) (seq? m) (list? m) (instance? java.util.List m)))
@@ -240,6 +232,20 @@
 ; 是否是字典
 (defn is-dic? [m]
     (or (map? m) (instance? java.util.Hashtable m) (instance? java.util.HashMap m) (instance? java.util.Map m)))
+
+
+; 是否已经存在
+(defn is-lst-contains?
+    ([lst item] (is-lst-contains? lst item false))
+    ([[f & rs] item flag]
+     (if (some? f)
+         (if (= (is-eq? f item) true) true
+                                      (recur rs item flag)) flag)))
+
+(defn is-contains? [lst-ht item]
+    (cond (is-seq? lst-ht) (is-lst-contains? lst-ht item)
+          (is-dic? lst-ht) (contains? lst-ht item)
+          ))
 
 ; 执行事务
 ; lst_cache: [MyCacheEx]

@@ -1,5 +1,6 @@
 package org.tools;
 
+import clojure.lang.PersistentArrayMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -38,16 +39,18 @@ public class MyConvertUtil {
     }
 
     public static Hashtable ConvertToDic(final Object obj) throws Exception {
-        if (myJavaUtilService.getJavaUtil().isDic(obj))
-        {
+        if (myJavaUtilService.getJavaUtil().isDic(obj)) {
+            //String cls_name = obj.getClass().toString();
+            //System.out.println(cls_name);
+            if (obj instanceof PersistentArrayMap) {
+                Object mobj = myJavaUtilService.getJavaUtil().toArrayOrHashtable(obj);
+                return (Hashtable) mobj;
+            }
             return (Hashtable) obj;
-        }
-        else if (obj instanceof String) {
+        } else if (obj instanceof String) {
             return gson.fromJson(ConvertToString(obj), new TypeToken<Hashtable<Object, Object>>() {
             }.getType());
-        }
-        else
-        {
+        } else {
             throw new Exception("输入参数：" + obj.toString() + " 不能转换为字典！");
         }
     }
