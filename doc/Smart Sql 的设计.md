@@ -337,7 +337,61 @@ noSqlDrop({"table_name": "my_cache"});
 noSqlInsert({"table_name": "my_cache", "key": "000A", "value": {"name": "吴大富", "age": 100}});
 ```
 
-### 6、高性能程序的开发
+#### 5.4、修改数据  cache
+```sql
+-- 修改数据  cache
+noSqlUpdate({"table_name": "my_cache", "key": "000A", "value": {"name": "吴大富", "age": 200}});
+```
+
+#### 5.5、删除数据  cache
+```sql
+-- 删除数据  cache
+noSqlDelete({"table_name": "my_cache", "key": "000A"});
+```
+
+#### 5.6、插入数据的事务 cache
+```sql
+-- 插入数据的事务  cache
+-- 这个方法的返回参数要输入到 trans 方法中才会执行事务
+noSqlInsertTran({"table_name": "my_cache", "key": "000A", "value": {"name": "吴大富", "age": 100}});
+```
+
+#### 5.7、修改数据的事务 cache
+```sql
+-- 修改数据的事务  cache
+-- 这个方法的返回参数要输入到 trans 方法中才会执行事务
+noSqlUpdateTran({"table_name": "my_cache", "key": "000A", "value": {"name": "吴大富", "age": 200}});
+```
+
+#### 5.8、删除数据的事务 cache
+```sql
+-- 删除数据的事务  cache
+-- 这个方法的返回参数要输入到 trans 方法中才会执行事务
+noSqlDeleteTran({"table_name": "my_cache", "key": "000A"});
+```
+
+### 6、定时任务
+#### 6.1、添加定时任务
+```sql
+-- 添加定时任务
+-- 需要输入三个参数，第一个是任务名，这个任务必须存在于 MY_META.MY_SCENES 中且有访问权限
+-- 参数列表，如果没有就设置为 null 或者 []
+-- cron 描述，例如：{1,3} * * * * *
+add_job('任务名', ['参数1', '参数2', ...], 'cron 描述');
+```
+#### 6.2、删除定时任务
+```sql
+-- 删除定时任务
+-- 输入任务名
+remove_job('任务名');
+```
+
+### 7、高性能程序的开发
+要开发稳定，高性能的应用程序需要遵循以下的规则：
+1. 在读取数据的时候，尽可能的读取 key-value 形式的 cache，而不是复杂的 SQL
+2. 尽量将所有业务逻辑都用 Smart Sql 来实现，外部程序可能通过 JDBC ，直接调用其方法。
+3. 尽量用函数式架构思想来，设计和实现程序。
+
 
 
 

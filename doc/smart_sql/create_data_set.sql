@@ -1,6 +1,6 @@
 -- 创建数据集并且为数据集添加用户组的 token
 
-create dataset wudafu;
+create dataset myy;
 add_user_group('myy_group', 'myy_token', 'all', 'myy');
 
 create dataset wudafu;
