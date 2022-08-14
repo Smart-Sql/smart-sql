@@ -260,12 +260,12 @@
     DROP TABLE IF EXISTS my_cron;
     */
     CREATE TABLE IF NOT EXISTS my_cron (
-                      cron_name VARCHAR(40),
+                      job_name VARCHAR(40),
+                      group_id BIGINT,
                       cron VARCHAR,
-                      ps VARBINARY,
-                      descrip VARCHAR,
-                      PRIMARY KEY (cron_name)
-                      ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.MyCron,cache_name=my_cron,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+                      ps VARCHAR,
+                      PRIMARY KEY (job_name)
+                      ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.MCron,cache_name=my_cron,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
     24、自定义方法

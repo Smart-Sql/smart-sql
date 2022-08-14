@@ -16,21 +16,23 @@ public class MyFunc implements Serializable {
     private String ps_code;
     private List<MyFuncPs> lst;
 
-    public MyFunc(final String method_name, final String java_method_name, final String cls_name, final String return_type, final String descrip)
+    public MyFunc(final String method_name, final String java_method_name, final String cls_name, final String return_type, List<MyFuncPs> lst, final String descrip)
     {
         this.method_name = method_name;
         this.java_method_name = java_method_name;
         this.cls_name = cls_name;
         this.return_type = return_type;
         this.descrip = descrip;
-        lst = new ArrayList<>();
-        StringBuilder sb = new StringBuilder();
-        List<MyFuncPs> lstFunc = lst.stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
-        for (MyFuncPs m : lstFunc)
-        {
-            sb.append(String.format("参数 %s: %s ", m.getPs_index().toString(), m.getPs_type()));
+        //lst = new ArrayList<>();
+        if (lst != null) {
+            StringBuilder sb = new StringBuilder();
+            List<MyFuncPs> lstFunc = lst.stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
+            for (MyFuncPs m : lstFunc) {
+                sb.append(String.format("参数 %s: %s ", m.getPs_index().toString(), m.getPs_type()));
+            }
+            this.ps_code = sb.toString();
+            this.lst = lst;
         }
-        this.ps_code = sb.toString();
     }
 
     public MyFunc()

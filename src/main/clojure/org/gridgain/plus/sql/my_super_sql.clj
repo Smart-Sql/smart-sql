@@ -198,13 +198,13 @@
              (last lst-rs)))))
 
 (defn super-sql [^Ignite ignite ^String userToken ^List lst]
-    (let [[group_id dataset_name group_type dataset_id] (my_group_id ignite userToken)]
+    (let [[group_id dataset_name group_type dataset_id] (my-lexical/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         ;(println lst)
         (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id lst)))
 
 (defn super-sql-line [^Ignite ignite ^String userToken ^String line]
-    (let [[group_id dataset_name group_type dataset_id] (my_group_id ignite userToken)]
+    (let [[group_id dataset_name group_type dataset_id] (my-lexical/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
 
@@ -220,7 +220,7 @@
         (throw (Exception. "没有权限不能访问数据库！"))))
 
 (defn -getGroupId [^Ignite ignite ^String userToken]
-    (if-let [group_id (my_group_id ignite userToken)]
+    (if-let [group_id (my-lexical/get_user_group ignite userToken)]
         true
         false))
 

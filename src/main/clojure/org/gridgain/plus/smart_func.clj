@@ -5,6 +5,7 @@
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
+        [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
@@ -35,7 +36,7 @@
     ([lst] (cron-to-str lst []))
     ([[f & r] lst]
      (if (some? f)
-         (if (= "*" (first r))
+         (if (contains? #{"*" "?"} (first r))
              (recur r (concat lst [f " "]))
              (recur r (concat lst [f])))
          (str/join lst))))
@@ -189,7 +190,48 @@
           (throw (Exception. (format "没有为用户组 id：%s 添加 %s 的权限" to-group-id method-name)))
           ))
 
+(defn run-job [ignite group_id job-name ps]
+    (cond (my-lexical/is-scenes? ignite group_id job-name) (if-not (empty? ps)
+                                                               (my-smart-scenes/my-invoke-scenes ignite group_id job-name ps)
+                                                               (my-smart-scenes/my-invoke-scenes-no-ps ignite group_id job-name))
+          (my-lexical/is-func? ignite job-name) (if-not (empty? ps)
+                                                    (apply my-smart-scenes/my-invoke-func ignite job-name ps)
+                                                    (my-smart-scenes/my-invoke-func-no-ps ignite job-name))
+          (my-lexical/is-call-scenes? ignite group_id job-name) (if-not (empty? ps)
+                                                                    (my-smart-scenes/my-invoke-scenes ignite group_id job-name ps)
+                                                                    (my-smart-scenes/my-invoke-scenes-no-ps ignite group_id job-name))
+          ))
+
+(defn init-add-job [^Ignite ignite ^Long my-group-id ^String job-name ^Object ps ^String cron]
+    (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
+        (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
+            (if-not (.containsKey scheduledFutures job-name)
+                (try
+                    (let [cron-line (cron-to-str (my-lexical/to-back cron))]
+                        (.scheduleLocal (.scheduler ignite) job-name (proxy [Object Runnable] []
+                                                                         (run []
+                                                                             ;(my-smart-scenes/my-invoke-scenes ignite group_id job-name ps)
+                                                                             (run-job ignite (my-lexical/get-user-group-by-id ignite my-group-id) job-name ps)
+                                                                             ))
+                                        cron-line))
+                    (catch Exception ex
+                        (.remove scheduledFutures job-name))
+                    )
+                ))))
+
+(defn init-job [^Ignite ignite]
+    (let [group_id [0 "MY_META" "all" -1]]
+        (let [rs (my-smart-db/query_sql ignite group_id "select m.job_name, m.group_id, m.cron, m.ps from my_cron m" nil)]
+            (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
+                (if (.hasNext M-F-v156-I-Q157-c-Y)
+                    (let [r (.next M-F-v156-I-Q157-c-Y)]
+                        (init-add-job ignite (nth r 1) (nth r 0) (nth r 3) (nth r 2))
+                        (recur M-F-v156-I-Q157-c-Y)))))))
+
 ; 添加 job
+; job-name: 任务名，场景名，函数名
+; ps：参数，列表类型，例如： ["吴大富", 100], 如果是空 []
+; cron: 0/5 * * * * ?   表示每5秒 执行任务
 (defn add-job [^Ignite ignite group_id ^String job-name ^Object ps ^String cron]
     (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
         (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
@@ -199,9 +241,11 @@
                     (let [cron-line (cron-to-str (my-lexical/to-back cron)) my-cron-cache (.cache ignite "my_cron")]
                         (if-not (nil? (.scheduleLocal (.scheduler ignite) job-name (proxy [Object Runnable] []
                                                                                        (run []
-                                                                                           (my-smart-scenes/my-invoke-scenes ignite group_id job-name ps)))
+                                                                                           ;(my-smart-scenes/my-invoke-scenes ignite group_id job-name ps)
+                                                                                           (run-job ignite group_id job-name ps)
+                                                                                           ))
                                                       cron-line))
-                            (.put my-cron-cache job-name (MCron. job-name cron-line (MyCacheExUtil/objToBytes ps)))))
+                            (.put my-cron-cache job-name (MCron. job-name (first group_id) cron-line (my-lexical/gson ps)))))
                     (catch Exception ex
                         (.remove scheduledFutures job-name))
                     )

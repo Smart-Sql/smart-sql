@@ -145,7 +145,7 @@
             (format "(%s %s)" my-lexical-func (get-lst-ps-vs ignite group_id lst_ps my-context))
             (cond
                   ;(my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  ;(my-lexical/is-eq? "println" func-name) (format "(println %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? "println" func-name) (format "(println %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
                   (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
                                                 (if (> (count lst_ps) 0)
                                                     (format "(%s (my-lexical/get-value %s) %s)" (my-lexical/smart-func method-name) let-name (get-lst-ps-vs ignite group_id lst_ps my-context))
@@ -181,11 +181,17 @@
                   (my-lexical/is-eq? func-name "add_scenes_to") (format "(smart-func/add-scenes-to ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
                   (my-lexical/is-eq? func-name "rm_scenes_from") (format "(smart-func/rm-scenes-from ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
 
-                  (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add_job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
                   (my-lexical/is-eq? func-name "remove_job") (format "(smart-func/remove-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" [%s])" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  (is-call-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" [%s])" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (is-func? ignite func-name) (if-not (empty? lst_ps)
+                                                  (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+                                                  (format "(my-smart-scenes/my-invoke-func-no-ps ignite \"%s\")" func-name))
+                  (is-scenes? ignite group_id func-name) (if-not (empty? lst_ps)
+                                                             (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" [%s])" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+                                                             (format "(my-smart-scenes/my-invoke-scenes-no-ps ignite group_id \"%s\")" func-name))
+                  (is-call-scenes? ignite group_id func-name) (if-not (empty? lst_ps)
+                                                                  (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" [%s])" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+                                                                  (format "(my-smart-scenes/my-invoke-scenes-no-ps ignite group_id \"%s\")" func-name))
 
                   (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
                   :else

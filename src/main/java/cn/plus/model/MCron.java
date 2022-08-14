@@ -10,23 +10,24 @@ import java.io.Serializable;
 public class MCron implements Serializable {
 
     private static final long serialVersionUID = 5363891392457651930L;
-    private String cron_name;
+    private String job_name;
     private String cron;
-    private byte[] ps;
-    private String descrip;
-    private clojure.lang.PersistentArrayMap ast;
+    private String ps;
+    private Long group_id;
+//    private String descrip;
+//
+//    public MCron(final String job_name, final String cron, final String ps, final String descrip)
+//    {
+//        this.job_name = job_name;
+//        this.cron = cron;
+//        this.ps = ps;
+//        this.descrip = descrip;
+//    }
 
-    public MCron(final String cron_name, final String cron, final String descrip, final clojure.lang.PersistentArrayMap ast)
+    public MCron(final String job_name, final Long group_id, final String cron, final String ps)
     {
-        this.cron_name = cron_name;
-        this.cron = cron;
-        this.descrip = descrip;
-        this.ast = ast;
-    }
-
-    public MCron(final String cron_name, final String cron, final byte[] ps)
-    {
-        this.cron_name = cron_name;
+        this.job_name = job_name;
+        this.group_id = group_id;
         this.cron = cron;
         this.ps = ps;
     }
@@ -34,28 +35,20 @@ public class MCron implements Serializable {
     public MCron()
     {}
 
-    public byte[] getPs() {
-        return ps;
+    public Long getGroup_id() {
+        return group_id;
     }
 
-    public void setPs(byte[] ps) {
-        this.ps = ps;
+    public void setGroup_id(Long group_id) {
+        this.group_id = group_id;
     }
 
-    public PersistentArrayMap getAst() {
-        return ast;
+    public String getJob_name() {
+        return job_name;
     }
 
-    public void setAst(PersistentArrayMap ast) {
-        this.ast = ast;
-    }
-
-    public String getCron_name() {
-        return cron_name;
-    }
-
-    public void setCron_name(String cron_name) {
-        this.cron_name = cron_name;
+    public void setJob_name(String job_name) {
+        this.job_name = job_name;
     }
 
     public String getCron() {
@@ -66,21 +59,20 @@ public class MCron implements Serializable {
         this.cron = cron;
     }
 
-    public String getDescrip() {
-        return descrip;
+    public String getPs() {
+        return ps;
     }
 
-    public void setDescrip(String descrip) {
-        this.descrip = descrip;
+    public void setPs(String ps) {
+        this.ps = ps;
     }
 
     @Override
     public String toString() {
         return "MCron{" +
-                "cron_name='" + cron_name + '\'' +
+                "job_name='" + job_name + '\'' +
                 ", cron='" + cron + '\'' +
-                ", descrip='" + descrip + '\'' +
-                ", ast=" + ast +
+                ", ps='" + ps + '\'' +
                 '}';
     }
 }

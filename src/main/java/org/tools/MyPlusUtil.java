@@ -197,6 +197,33 @@ public class MyPlusUtil {
         }
         return rs;
     }
+
+    public static Object invokeFuncNoPs(final Ignite ignite, final String func_name)
+    {
+        Object rs = null;
+        IgniteCache<String, MyFunc> funcCache = ignite.cache("my_func");
+        MyFunc myFunc = funcCache.get(func_name);
+        try {
+
+
+            Class<?> cls = Class.forName(myFunc.getCls_name());
+            Method method = cls.getMethod(myFunc.getJava_method_name());
+            rs = method.invoke(cls.newInstance());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return rs;
+    }
 }
 
 

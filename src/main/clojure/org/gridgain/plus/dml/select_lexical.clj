@@ -5,12 +5,13 @@
     (:import (org.apache.ignite Ignite IgniteCache)
              (org.gridgain.smart MyVar MyLetLayer)
              (org.apache.ignite.transactions Transaction)
+             (com.google.gson Gson GsonBuilder)
              (org.tools MyConvertUtil KvSql)
              (cn.plus.model MyLogCache SqlType)
              (cn.mysuper.model MyUrlToken)
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
-             (cn.plus.model.db MyScenesCache MyScenesCachePk MyScenesParams)
+             (cn.plus.model.db MyCallScenesPk MyCallScenes MyScenesCache MyScenesCachePk MyScenesParams)
              (org.gridgain.myservice MyNoSqlFunService)
              (org.gridgain.jdbc MyJdbc)
              (org.gridgain.smart.view MyViewAstPK)
@@ -41,6 +42,25 @@
         (ArrayList.)
         params))
 
+(defn gson [m]
+    (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+        (.toJson gs m)))
+
+(defn get_user_group [ignite user_token]
+    (let [group_id [0 "MY_META" "all" -1]]
+        (let [vs (my-lexical/no-sql-get-vs ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)))]
+            (cond (my-lexical/not-empty? vs) vs
+                  :else (let [rs (my-smart-db/query_sql ignite group_id "select g.id, m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.user_token = ?" [(my-lexical/to_arryList [user_token])])]
+                            (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
+                                (if (.hasNext M-F-v156-I-Q157-c-Y)
+                                    (let [r (.next M-F-v156-I-Q157-c-Y)]
+                                        (my-lexical/no-sql-insert ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)(.put "value" r)))
+                                        r
+                                        (recur M-F-v156-I-Q157-c-Y)))))))))
+
+(defn get-user-group-by-id [ignite user-group-id]
+    (if-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [user-group-id])))))]
+        (cons user-group-id m)))
 
 ; 判断字符串不为空
 (defn is-not-empty? [^String line]
@@ -49,6 +69,18 @@
 
 (defn is-empty? [^String line]
     (Strings/isNullOrEmpty line))
+
+
+; 判断 func
+(defn is-func? [^Ignite ignite ^String func-name]
+    (.containsKey (.cache ignite "my_func") (str/lower-case func-name)))
+
+; 判断 scenes
+(defn is-scenes? [^Ignite ignite group_id ^String scenes-name]
+    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. (first group_id) (str/lower-case scenes-name))))
+
+(defn is-call-scenes? [^Ignite ignite group_id ^String scenes-name]
+    (.containsKey (.cache ignite "call_scenes") (MyCallScenesPk. (first group_id) scenes-name)))
 
 ; 添加参数
 (defn add-scenes-ps [^Ignite ignite group_id my-method-name index ps-type]

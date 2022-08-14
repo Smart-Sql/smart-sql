@@ -41,6 +41,9 @@
 (defn my-invoke-func [^Ignite ignite ^String method-name ps]
     (MyPlusUtil/invokeFunc ignite method-name ps))
 
+(defn my-invoke-func-no-ps [^Ignite ignite ^String method-name]
+    (MyPlusUtil/invokeFuncNoPs ignite method-name))
+
 ; 获取输入参数和处理后的参数
 (defn get-params [params]
     (if (> (count params) 0)
@@ -80,6 +83,9 @@
                     (my-invoke-scenes ignite (.getGroup_id_obj my-group) method-name ps)
                     (scenes-run ignite group_id my-method-name ps))
                 ))))
+
+(defn my-invoke-scenes-no-ps [^Ignite ignite group_id ^String method-name]
+    (my-invoke-scenes ignite group_id method-name []))
 
 ;(defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name ps]
 ;    (let [my-method-name (str/lower-case method-name)]

@@ -30,7 +30,7 @@
         (org.gridgain.smart MyVar)
         (org.gridgain.nosql MyNoSqlUtil)
         (com.google.common.base Strings)
-        (org.tools MyConvertUtil KvSql)
+        (org.tools MyConvertUtil MyPlusUtil KvSql MyDbUtil MyGson MyTools)
         (org.gridgain.smart.view MyViewAstPK)
         (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
         (cn.plus.model.ddl MyViewsPk MySchemaTable MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyUpdateViews)
@@ -46,9 +46,7 @@
         (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
         (java.math BigDecimal)
         (com.google.gson Gson)
-        (org.tools MyGson)
         (org.gridgain.plus.dml MySmartSql)
-        (org.tools MyTools)
         )
 
 (def ignite (IgnitionEx/start "/Users/chenfei/Documents/Java/my-grid-plus/resources/default-config.xml"))
