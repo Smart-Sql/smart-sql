@@ -17,6 +17,7 @@
         [org.gridgain.plus.dml.my-smart-db-line :as my-smart-db-line]
         [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
+        [org.gridgain.plus.tools.my-user-group :as my-user-group]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
@@ -198,13 +199,13 @@
              (last lst-rs)))))
 
 (defn super-sql [^Ignite ignite ^String userToken ^List lst]
-    (let [[group_id dataset_name group_type dataset_id] (my-lexical/get_user_group ignite userToken)]
+    (let [[group_id dataset_name group_type dataset_id] (my-user-group/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         ;(println lst)
         (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id lst)))
 
 (defn super-sql-line [^Ignite ignite ^String userToken ^String line]
-    (let [[group_id dataset_name group_type dataset_id] (my-lexical/get_user_group ignite userToken)]
+    (let [[group_id dataset_name group_type dataset_id] (my-user-group/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
 
@@ -220,7 +221,7 @@
         (throw (Exception. "没有权限不能访问数据库！"))))
 
 (defn -getGroupId [^Ignite ignite ^String userToken]
-    (if-let [group_id (my-lexical/get_user_group ignite userToken)]
+    (if-let [group_id (my-user-group/get_user_group ignite userToken)]
         true
         false))
 

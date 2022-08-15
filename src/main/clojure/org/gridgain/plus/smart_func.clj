@@ -7,6 +7,7 @@
         [org.gridgain.plus.dml.my-delete :as my-delete]
         [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
+        [org.gridgain.plus.tools.my-user-group :as my-user-group]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -29,7 +30,8 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [smart_view [org.apache.ignite.Ignite Object String String] String]]
+        :methods [^:static [smart_view [org.apache.ignite.Ignite Object String String] String]
+                  ^:static [initJob [org.apache.ignite.Ignite] void]]
         ))
 
 (defn cron-to-str
@@ -211,7 +213,7 @@
                         (.scheduleLocal (.scheduler ignite) job-name (proxy [Object Runnable] []
                                                                          (run []
                                                                              ;(my-smart-scenes/my-invoke-scenes ignite group_id job-name ps)
-                                                                             (run-job ignite (my-lexical/get-user-group-by-id ignite my-group-id) job-name ps)
+                                                                             (run-job ignite (my-user-group/get-user-group-by-id ignite my-group-id) job-name ps)
                                                                              ))
                                         cron-line))
                     (catch Exception ex
@@ -225,8 +227,11 @@
             (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
                 (if (.hasNext M-F-v156-I-Q157-c-Y)
                     (let [r (.next M-F-v156-I-Q157-c-Y)]
-                        (init-add-job ignite (nth r 1) (nth r 0) (nth r 3) (nth r 2))
+                        (init-add-job ignite (nth r 1) (nth r 0) (MyConvertUtil/ConvertToList (nth r 3)) (nth r 2))
                         (recur M-F-v156-I-Q157-c-Y)))))))
+
+(defn -initJob [^Ignite ignite]
+    (init-job ignite))
 
 ; 添加 job
 ; job-name: 任务名，场景名，函数名
