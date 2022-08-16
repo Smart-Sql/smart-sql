@@ -29,7 +29,7 @@ function has_user_token_type(user_token_type:string)
     -- user_token_type 只能取
     let lst = ["ddl", "dml", "all"];
     match {
-        lst.contains(user_token_type.toLowerCase()): flag = true;
+        lst.contains?(user_token_type.toLowerCase()): flag = true;
     }
     flag;
 }
@@ -56,18 +56,39 @@ function get_user_group(user_token:string)
 function add_user_group(group_name:string, user_token:string, group_type:string, data_set_name:string)
 {
     match {
-        has_user_token_type(group_type): -- 通过 data set name 获取 data set 的 id
-                                         let data_set_id = get_data_set_id(data_set_name);
-                                         match {
-                                             data_set_id > 0:
-                                                              -- data set id 大于 0 时，插入到 my_users_group 表中
-                                                              let user_group_id = auto_id("my_users_group");
-                                                              let lst = [["insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (?, ?, ?, ?, ?)", [user_group_id, group_name, data_set_id, user_token, group_type]]];
-                                                              -- 同时对 user_group_id 赋予 get_user_group 的访问权限
-                                                              lst.add(["insert into call_scenes (group_id, to_group_id, scenes_name) values (?, ?, ?)", [0, user_group_id, "get_user_group"]]);
-                                                              -- 执行事务
-                                                              trans(lst);
-                                             else false;
+        has_user_token_type(group_type): match {
+                                            notNullOrEmpty?(get_user_group(user_token)): "已经存在了该 user_token 不能重复插入！";
+                                            else  -- 通过 data set name 获取 data set 的 id
+                                                  let data_set_id = get_data_set_id(data_set_name);
+                                                  match {
+                                                      data_set_id > 0 and :
+                                                                       -- data set id 大于 0 时，插入到 my_users_group 表中
+                                                                       let user_group_id = auto_id("my_users_group");
+                                                                       let lst = [["insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (?, ?, ?, ?, ?)", [user_group_id, group_name, data_set_id, user_token, group_type]]];
+                                                                       -- 同时对 user_group_id 赋予 get_user_group 的访问权限
+                                                                       lst.add(["insert into call_scenes (group_id, to_group_id, scenes_name) values (?, ?, ?)", [0, user_group_id, "get_user_group"]]);
+                                                                       -- 执行事务
+                                                                       trans(lst);
+                                                                       -- 添加访问权限
+                                                                       -- 用户组只能访问自己数据集里面的 cache
+                                                                       -- 用户组只能访问自己数据集里面的 cache
+                                                                       my_view(group_name, format("select * from my_caches where dataset_name = '%s'", data_set_name));
+                                                                       -- 用户只能查看别人赋予他的方法
+                                                                       my_view(group_name, format("select * from call_scenes where to_group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的定时任务
+                                                                       my_view(group_name, format("select * from my_cron where group_id = '%s'", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 delete 权限视图
+                                                                       my_view(group_name, format("select * from my_delete_views where group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 insert 权限视图
+                                                                       my_view(group_name, format("select * from my_insert_views where group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 update 权限视图
+                                                                       my_view(group_name, format("select * from my_update_views where group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 select 权限视图
+                                                                       my_view(group_name, format("select * from my_select_views where group_id = %s", user_group_id));
+                                                                       -- 不能访问用户组，其它用户的 user_token
+                                                                       my_view(group_name, "select id, group_name, data_set_id, group_type from my_users_group");
+                                                      else false;
+                                                  }
                                          }
     }
 }

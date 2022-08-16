@@ -22,7 +22,7 @@ function has_user_token_type(user_token_type:string)
     -- user_token_type 只能取
     let lst = ["ddl", "dml", "all"];
     match {
-        lst.contains(user_token_type.toLowerCase()): flag = true;
+        lst.contains?(user_token_type.toLowerCase()): flag = true;
     }
     flag;
 }
@@ -90,7 +90,7 @@ function has_user_token_type(user_token_type:string)
     -- user_token_type 只能取
     let lst = ["ddl", "dml", "all"];
     match {
-        lst.contains(user_token_type.toLowerCase()): flag = true;
+        lst.contains?(user_token_type.toLowerCase()): flag = true;
     }
     flag;
 }

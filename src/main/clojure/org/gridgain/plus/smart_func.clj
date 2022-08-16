@@ -257,19 +257,24 @@
                 ))))
 
 ; 删除 job
+; 除超级用户外，只有同一个用户组的，才可以删除
 (defn remove-job [^Ignite ignite group_id ^String job-name]
     (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
         (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
             (let [job-cache (.cache ignite "my_cron")]
                 (if-let [job-obj (.get job-cache job-name)]
-                    (if (.containsKey scheduledFutures job-name)
-                        (try
-                            (.remove scheduledFutures job-name)
-                            (.remove job-cache job-name)
-                            (catch Exception ex
-                                (add-job ignite group_id job-name (MyCacheExUtil/restore (.getPs job-obj)) (.getCron job-obj)))
-                            )
-                        (throw (Exception. (format "任务 %s 不存在！" job-name)))))
+                    (if-let [m-job (.get job-cache job-name)]
+                        (cond (or (= (.getGroup_id m-job) (first group_id)) (= (first group_id) 0)) (if (.containsKey scheduledFutures job-name)
+                                                                                                        (try
+                                                                                                            (.remove scheduledFutures job-name)
+                                                                                                            (.remove job-cache job-name)
+                                                                                                            (catch Exception ex
+                                                                                                                (add-job ignite group_id job-name (MyCacheExUtil/restore (.getPs job-obj)) (.getCron job-obj)))
+                                                                                                            )
+                                                                                                        (throw (Exception. (format "任务 %s 不存在！" job-name))))
+                              :else (throw (Exception. (format "没有删除 %s 任务的权限！" job-name)))
+                              ))
+                    )
                 )
             )))
 

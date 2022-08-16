@@ -21,7 +21,7 @@ function my_dic(my_keys:list, my_dic:dic)
    --let user_dic = {"emp_no": "000C", "level": 20, "emp": {"name": "吴大富", "age": 100}};
    --user_dic.get("emp").get(my_key);
    match {
-      my_dic.contains(my_keys.first()): match {
+      my_dic.contains?(my_keys.first()): match {
                                            my_keys.count() > 1: my_dic(my_keys.rest(), my_dic.get(my_keys.first()));
                                            my_keys.count() == 1: my_dic.get(my_keys.first());
                                         }
@@ -44,7 +44,7 @@ function get_dic_vs(ps_keys:list)
           --let user_dic = {"emp_no": "000C", "level": 20, "emp": {"name": "吴大富", "age": 100}};
           --user_dic.get("emp").get(my_key);
           match {
-             ps_dics.contains(ps_keys.first()): match {
+             ps_dics.contains?(ps_keys.first()): match {
                                                   ps_keys.count() > 1: my_dic(ps_keys.rest(), ps_dics.get(ps_keys.first()));
                                                   ps_keys.count() == 1: ps_dics.get(ps_keys.first());
                                                }

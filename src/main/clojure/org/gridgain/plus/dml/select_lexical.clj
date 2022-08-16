@@ -47,11 +47,11 @@
         (.toJson gs m)))
 
 ; 判断字符串不为空
-(defn is-not-empty? [^String line]
+(defn is-str-not-empty? [^String line]
     (if-not (Strings/isNullOrEmpty line)
         true false))
 
-(defn is-empty? [^String line]
+(defn is-str-empty? [^String line]
     (Strings/isNullOrEmpty line))
 
 
@@ -560,7 +560,7 @@
           (is-eq? func-name "nth") "nth"
           (is-eq? func-name "count") "count"
           (is-eq? func-name "concat") "my-lexical/my-concat"
-          (is-eq? func-name "contains") "my-lexical/is-contains?"
+          (is-eq? func-name "contains?") "my-lexical/is-contains?"
           (is-eq? func-name "put") ".put"
           (is-eq? func-name "get") "my-lexical/map-list-get"
           (is-eq? func-name "remove") "my-lexical/list-remove"
@@ -568,8 +568,13 @@
           (is-eq? func-name "peek") "my-lexical/list-peek"
           (is-eq? func-name "takeLast") "my-lexical/list-take-last"
           (is-eq? func-name "dropLast") "my-lexical/list-drop-last"
+          (is-eq? func-name "null?") "nil?"
+          (is-eq? func-name "notNull?") "my-lexical/not-null?"
           (is-eq? func-name "empty?") "empty?"
           (is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
+          (is-eq? func-name "nullOrEmpty?") "my-lexical/null-or-empty?"
+          (is-eq? func-name "notNullOrEmpty?") "my-lexical/not-null-or-empty?"
+          (is-eq? func-name "format") "format"
           (is-eq? func-name "abs") "MyFunction/abs"
           (is-eq? func-name "acos") "my-lexical/my-acos"
           (is-eq? func-name "asin") "my-lexical/my-asin"
@@ -642,6 +647,21 @@
 
 (defn not-empty? [lst]
     (not (empty? lst)))
+
+(defn not-null? [m]
+    (not (nil? m)))
+
+
+(defn null-or-empty? [m]
+    (if (instance? String m)
+        (Strings/isNullOrEmpty m)
+        (cond (nil? m) true
+              (empty? m) true
+              :else false
+              )))
+
+(defn not-null-or-empty? [m]
+    (not (null-or-empty? m)))
 
 (defn map-list-get [dic-lst my-key]
     (cond (map? dic-lst) (get dic-lst my-key)
