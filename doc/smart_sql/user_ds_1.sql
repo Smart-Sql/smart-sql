@@ -52,15 +52,6 @@ function get_user_group(user_token:string)
     }
 }
 
-function get_user_token(group_name:string)
-{
-     let rs = query_sql("select m.user_token from my_users_group m where m.group_name = ?", [group_name]);
-     for (r in rs)
-     {
-        r.first();
-     }
-}
-
 -- 2、添加用户组，同时为用户组的 get_user_group
 function add_user_group(group_name:string, user_token:string, group_type:string, data_set_name:string)
 {
@@ -81,21 +72,21 @@ function add_user_group(group_name:string, user_token:string, group_type:string,
                                                                        -- 添加访问权限
                                                                        -- 用户组只能访问自己数据集里面的 cache
                                                                        -- 用户组只能访问自己数据集里面的 cache
-                                                                       my_view(group_name, format("select * from my_meta.my_caches where dataset_name = '%s'", data_set_name));
+                                                                       my_view(group_name, format("select * from my_caches where dataset_name = '%s'", data_set_name));
                                                                        -- 用户只能查看别人赋予他的方法
-                                                                       my_view(group_name, format("select * from my_meta.call_scenes where to_group_id = %s", user_group_id));
+                                                                       my_view(group_name, format("select * from call_scenes where to_group_id = %s", user_group_id));
                                                                        -- 用户组只能访问自己用户组里面的定时任务
-                                                                       my_view(group_name, format("select * from my_meta.my_cron where group_id = '%s'", user_group_id));
+                                                                       my_view(group_name, format("select * from my_cron where group_id = '%s'", user_group_id));
                                                                        -- 用户组只能访问自己用户组里面的 delete 权限视图
-                                                                       my_view(group_name, format("select * from my_meta.my_delete_views where group_id = %s", user_group_id));
+                                                                       my_view(group_name, format("select * from my_delete_views where group_id = %s", user_group_id));
                                                                        -- 用户组只能访问自己用户组里面的 insert 权限视图
-                                                                       my_view(group_name, format("select * from my_meta.my_insert_views where group_id = %s", user_group_id));
+                                                                       my_view(group_name, format("select * from my_insert_views where group_id = %s", user_group_id));
                                                                        -- 用户组只能访问自己用户组里面的 update 权限视图
-                                                                       my_view(group_name, format("select * from my_meta.my_update_views where group_id = %s", user_group_id));
+                                                                       my_view(group_name, format("select * from my_update_views where group_id = %s", user_group_id));
                                                                        -- 用户组只能访问自己用户组里面的 select 权限视图
-                                                                       my_view(group_name, format("select * from my_meta.my_select_views where group_id = %s", user_group_id));
+                                                                       my_view(group_name, format("select * from my_select_views where group_id = %s", user_group_id));
                                                                        -- 不能访问用户组，其它用户的 user_token
-                                                                       my_view(group_name, "select id, group_name, data_set_id, group_type from my_meta.my_users_group");
+                                                                       my_view(group_name, "select id, group_name, data_set_id, group_type from my_users_group");
                                                       else false;
                                                   }
                                          }
@@ -103,23 +94,25 @@ function add_user_group(group_name:string, user_token:string, group_type:string,
 }
 
 -- 修改用户组，在这里我们要修改的是 group_type
-function update_user_group(group_name:string, group_type:string)
+function update_user_group(user_token:string, group_type:string)
 {
-    let user_token = get_user_token(group_name);
-    let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token});
-    let new_vs = vs.set(2, group_type);
-    let lst = [["update my_users_group set group_type = ? where group_name = ?", [group_type, group_name]]];
-    lst.add([noSqlUpdateTran({"table_name": "user_group_cache", "key": user_token, "value": new_vs})]);
-    -- 执行事务
-    trans(lst);
+    match {
+       has_user_token_type(group_type): let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token});
+                                        let new_vs = vs.set(2, group_type);
+                                        let lst = [["update my_users_group set group_type = ? where group_type = ?", [group_type, user_token]]];
+                                        lst.add([noSqlUpdateTran({"table_name": "user_group_cache", "key": user_token, "value": new_vs})]);
+                                        -- 执行事务
+                                        trans(lst);
+    }
 }
 
 -- 删除用户组
-function delete_user_group(group_name:string)
+function delete_user_group(user_token:string, group_type:string)
 {
-    let user_token = get_user_token(group_name);
-    let lst = [["delete from my_users_group where group_name = ?", [group_name]]];
-    lst.add([noSqlDeleteTran({"table_name": "user_group_cache", "key": user_token})]);
-    -- 执行事务
-    trans(lst);
+    match {
+       has_user_token_type(group_type): let lst = [["delete from my_users_group where group_type = ?", [user_token]]];
+                                        lst.add([noSqlDeleteTran({"table_name": "user_group_cache", "key": user_token})]);
+                                        -- 执行事务
+                                        trans(lst);
+    }
 }
