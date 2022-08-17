@@ -43,22 +43,26 @@ function get_user_group(user_token:string)
     match {
         notEmpty?(vs): vs;
         else let rs = query_sql("select g.id, m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.user_token = ?", [user_token]);
+             let result;
              for (r in rs)
              {
                 -- 如果存在就保存在缓存中，并且返回
                 noSqlInsert({"table_name": "user_group_cache", "key": user_token, "value": r});
-                r;
+                result = r;
              }
+             result;
     }
 }
 
 function get_user_token(group_name:string)
 {
+     let group_token;
      let rs = query_sql("select m.user_token from my_users_group m where m.group_name = ?", [group_name]);
      for (r in rs)
      {
-        r.first();
+        group_token = r.first();
      }
+     group_token;
 }
 
 -- 2、添加用户组，同时为用户组的 get_user_group

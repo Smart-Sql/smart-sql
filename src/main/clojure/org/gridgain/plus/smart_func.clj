@@ -48,10 +48,10 @@
         [(first rs) (second rs)]))
 
 (defn get-data-set-id-by-ds-name [^Ignite ignite ^String schema_name]
-    (if (my-lexical/is-eq? schema_name "public")
-        0
-        (let [rs (first (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_dataset as m where m.dataset_name = ?") (to-array [schema_name])))))]
-            (first rs)))
+    (cond (my-lexical/is-eq? schema_name "public") 0
+          (my-lexical/is-eq? schema_name "my_meta") -1
+          :else (let [rs (first (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_dataset as m where m.dataset_name = ?") (to-array [schema_name])))))]
+                    (first rs)))
     )
 
 ;(defn smart-view-select [^Ignite ignite ^String group_name lst code]

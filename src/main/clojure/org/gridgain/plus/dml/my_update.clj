@@ -132,7 +132,7 @@
     (loop [[f & r] where-line-lst where-lst [] args []]
         (if (some? f)
             (if (contains? args-dic f)
-                (recur r (conj where-lst "?") (conj args (get args-dic f)))
+                (recur r (conj where-lst "?") (conj args (first (get args-dic f))))
                 (recur r (conj where-lst f) args))
             [where-lst args])))
 
@@ -291,12 +291,12 @@
         ct
         (get-column data column_name)))
 
-(defn merge-pk-where-items [pk data obj]
+(defn merge-pk-where-items [pk data obj args-dic]
     (if-let [lst-items (my-items (-> obj :items))]
         (loop [[f & r] (concat pk lst-items) index 0 rs [] ht #{}]
             (if (some? f)
                 (cond (and (map? f) (contains? f :column_name) (not (contains? ht (-> f :column_name)))) (recur r (+ index 1) (conj rs {:column_name (-> f :column_name) :column_type (-> f :column_type) :index index :is-pk true}) (conj ht (-> f :column_name)))
-                      (and (string? f) (not (contains? ht f))) (recur r (+ index 1) (conj rs {:column_name f :column_type (get-column_type pk data f) :index index :is-pk false}) (conj ht f))
+                      (and (string? f) (not (contains? args-dic f)) (not (contains? ht f))) (recur r (+ index 1) (conj rs {:column_name f :column_type (get-column_type pk data f) :index index :is-pk false}) (conj ht f))
                       :else
                       (recur r (+ index 1) rs ht))
                 rs))
@@ -328,9 +328,9 @@
             (recur r (conj lst (assoc f :type (get-column-type (-> f :item_name) data))))
             lst)))
 
-(defn my_update_query_sql [^Ignite ignite group_id obj]
+(defn my_update_query_sql [^Ignite ignite group_id obj args-dic]
     (if-let [{pk :pk data :data} (.get (.cache ignite "table_ast") (MySchemaTable. (-> obj :schema_name) (-> obj :table_name)))]
-        (let [pk-where-item (merge-pk-where-items pk data obj)]
+        (let [pk-where-item (merge-pk-where-items pk data obj args-dic)]
             (if-let [k-v (pk-where pk (-> obj :where-objs))]
                 {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :k-v k-v :args (-> obj :args) :items (get_items_type (-> obj :items) data)}
                 {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst pk-where-item :sql (format "select %s from %s.%s where %s" (get_pk_line pk-where-item []) (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) data)})))
@@ -340,14 +340,14 @@
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
         (if (and (boolean? m) (true? m))
             true
-            (if-let [us (my_update_query_sql ignite group_id m)]
+            (if-let [us (my_update_query_sql ignite group_id m args-dic)]
                 us
                 (throw (Exception. "更新语句字符串错误！"))))
         (throw (Exception. "更新语句字符串错误！"))))
 
 (defn my_update_obj [^Ignite ignite group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
-        (if-let [us (my_update_query_sql ignite group_id m)]
+        (if-let [us (my_update_query_sql ignite group_id m args-dic)]
             us
             (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))
@@ -356,14 +356,14 @@
     (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
         (if (and (boolean? m) (true? m))
             true
-            (if-let [us (my_update_query_sql ignite group_id m)]
+            (if-let [us (my_update_query_sql ignite group_id m args-dic)]
                 us
                 (throw (Exception. "更新语句字符串错误！"))))
         (throw (Exception. "更新语句字符串错误！"))))
 
 (defn my_update_obj-authority [^Ignite ignite group_id lst-sql args-dic]
     (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
-        (if-let [us (my_update_query_sql ignite group_id m)]
+        (if-let [us (my_update_query_sql ignite group_id m args-dic)]
             us
             (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))

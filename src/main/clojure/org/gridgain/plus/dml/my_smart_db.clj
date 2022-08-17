@@ -241,6 +241,11 @@
 (defn delete-to-cache [ignite group_id sql args]
     (if (some? args)
         (let [args-dic (args-to-dic args)]
+            ;(println "****************")
+            ;(println sql)
+            ;(println args)
+            ;(println (my-delete/my_delete_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic)))
+            ;(println "****************")
             (if-let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} (my-delete/my_delete_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic))]
                 (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                       (.setArgs (to-array select-args))

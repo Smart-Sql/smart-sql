@@ -317,10 +317,10 @@
 
 ; smart 操作集合的函数
 (defn list-add [^ArrayList lst ^Object obj]
-    (.add lst obj))
+    (doto lst (.add obj)))
 
 (defn list-set [^ArrayList lst ^Integer index ^Object obj]
-    (.set lst index obj))
+    (doto lst (.set index obj)))
 
 (defn list-remove [dic-lst ^Integer index]
     (cond (instance? java.util.List dic-lst) (MyTools/removeIndex dic-lst index)
@@ -779,7 +779,11 @@
                 (cond (map? ast) (get-ast-map-items ast)
                       (is-seq? ast) (get-ast-lst-items ast)
                       ))]
-        (get-only-item (get-ast-items ast))))
+        (if-let [items-lst (get-ast-items ast)]
+            (cond (map? items-lst) [items-lst]
+                  (is-seq? items-lst) (get-only-item (get-ast-items ast))
+                  ))
+        ))
 
 (defn to-smart-sql-type [f-type]
     (cond (re-find #"^(?i)FLOAT$" f-type) "double"
