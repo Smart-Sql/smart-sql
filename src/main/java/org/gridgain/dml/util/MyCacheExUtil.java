@@ -160,10 +160,17 @@ public class MyCacheExUtil implements Serializable {
      * */
     public static MyCacheEx convertToCacheEx(final Ignite ignite, final Object logCache)
     {
-        if (logCache instanceof MyLogCache)
-            return convertToCacheEx_logCache(ignite, (MyLogCache)logCache);
-        else
-            return convertToCacheEx_noSql(ignite, (MyNoSqlCache)logCache);
+        if (logCache instanceof MyLogCache) {
+            try {
+                return convertToCacheEx_logCache(ignite, (MyLogCache) logCache);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            return convertToCacheEx_noSql(ignite, (MyNoSqlCache) logCache);
+        }
+        return null;
     }
 
     private static Boolean isLstKv(Object o)
@@ -179,29 +186,32 @@ public class MyCacheExUtil implements Serializable {
         return false;
     }
 
-    public static MyCacheEx convertToCacheEx_logCache(final Ignite ignite, final MyLogCache logCache)
-    {
-        switch (logCache.getSqlType())
-        {
-            case INSERT:
-                return new MyCacheEx(ignite.cache(logCache.getCache_name()), convertToKey(ignite, logCache), convertToValue(ignite, logCache), logCache.getSqlType(), logCache);
-            case DELETE:
-                return new MyCacheEx(ignite.cache(logCache.getCache_name()), convertToKey(ignite, logCache), null, logCache.getSqlType(), logCache);
-            case UPDATE:
-                Object key = convertToKey(ignite, logCache);
-                IgniteCache igniteCache = ignite.cache(logCache.getCache_name()).withKeepBinary();
-                BinaryObject binaryObject = (BinaryObject) igniteCache.get(key);
-                if (isLstKv(logCache.getValue())) {
-                    BinaryObjectBuilder binaryObjectBuilder = binaryObject.toBuilder();
-                    for (MyKeyValue m : (List<MyKeyValue>) logCache.getValue()) {
-                        binaryObjectBuilder.setField(m.getName(), m.getValue());
+    public static MyCacheEx convertToCacheEx_logCache(final Ignite ignite, final MyLogCache logCache) throws Exception {
+        IgniteCache myIgniteCache = ignite.cache(logCache.getCache_name());
+        if (myIgniteCache != null) {
+            switch (logCache.getSqlType()) {
+                case INSERT:
+                    return new MyCacheEx(myIgniteCache, convertToKey(ignite, logCache), convertToValue(ignite, logCache), logCache.getSqlType(), logCache);
+                case DELETE:
+                    return new MyCacheEx(myIgniteCache, convertToKey(ignite, logCache), null, logCache.getSqlType(), logCache);
+                case UPDATE:
+                    Object key = convertToKey(ignite, logCache);
+                    IgniteCache igniteCache = myIgniteCache.withKeepBinary();
+                    BinaryObject binaryObject = (BinaryObject) igniteCache.get(key);
+                    if (isLstKv(logCache.getValue())) {
+                        BinaryObjectBuilder binaryObjectBuilder = binaryObject.toBuilder();
+                        for (MyKeyValue m : (List<MyKeyValue>) logCache.getValue()) {
+                            binaryObjectBuilder.setField(m.getName(), m.getValue());
+                        }
+                        return new MyCacheEx(igniteCache, key, binaryObjectBuilder.build(), logCache.getSqlType(), logCache);
+                    } else {
+                        return new MyCacheEx(igniteCache, key, logCache.getValue(), logCache.getSqlType(), logCache);
                     }
-                    return new MyCacheEx(igniteCache, key, binaryObjectBuilder.build(), logCache.getSqlType(), logCache);
-                }
-                else
-                {
-                    return new MyCacheEx(igniteCache, key, logCache.getValue(), logCache.getSqlType(), logCache);
-                }
+            }
+        }
+        else
+        {
+            throw new Exception("缓存不存在！");
         }
         return null;
     }

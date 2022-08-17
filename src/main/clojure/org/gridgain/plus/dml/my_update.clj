@@ -207,7 +207,9 @@
                    rs)))
     ([[f & r] lst]
      (if (some? f)
-         (recur r (concat lst (my-lexical/my-ast-items (-> f :item_obj))))
+         (if-let [items-lst (my-lexical/my-ast-items (-> f :item_obj))]
+             (recur r (concat lst items-lst))
+             (recur r lst))
          lst)))
 
 (defn get-rows [^Ignite ignite group_id ^String schema_name ^String table_name]

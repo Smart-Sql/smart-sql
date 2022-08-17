@@ -297,22 +297,22 @@
 
 (defn my-is-iter? [m]
     (cond (instance? Iterator m) true
-          (and (instance? MyVar m) (instance? Iterator (.getVar m))) true
+          (and (instance? MyVar m) (instance? Iterator (get-value m))) true
           :else false))
 
 (defn get-my-iter [m]
     (cond (instance? Iterator m) m
-          (and (instance? MyVar m) (instance? Iterator (.getVar m))) (.getVar m)
+          (and (instance? MyVar m) (instance? Iterator (get-value m))) (get-value m)
           ))
 
 (defn my-is-seq? [m]
     (cond (is-seq? m) true
-          (and (instance? MyVar m) (is-seq? (.getVar m))) true
+          (and (instance? MyVar m) (is-seq? (get-value m))) true
           :else false))
 
 (defn get-my-seq [m]
     (cond (is-seq? m) m
-          (and (instance? MyVar m) (is-seq? (.getVar m))) (.getVar m)
+          (and (instance? MyVar m) (is-seq? (get-value m))) (get-value m)
           ))
 
 ; smart 操作集合的函数
@@ -781,7 +781,8 @@
                       ))]
         (if-let [items-lst (get-ast-items ast)]
             (cond (map? items-lst) [items-lst]
-                  (is-seq? items-lst) (get-only-item (get-ast-items ast))
+                  (is-seq? items-lst) (cond (= (count items-lst) 1) items-lst
+                                            (> (count items-lst) 1) (get-only-item (get-ast-items ast)))
                   ))
         ))
 
