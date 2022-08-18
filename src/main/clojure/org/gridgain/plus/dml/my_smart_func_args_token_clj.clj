@@ -148,14 +148,15 @@
             (format "(%s %s)" my-lexical-func (get-lst-ps-vs ignite group_id lst_ps args-dic))
             (cond
                   ;(my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
-                  (my-lexical/is-eq? "println" func-name) (format "(println %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  ;(my-lexical/is-eq? "println" func-name) (format "(println %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  (my-lexical/is-eq? "println" func-name) (format "(my-lexical/my-show-msg (my-lexical/gson %s))" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
                                                 (if (> (count lst_ps) 0)
                                                     (format "(%s (my-lexical/get-value %s) %s)" (my-lexical/smart-func method-name) let-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
                                                     (format "(%s (my-lexical/get-value %s))" (my-lexical/smart-func method-name) let-name))
                                                 )
                   ; 系统函数
-                  (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  (contains? #{"first" "rest" "next" "second" "last"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   ; inner function
                   ;(get-inner-function-context (str/lower-case func-name) args-dic) (format "(%s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "query_sql") (cond (= (count lst_ps) 1) (format "(my-smart-db/query_sql ignite group_id %s nil)" (get-lst-ps-vs ignite group_id lst_ps args-dic))

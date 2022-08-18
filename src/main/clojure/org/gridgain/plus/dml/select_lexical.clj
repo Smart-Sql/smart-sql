@@ -22,7 +22,7 @@
              (com.google.common.base Strings))
     (:gen-class
         ;:implements [org.gridgain.superservice.INoSqlFun]
-        ; 生成 class 的类名
+        ; 生成 class 的类名f
         :name org.gridgain.plus.dml.MyLexical
         ; 是否生成 class 的 main 方法
         :main false

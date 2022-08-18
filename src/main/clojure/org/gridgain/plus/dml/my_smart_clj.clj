@@ -397,9 +397,9 @@
             (str/replace code #"^\(\s*" "(defn "))
         ))
 
-(defn gson [m]
-    (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
-        (.toJson gs m)))
+;(defn gson [m]
+;    (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+;        (.toJson gs m)))
 
 (defn re-ast [my-prefix ast]
     (cond (my-lexical/is-seq? ast) (map (partial re-ast my-prefix) ast)

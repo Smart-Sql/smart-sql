@@ -155,6 +155,7 @@
             (MyCacheExUtil/transLogCache ignite [select-view select-view-ast])
             )))
 
+; rm_view('wudafu_group', 'public.Categories', 'update');
 (defn rm-smart-view [^Ignite ignite group_id ^String group_name ^String schema_name-table_name ^String rm-type]
     (if (= (first group_id) 0)
         (let [lst (my-lexical/to-back schema_name-table_name)]
@@ -262,19 +263,17 @@
     (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
         (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
             (let [job-cache (.cache ignite "my_cron")]
-                (if-let [job-obj (.get job-cache job-name)]
-                    (if-let [m-job (.get job-cache job-name)]
-                        (cond (or (= (.getGroup_id m-job) (first group_id)) (= (first group_id) 0)) (if (.containsKey scheduledFutures job-name)
-                                                                                                        (try
-                                                                                                            (.remove scheduledFutures job-name)
-                                                                                                            (.remove job-cache job-name)
-                                                                                                            (catch Exception ex
-                                                                                                                (add-job ignite group_id job-name (MyCacheExUtil/restore (.getPs job-obj)) (.getCron job-obj)))
-                                                                                                            )
-                                                                                                        (throw (Exception. (format "任务 %s 不存在！" job-name))))
-                              :else (throw (Exception. (format "没有删除 %s 任务的权限！" job-name)))
-                              ))
-                    )
+                (if-let [m-job (.get job-cache job-name)]
+                    (cond (or (= (.getGroup_id m-job) (first group_id)) (= (first group_id) 0)) (if (.containsKey scheduledFutures job-name)
+                                                                                                    (try
+                                                                                                        (.remove scheduledFutures job-name)
+                                                                                                        (.remove job-cache job-name)
+                                                                                                        (catch Exception ex
+                                                                                                            (throw ex))
+                                                                                                        )
+                                                                                                    (throw (Exception. (format "任务 %s 不存在！" job-name))))
+                          :else (throw (Exception. (format "没有删除 %s 任务的权限！" job-name)))
+                          ))
                 )
             )))
 

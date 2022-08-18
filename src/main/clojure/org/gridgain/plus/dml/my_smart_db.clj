@@ -497,10 +497,19 @@
                                                                                                                                                                                 logCache)
                                                                            (and (re-find #"^(?i)delete\s+" (first f)) (false? (.isMultiUserGroup (.configuration ignite)))) (let [logCache (delete-to-cache-no-authority ignite group_id (first f) (last f))]
                                                                                                                                                                                 logCache)
+                                                                           :else
+                                                                           (throw (Exception. "trans 只能执行 insert、update、delete 和 no sql 的 语句！"))
                                                                            )
           (instance? MyNoSqlCache f) [f]
           (my-lexical/is-seq? f) (apply concat (map (partial trans-cahces ignite group_id) f))
+          :else
+          (throw (Exception. "trans 只能执行 insert、update、delete 和 no sql 的 语句！"))
           ))
+
+(defn to-all-lst [f]
+    (if (my-lexical/is-seq? f)
+        (apply concat (map to-all-lst f))
+        [f]))
 
 (defn trans
     ([ignite group_id lst] (trans ignite group_id lst []))
@@ -509,7 +518,7 @@
          (if-let [m (trans-cahces ignite group_id f)]
              (recur ignite group_id r (concat lst-rs m))
              (recur ignite group_id r lst-rs))
-         (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList lst-rs)))))
+         (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList (to-all-lst lst-rs))))))
 
 ;(defn trans
 ;    ([ignite group_id lst] (trans ignite group_id lst []))

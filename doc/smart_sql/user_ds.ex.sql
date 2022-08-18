@@ -57,10 +57,10 @@ function get_user_group(user_token:string)
 function get_user_token(group_name:string)
 {
      let group_token;
-     let rs = query_sql("select m.user_token from my_users_group m where m.group_name = ?", [group_name]);
+     let rs = query_sql("select m.id, m.user_token from my_users_group m where m.group_name = ?", [group_name]);
      for (r in rs)
      {
-        group_token = r.first();
+        group_token = r;
      }
      group_token;
 }
@@ -110,20 +110,36 @@ function add_user_group(group_name:string, user_token:string, group_type:string,
 function update_user_group(group_name:string, group_type:string)
 {
     let user_token = get_user_token(group_name);
-    let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token});
-    let new_vs = vs.set(2, group_type);
-    let lst = [["update my_users_group set group_type = ? where group_name = ?", [group_type, group_name]]];
-    lst.add([noSqlUpdateTran({"table_name": "user_group_cache", "key": user_token, "value": new_vs})]);
-    -- 执行事务
-    trans(lst);
+    let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token.last()});
+    match {
+       null?(vs): query_sql("update my_users_group set group_type = ? where group_name = ?", [group_type, group_name]);
+       else let new_vs = vs.set(2, group_type);
+            let lst = [["update my_users_group set group_type = ? where group_name = ?", [group_type, group_name]]];
+            lst.add([noSqlUpdateTran({"table_name": "user_group_cache", "key": user_token.last(), "value": new_vs})]);
+            -- 执行事务
+            trans(lst);
+    }
 }
 
 -- 删除用户组
 function delete_user_group(group_name:string)
 {
     let user_token = get_user_token(group_name);
+
+    rm_view(group_name, 'my_meta.my_caches', 'select');
+    rm_view(group_name, 'my_meta.call_scenes', 'select');
+    rm_view(group_name, 'my_meta.my_cron', 'select');
+    rm_view(group_name, 'my_meta.my_delete_views', 'select');
+    rm_view(group_name, 'my_meta.my_insert_views', 'select');
+    rm_view(group_name, 'my_meta.my_update_views', 'select');
+    rm_view(group_name, 'my_meta.my_select_views', 'select');
+    rm_view(group_name, 'my_meta.my_users_group', 'select');
+
     let lst = [["delete from my_users_group where group_name = ?", [group_name]]];
-    lst.add([noSqlDeleteTran({"table_name": "user_group_cache", "key": user_token})]);
+    lst.add(["delete from call_scenes where to_group_id = ?", [user_token.first()]]);
+    lst.add(noSqlDeleteTran({"table_name": "user_group_cache", "key": user_token.last()}));
+    --lst.add([noSqlDeleteTran({"table_name": "user_group_cache", "key": user_token})]);
     -- 执行事务
     trans(lst);
+
 }

@@ -7,7 +7,7 @@ function get_corn_now()
 -- 添加定时任务
 function get_cron_time()
 {
-    println(concat("第一个任务：", get_now()));
+    my_println(concat("第一个任务：", get_now()));
 }
 
 -- 添加定时任务
