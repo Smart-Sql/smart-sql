@@ -370,23 +370,235 @@ noSqlUpdateTran({"table_name": "my_cache", "key": "000A", "value": {"name": "吴
 noSqlDeleteTran({"table_name": "my_cache", "key": "000A"});
 ```
 
-### 6、定时任务
+### 6、分布式定时任务
+分布式定时任务在 Smart Sql 中可以，可以利用这个功能，快速的实现一个比 Airflow 功能更强大的分布式任务调度平台。
 #### 6.1、添加定时任务
+定时任务使用 cron4j 的表达式
 ```sql
 -- 添加定时任务
 -- 需要输入三个参数，第一个是任务名，这个任务必须存在于 MY_META.MY_SCENES 中且有访问权限
 -- 参数列表，如果没有就设置为 null 或者 []
--- cron 描述，例如：{1,3} * * * * *
+-- cron 描述，例如：{1,3} * * * * *   每隔一分钟，重复执行三次
 add_job('任务名', ['参数1', '参数2', ...], 'cron 描述');
 ```
+
+```sql
+-- 例如：我们要开发一个定时显示时间的任务，每隔两分钟，重复执行 30 次
+
+-- 显示时间的任务：get_cron_time
+-- 添加定时任务
+function get_cron_time()
+{
+    my_println(concat("第一个任务：", get_now()));
+}
+-- get_now() 和 my_println() 来自自定义方法。(在 7 自定义方法中会有详细的介绍)
+
+-- 添加这个定时任务
+add_job('get_cron_time', [], '{2,30} * * * * *');
+```
+
 #### 6.2、删除定时任务
 ```sql
 -- 删除定时任务
 -- 输入任务名
 remove_job('任务名');
+
+-- 例如：上面的例子，删除定时任务 get_cron_time
+remove_job('get_cron_time');
 ```
 
-### 7、高性能程序的开发
+#### 6.3、查看定时任务的快照
+```sql
+-- 查看定时任务快照
+-- 输入任务名
+job_snapshot('任务名');
+
+-- 例如：上面的例子，删除定时任务 get_cron_time
+job_snapshot('get_cron_time');
+```
+
+### 7、自定义扩展的方法
+在使用 Smart Sql 中，用户自己可以扩展 Smart Sql 中的方法。具体做法分两步：
+1. 用户自己把程序打包成 jar 包，当到安装文件夹下面的 cls 文件下。
+2. 调用 add_func 将 jar 包中的方法，注册到 Smart Sql。
+完成这两步后，注册的方法就会像 Smart Sql 自己的方法一样，可以在标准 SQL 和 Smart Sql 脚本中使用。
+
+**删除方法：remove_func(方法名称)**
+**需要特别注意一点：只有 root 权限才能添加和删除方法，因为添加的方法是供整个系统使用的！**
+
+例如：用 java 实现上面需要的两个方法：get_now();  my_println("字符串");
+1. java 实现的方法
+```java
+package org.example.plus;
+
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class MyPulsTime {
+
+    public String getNow()
+    {
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        return simpleDateFormat.format(new Date(timestamp.getTime()));
+    }
+
+    public void myPrintln(String line)
+    {
+        System.out.println(line);
+    }
+}
+```
+2. 调用 add_func 将 jar 包中的方法，注册到 Smart Sql。
+```sql
+-- 注册的参数是 MyUserFunc 的 json 对象
+add_func({"method_name":"my_println","java_method_name":"myPrintln","cls_name":"org.example.plus.MyPulsTime","return_type":"void","descrip":"打印输入结果","lst":[{"ps_index":1,"ps_type":"String"}]});
+```
+
+```java
+// 参数描述
+public class MyFuncPs implements Serializable {
+    private static final long serialVersionUID = -2727827280051252693L;
+    // 参数的 index
+    private Integer ps_index;
+    // 参数的类型，名称为 String
+    private String ps_type;
+
+    public MyFuncPs(final Integer ps_index, final String ps_type)
+    {
+        this.ps_index = ps_index;
+        this.ps_type = ps_type;
+    }
+
+    public MyFuncPs()
+    {}
+
+    public Integer getPs_index() {
+        return ps_index;
+    }
+
+    public void setPs_index(Integer ps_index) {
+        this.ps_index = ps_index;
+    }
+
+    public String getPs_type() {
+        return ps_type;
+    }
+
+    public void setPs_type(String ps_type) {
+        this.ps_type = ps_type;
+    }
+
+    @Override
+    public String toString() {
+        return "MyFuncPs{" +
+                ", ps_index=" + ps_index +
+                ", ps_type='" + ps_type + '\'' +
+                '}';
+    }
+}
+
+
+// add_func 输入参数的 java 对象
+public class MyUserFunc implements Serializable {
+    private static final long serialVersionUID = 8331935187125596376L;
+
+    // smart sql 中的方法
+    private String method_name;
+    // Java 中的函数名
+    private String java_method_name;
+    // java 命名空间.类名
+    private String cls_name;
+    // java 返回类型
+    private String return_type;
+    // 方法的描述
+    private String descrip;
+    // 参数列表
+    private List<MyFuncPs> lst;
+
+    public MyUserFunc(final String method_name, final String java_method_name, final String cls_name, final String return_type, List<MyFuncPs> lst, final String descrip)
+    {
+        this.method_name = method_name;
+        this.java_method_name = java_method_name;
+        this.cls_name = cls_name;
+        this.return_type = return_type;
+        this.descrip = descrip;
+        //lst = new ArrayList<>();
+        if (lst != null) {
+            this.lst = lst;
+        }
+    }
+
+    public String getMethod_name() {
+        return method_name;
+    }
+
+    public void setMethod_name(String method_name) {
+        this.method_name = method_name;
+    }
+
+    public String getJava_method_name() {
+        return java_method_name;
+    }
+
+    public void setJava_method_name(String java_method_name) {
+        this.java_method_name = java_method_name;
+    }
+
+    public String getCls_name() {
+        return cls_name;
+    }
+
+    public void setCls_name(String cls_name) {
+        this.cls_name = cls_name;
+    }
+
+    public String getReturn_type() {
+        return return_type;
+    }
+
+    public void setReturn_type(String return_type) {
+        this.return_type = return_type;
+    }
+
+    public String getDescrip() {
+        return descrip;
+    }
+
+    public void setDescrip(String descrip) {
+        this.descrip = descrip;
+    }
+
+    public List<MyFuncPs> getLst() {
+        return lst;
+    }
+
+    public void setLst(List<MyFuncPs> lst) {
+        this.lst = lst;
+    }
+
+    @Override
+    public String toString() {
+        return "MyUserFunc{" +
+                "method_name='" + method_name + '\'' +
+                ", java_method_name='" + java_method_name + '\'' +
+                ", cls_name='" + cls_name + '\'' +
+                ", return_type='" + return_type + '\'' +
+                ", descrip='" + descrip + '\'' +
+                ", lst=" + lst +
+                '}';
+    }
+}
+```
+
+```sql
+-- 删除方法 my_println
+remove_func(my_println)；
+```
+
+### 8、高性能程序的开发
 要开发稳定，高性能的应用程序需要遵循以下的规则：
 1. 在读取数据的时候，尽可能的读取 key-value 形式的 cache，而不是复杂的 SQL
 2. 尽量将所有业务逻辑都用 Smart Sql 来实现，外部程序可能通过 JDBC ，直接调用其方法。

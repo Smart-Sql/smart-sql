@@ -12,7 +12,7 @@
         [clojure.string :as str]
         [clojure.walk :as w])
     (:import (org.apache.ignite Ignite)
-             (org.tools MyConvertUtil MyPlusUtil KvSql MyDbUtil)
+             (org.tools MyConvertUtil MyPlusUtil MyGson KvSql MyDbUtil)
              (com.google.common.base Strings)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyCallScenesPk MyCallScenes MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
@@ -261,21 +261,82 @@
 ; 除超级用户外，只有同一个用户组的，才可以删除
 (defn remove-job [^Ignite ignite group_id ^String job-name]
     (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
-        (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
-            (let [job-cache (.cache ignite "my_cron")]
-                (if-let [m-job (.get job-cache job-name)]
-                    (cond (or (= (.getGroup_id m-job) (first group_id)) (= (first group_id) 0)) (if (.containsKey scheduledFutures job-name)
-                                                                                                    (try
-                                                                                                        (.remove scheduledFutures job-name)
-                                                                                                        (.remove job-cache job-name)
-                                                                                                        (catch Exception ex
-                                                                                                            (throw ex))
-                                                                                                        )
-                                                                                                    (throw (Exception. (format "任务 %s 不存在！" job-name))))
-                          :else (throw (Exception. (format "没有删除 %s 任务的权限！" job-name)))
-                          ))
-                )
+        (let [job-cache (.cache ignite "my_cron")]
+            (if-let [m-job (.get job-cache job-name)]
+                (cond (or (= (.getGroup_id m-job) (first group_id)) (= (first group_id) 0)) (if (.containsKey (.getScheduledFutures scheduleProcessor) job-name)
+                                                                                                (try
+                                                                                                    ;(.onDescheduled scheduleProcessor job-name)
+                                                                                                    (if (true? (.cancel (.get (.getScheduledFutures scheduleProcessor) job-name)))
+                                                                                                        (.remove job-cache job-name))
+                                                                                                    (catch Exception ex
+                                                                                                        (throw ex))
+                                                                                                    )
+                                                                                                (throw (Exception. (format "任务 %s 不存在！" job-name))))
+                      :else (throw (Exception. (format "没有删除 %s 任务的权限！" job-name)))
+                      ))
             )))
+
+; 获取 job 快照
+(defn get-job-snapshot [^Ignite ignite group_id ^String job-name]
+    (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
+        (let [job-cache (.cache ignite "my_cron") scheduledFutures (.getScheduledFutures scheduleProcessor)]
+            (if-let [m-job (.get job-cache job-name)]
+                (cond (or (= (.getGroup_id m-job) (first group_id)) (= (first group_id) 0)) (if (.containsKey scheduledFutures job-name)
+                                                                                                (try
+                                                                                                    ;(.onDescheduled scheduleProcessor job-name)
+                                                                                                    (let [sm (.get scheduledFutures job-name)]
+                                                                                                        (doto (StringBuilder.)
+                                                                                                            (.append (format "cron: %s " (.pattern sm)))
+                                                                                                            (.append (format "是否运行: %s " (.isRunning sm)))
+                                                                                                            (.append (format "开始时间: %s " (.lastStartTime sm)))
+                                                                                                            (.append (format "平均执行时间: %s " (.averageExecutionTime sm)))
+                                                                                                            (.append (format "结束时间: %s" (.lastFinishTime sm)))
+                                                                                                            ))
+                                                                                                    (catch Exception ex
+                                                                                                        (throw ex))
+                                                                                                    )
+                                                                                                (throw (Exception. (format "任务 %s 不存在！" job-name))))
+                      :else (throw (Exception. (format "没有参考 %s 任务快照的权限！" job-name)))
+                      ))
+            )))
+
+;(defn remove-job [^Ignite ignite group_id ^String job-name]
+;    (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
+;        (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
+;            (let [job-cache (.cache ignite "my_cron")]
+;                (if-let [m-job (.get job-cache job-name)]
+;                    (cond (or (= (.getGroup_id m-job) (first group_id)) (= (first group_id) 0)) (if (.containsKey scheduledFutures job-name)
+;                                                                                                    (try
+;                                                                                                        (.remove scheduledFutures job-name)
+;                                                                                                        (.remove job-cache job-name)
+;                                                                                                        (catch Exception ex
+;                                                                                                            (throw ex))
+;                                                                                                        )
+;                                                                                                    (throw (Exception. (format "任务 %s 不存在！" job-name))))
+;                          :else (throw (Exception. (format "没有删除 %s 任务的权限！" job-name)))
+;                          ))
+;                )
+;            )))
+
+; add_func: 添加扩展方法
+(defn add_func [^Ignite ignite group_id func-define]
+    (if (= (first group_id) 0)
+        (if-let [m (MyGson/getUserFunc func-define)]
+            (let [cache (.cache ignite "my_func")]
+                (if (.containsKey cache (.getMethod_name m))
+                    (throw (Exception. "扩展方法已经存在，如果要添加，请将旧方法先删除！"))
+                    (.put cache (.getMethod_name m) (MyFunc. m))))
+            (throw (Exception. "参数输入错误！输入的参数需要符合 MyUserFunc 的 json 对象！")))
+        (throw (Exception. "只有 root 用户才能添加扩展方法！"))))
+
+; add_func: 添加扩展方法
+(defn remove_func [^Ignite ignite group_id func-name]
+    (if (= (first group_id) 0)
+        (let [cache (.cache ignite "my_func")]
+            (if (.containsKey cache func-name)
+                (.remove cache func-name)
+                (throw (Exception. "扩展方法不存在，所以不能删除！"))))
+        (throw (Exception. "只有 root 用户才能删除扩展方法！"))))
 
 (defn -smart_view [^Ignite ignite group_id ^String group_name ^String code]
     (smart-view ignite group_id group_name code))

@@ -1,6 +1,7 @@
 package org.tools;
 
 import clojure.lang.PersistentVector;
+import cn.plus.model.ddl.MyUserFunc;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -21,6 +22,11 @@ public class MyGson {
     public static List<Object> lineToObj(final String line)
     {
         return gson.fromJson(line, new TypeToken<List<Object>>(){}.getType());
+    }
+
+    public static MyUserFunc getUserFunc(final String userFunc)
+    {
+        return gson.fromJson(userFunc, new TypeToken<MyUserFunc>(){}.getType());
     }
 }
 

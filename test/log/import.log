@@ -22,6 +22,7 @@
     '[org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
     '[org.gridgain.plus.dml.my-load-smart-sql :as my-load-smart-sql]
     '[org.gridgain.plus.smart-func :as smart-func]
+    '[org.gridgain.plus.tools.my-user-group :as my-user-group]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
     '[clojure.walk :as w])

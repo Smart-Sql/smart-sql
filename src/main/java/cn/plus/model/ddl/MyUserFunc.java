@@ -1,22 +1,20 @@
 package cn.plus.model.ddl;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MyFunc implements Serializable {
-    private static final long serialVersionUID = 84399306871982769L;
+public class MyUserFunc implements Serializable {
+    private static final long serialVersionUID = 8331935187125596376L;
 
     private String method_name;
     private String java_method_name;
     private String cls_name;
     private String return_type;
     private String descrip;
-    private String ps_code;
     private List<MyFuncPs> lst;
 
-    public MyFunc(final String method_name, final String java_method_name, final String cls_name, final String return_type, List<MyFuncPs> lst, final String descrip)
+    public MyUserFunc(final String method_name, final String java_method_name, final String cls_name, final String return_type, List<MyFuncPs> lst, final String descrip)
     {
         this.method_name = method_name;
         this.java_method_name = java_method_name;
@@ -25,41 +23,8 @@ public class MyFunc implements Serializable {
         this.descrip = descrip;
         //lst = new ArrayList<>();
         if (lst != null) {
-            StringBuilder sb = new StringBuilder();
-            List<MyFuncPs> lstFunc = lst.stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
-            for (MyFuncPs m : lstFunc) {
-                sb.append(String.format("参数 %s: %s ", m.getPs_index().toString(), m.getPs_type()));
-            }
-            this.ps_code = sb.toString();
             this.lst = lst;
         }
-    }
-
-    public MyFunc(final MyUserFunc m)
-    {
-        new MyFunc(m.getMethod_name(), m.getJava_method_name(), m.getCls_name(), m.getReturn_type(), m.getLst(), m.getDescrip());
-    }
-
-    public MyFunc()
-    {}
-
-    public List<MyFuncPs> getLst() {
-        return lst;
-    }
-
-    public void setLst(List<MyFuncPs> lst) {
-        StringBuilder sb = new StringBuilder();
-        List<MyFuncPs> lstFunc = lst.stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
-        for (MyFuncPs m : lstFunc)
-        {
-            sb.append(String.format("参数 %s: 数据类型：%s", m.getPs_index().toString(), m.getPs_type()));
-        }
-        this.ps_code = sb.toString();
-        this.lst = lst;
-    }
-
-    public String getPs_code() {
-        return ps_code;
     }
 
     public String getMethod_name() {
@@ -102,15 +67,23 @@ public class MyFunc implements Serializable {
         this.descrip = descrip;
     }
 
+    public List<MyFuncPs> getLst() {
+        return lst;
+    }
+
+    public void setLst(List<MyFuncPs> lst) {
+        this.lst = lst;
+    }
+
     @Override
     public String toString() {
-        return "MyFunc{" +
+        return "MyUserFunc{" +
                 "method_name='" + method_name + '\'' +
                 ", java_method_name='" + java_method_name + '\'' +
                 ", cls_name='" + cls_name + '\'' +
                 ", return_type='" + return_type + '\'' +
                 ", descrip='" + descrip + '\'' +
-                ", ps_code='" + ps_code + '\'' +
+                ", lst=" + lst +
                 '}';
     }
 }
