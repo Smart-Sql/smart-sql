@@ -124,6 +124,125 @@ public class MyPlusUtil {
     /**
      * 调用 func
      * */
+    public static Object invokeFuncObj(final Ignite ignite, final String func_name, Object... ps)
+    {
+        Object rs = null;
+        IgniteCache<String, MyFunc> funcCache = ignite.cache("my_func");
+        MyFunc myFunc = funcCache.get(func_name);
+        try {
+
+            List<MyFuncPs> lstFunc = myFunc.getLst().stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
+            List<Class<?>> pstypes = lstFunc.stream().map(m -> getClassByName(m.getPs_type())).collect(Collectors.toList());
+
+            List<Object> psvalue = new ArrayList<>();
+            for (int i = 0; i < ps.length; i++)
+            {
+                MyFuncPs myFuncPs = lstFunc.get(i);
+                switch (myFuncPs.getPs_type())
+                {
+                    case "String":
+                        if (ps[i] instanceof String) {
+                            psvalue.add(ps[i]);
+                        }
+                        else
+                        {
+                            psvalue.add(MyConvertUtil.ConvertToString(ps[i]));
+                        }
+                        break;
+                    case "Double":
+                        if (ps[i] instanceof Double)
+                        {
+                            psvalue.add(ps[i]);
+                        }
+                        else {
+                            psvalue.add(MyConvertUtil.ConvertToDouble(ps[i]));
+                        }
+                        break;
+                    case "double":
+                        psvalue.add(MyConvertUtil.ConvertToDouble(ps[i]));
+                        break;
+                    case "Integer":
+                        if (ps[i] instanceof Integer)
+                        {
+                            psvalue.add(ps[i]);
+                        }
+                        else {
+                            psvalue.add(MyConvertUtil.ConvertToInt(ps[i]));
+                        }
+                        break;
+                    case "int":
+                        psvalue.add(MyConvertUtil.ConvertToInt(ps[i]));
+                        break;
+                    case "Long":
+                        if (ps[i] instanceof Long)
+                        {
+                            psvalue.add(ps[i]);
+                        }
+                        else {
+                            psvalue.add(MyConvertUtil.ConvertToLong(ps[i]));
+                        }
+                        break;
+                    case "long":
+                        psvalue.add(MyConvertUtil.ConvertToLong(ps[i]));
+                        break;
+                    case "Boolean":
+                        if (ps[i] instanceof Boolean)
+                        {
+                            psvalue.add(ps[i]);
+                        }
+                        else {
+                            psvalue.add(MyConvertUtil.ConvertToBoolean(ps[i]));
+                        }
+                        break;
+                    case "boolean":
+                        psvalue.add(MyConvertUtil.ConvertToBoolean(ps[i]));
+                        break;
+                    case "Date":
+                        if (ps[i] instanceof Date)
+                        {
+                            psvalue.add(ps[i]);
+                        }
+                        else {
+                            psvalue.add(MyConvertUtil.ConvertToTimestamp(ps[i]));
+                        }
+                        break;
+                    case "Timestamp":
+                        if (ps[i] instanceof Timestamp)
+                        {
+                            psvalue.add(ps[i]);
+                        }
+                        else {
+                            psvalue.add(MyConvertUtil.ConvertToTimestamp(ps[i]));
+                        }
+                        break;
+                    default:
+                        psvalue.add(ps[i]);
+                        break;
+                }
+            }
+
+            Class<?> cls = Class.forName(myFunc.getCls_name());
+            Method method = cls.getMethod(myFunc.getJava_method_name(), pstypes.toArray(new Class[]{}));
+            rs = method.invoke(cls.newInstance(), psvalue.toArray());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return rs;
+    }
+
+    /**
+     * 调用 func
+     * */
     public static Object invokeFunc(final Ignite ignite, final String func_name, String... ps)
     {
         Object rs = null;

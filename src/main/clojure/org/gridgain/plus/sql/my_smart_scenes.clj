@@ -39,7 +39,7 @@
 
 ; 调用 func
 (defn my-invoke-func [^Ignite ignite ^String method-name ps]
-    (MyPlusUtil/invokeFunc ignite method-name ps))
+    (MyPlusUtil/invokeFuncObj ignite method-name (to-array ps)))
 
 (defn my-invoke-func-no-ps [^Ignite ignite ^String method-name]
     (MyPlusUtil/invokeFuncNoPs ignite method-name))

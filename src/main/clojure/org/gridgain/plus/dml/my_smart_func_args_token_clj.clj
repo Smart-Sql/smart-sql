@@ -188,7 +188,7 @@
                   (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "remove_job") (format "(smart-func/remove-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (is-func? ignite func-name) (if-not (empty? lst_ps)
-                                                  (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                                                  (format "(my-smart-scenes/my-invoke-func ignite \"%s\" [%s])" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
                                                   (format "(my-smart-scenes/my-invoke-func-no-ps ignite \"%s\")" func-name))
                   (is-scenes? ignite group_id func-name) (if-not (empty? lst_ps)
                                                              (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" [%s])" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
