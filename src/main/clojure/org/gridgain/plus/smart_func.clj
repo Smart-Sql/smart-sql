@@ -17,7 +17,7 @@
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyCallScenesPk MyCallScenes MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (cn.plus.model MyNoSqlCache MyCacheEx MyKeyValue MyLogCache MCron SqlType)
-             (cn.plus.model.ddl MyViewsPk MyInsertViews MySelectViews MyUpdateViews MyDeleteViews)
+             (cn.plus.model.ddl MyUserFunc MyFunc MyViewsPk MyInsertViews MySelectViews MyUpdateViews MyDeleteViews)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (org.gridgain.smart.view MyViewAstPK)
              (org.gridgain.nosql MyNoSqlUtil)
