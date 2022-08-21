@@ -25,6 +25,7 @@ import org.tools.MyConvertUtil;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * No sql
@@ -115,8 +116,10 @@ public class MyNoSqlUtil {
         {
             IgniteTransactions transactions = ignite.transactions();
             Transaction tx = null;
+            String transSession = UUID.randomUUID().toString();
             try {
                 tx = transactions.txStart();
+                myLog.createSession(transSession);
 
                 ignite.getOrCreateCache(configuration);
 
@@ -127,15 +130,14 @@ public class MyNoSqlUtil {
                 mySmartCache.setMaxSize(maxSize);
                 mySmartCache.setTable_name(cacheName);
 
-                if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartCache)) == false)
-                {
-                    throw new Exception("log 保存失败！");
-                }
+                myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartCache));
 
+                myLog.commit(transSession);
                 tx.commit();
             } catch (Exception ex) {
                 if (tx != null) {
                     ignite.destroyCache(cacheName);
+                    myLog.rollback(transSession);
                     tx.rollback();
                 }
             } finally {
@@ -167,8 +169,10 @@ public class MyNoSqlUtil {
         {
             IgniteTransactions transactions = ignite.transactions();
             Transaction tx = null;
+            String transSession = UUID.randomUUID().toString();
             try {
                 tx = transactions.txStart();
+                myLog.createSession(transSession);
 
                 ignite.getOrCreateCache(configuration);
 
@@ -179,18 +183,17 @@ public class MyNoSqlUtil {
                 mySmartCache.setMaxSize(maxSize);
                 mySmartCache.setTable_name(cacheName);
 
-                if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartCache)) == false)
-                {
-                    throw new Exception("log 保存失败！");
-                }
+                myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartCache));
 
                 IgniteCache<MyCachePK, MyCaches> my_caches = ignite.cache("my_caches");
                 my_caches.put(new MyCachePK(data_set_name, table_name), new MyCaches(data_set_name, table_name, is_cache, mode, maxSize));
 
+                myLog.commit(transSession);
                 tx.commit();
             } catch (Exception ex) {
                 if (tx != null) {
                     ignite.destroyCache(cacheName);
+                    myLog.rollback(transSession);
                     tx.rollback();
                 }
             } finally {
@@ -215,13 +218,18 @@ public class MyNoSqlUtil {
             mySmartCache.setCacheDllType(CacheDllType.DROP);
             mySmartCache.setTable_name(cacheName);
 
-            if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartCache)) == false)
+            String transSession = UUID.randomUUID().toString();
+            try
             {
-                throw new Exception("log 保存失败！");
-            }
-            else
-            {
+                myLog.createSession(transSession);
+                myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartCache));
                 ignite.destroyCache(cacheName);
+                myLog.commit(transSession);
+
+            }
+            catch (Exception ex)
+            {
+                myLog.rollback(transSession);
             }
         }
         else
@@ -238,13 +246,18 @@ public class MyNoSqlUtil {
             mySmartCache.setCacheDllType(CacheDllType.DROP);
             mySmartCache.setTable_name(cacheName);
 
-            if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartCache)) == false)
+            String transSession = UUID.randomUUID().toString();
+            try
             {
-                throw new Exception("log 保存失败！");
-            }
-            else
-            {
+                myLog.createSession(transSession);
+                myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartCache));
                 ignite.destroyCache(cacheName);
+                myLog.commit(transSession);
+
+            }
+            catch (Exception ex)
+            {
+                myLog.rollback(transSession);
             }
         }
         else

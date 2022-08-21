@@ -8,6 +8,7 @@ import org.gridgain.dml.util.MyCacheExUtil;
 import org.gridgain.myservice.MyJavaUtilService;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -58,6 +59,22 @@ public class MyConvertUtil {
     public static byte[] ConvertToByte(final Object obj)
     {
         return MyCacheExUtil.objToBytes(obj);
+    }
+
+    public static byte[] bufferToByte(final ByteBuffer byteBuffer)
+    {
+        int len = byteBuffer.limit() - byteBuffer.position();
+        byte[] bytes = new byte[len];
+        byteBuffer.get(bytes);
+        return bytes;
+    }
+
+    public static ByteBuffer byteToBuffer(final byte[] vs)
+    {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(vs.length);
+        byteBuffer.clear();
+        byteBuffer.get(vs, 0, vs.length);
+        return byteBuffer;
     }
 
     public static Boolean ConvertToBoolean(Object t)

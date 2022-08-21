@@ -4,6 +4,7 @@ import clojure.lang.*;
 import cn.plus.model.*;
 import cn.smart.service.IMyLogTransaction;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.smart.service.MyLogService;
@@ -18,6 +19,7 @@ import org.tools.MyLineToBinary;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class MyCacheExUtil implements Serializable {
@@ -71,47 +73,38 @@ public class MyCacheExUtil implements Serializable {
 
     private static void transMyCache(final Ignite ignite, final List<MyCacheEx> lstCache) {
         //List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
-
         if (myLog != null)
         {
             IgniteTransactions transactions = ignite.transactions();
             Transaction tx = null;
+            String transSession = UUID.randomUUID().toString();
             try {
                 tx = transactions.txStart();
-                myLog.begin();
+                myLog.createSession(transSession);
 
                 for (MyCacheEx m : lstCache)
                 {
                     switch (m.getSqlType()) {
                         case UPDATE:
                             m.getCache().replace(m.getKey(), m.getValue());
-                            if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
-                            {
-                                throw new Exception("log 保存失败！");
-                            }
+                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(m.getData()));
                             break;
                         case INSERT:
                             m.getCache().put(m.getKey(), m.getValue());
-                            if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
-                            {
-                                throw new Exception("log 保存失败！");
-                            }
+                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(m.getData()));
                             break;
                         case DELETE:
                             m.getCache().remove(m.getKey());
-                            if(myLog.saveTo(MyCacheExUtil.objToBytes(m.getData())) == false)
-                            {
-                                throw new Exception("log 保存失败！");
-                            }
+                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(m.getData()));
                             break;
                     }
                 }
 
-                myLog.commit();
+                myLog.commit(transSession);
                 tx.commit();
             } catch (Exception ex) {
                 if (tx != null) {
-                    myLog.rollback();
+                    myLog.rollback(transSession);
                     tx.rollback();
                 }
             } finally {

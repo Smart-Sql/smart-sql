@@ -16,6 +16,7 @@ import org.gridgain.dml.util.MyCacheExUtil;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class MyCreateTableUtil implements Serializable {
     private static final long serialVersionUID = 1484107803014288212L;
@@ -61,23 +62,17 @@ public class MyCreateTableUtil implements Serializable {
             lst_dml_table.add(kvCache);
             IgniteTransactions transactions = ignite.transactions();
             Transaction tx = null;
+            String transSession = UUID.randomUUID().toString();
             try {
                 tx = transactions.txStart();
-                myLog.begin();
+                myLog.createSession(transSession);
 
                 lst_ddl.stream().forEach(map ->
                 {
                     PersistentArrayMap pmap = ((PersistentArrayMap) map);
                     String sql = pmap.get(Keyword.intern("sql")).toString();
                     MySmartDll mySmartDll = new MySmartDll(sql);
-                    if(myLog.saveTo(MyCacheExUtil.objToBytes(mySmartDll)) == false)
-                    {
-                        try {
-                            throw new Exception("log 保存失败！");
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
                 });
 
                 for (int i = 0; i < lst_dml_table.size(); i++) {
@@ -85,30 +80,24 @@ public class MyCreateTableUtil implements Serializable {
                     switch (myCacheEx.getSqlType()) {
                         case UPDATE:
                             myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
-                            if (myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false) {
-                                throw new Exception("log 保存失败！");
-                            }
+                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
                             break;
                         case INSERT:
                             myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
-                            if (myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false) {
-                                throw new Exception("log 保存失败！");
-                            }
+                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
                             break;
                         case DELETE:
                             myCacheEx.getCache().remove(myCacheEx.getKey());
-                            if (myLog.saveTo(MyCacheExUtil.objToBytes(myCacheEx.getData())) == false) {
-                                throw new Exception("log 保存失败！");
-                            }
+                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
                             break;
                     }
                 }
 
-                myLog.commit();
+                myLog.commit(transSession);
                 tx.commit();
             } catch (Exception ex) {
                 if (tx != null) {
-                    myLog.rollback();
+                    myLog.rollback(transSession);
                     tx.rollback();
 
                     lst_ddl.stream().forEach(map -> ignite.getOrCreateCache(new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META")).query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());

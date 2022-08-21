@@ -598,6 +598,13 @@ public class MyUserFunc implements Serializable {
 remove_func(my_println)；
 ```
 
+**扩展方法的应用场景：
+1. 整合现有系统，将现有系统的服务完美的整合进 Smart Sql。
+2. 扩展 Smart Sql 的基础功能。例如：可以将机器学习的方法整合进去，让 Smart Sql 可以用简单的 Sql 来完成机器学习的模型。这个例子，我们会逐步的给出来。
+**
+
+**扩展方法的实现原理：Smart Sql 识别出 method_name 标识后，会找到对应 java method 的描述，在通过反射来调用这个 java method。（当然，不一定非的是 java，其它能编译成 class 的语言实现也是可以的，例如：scala, kotlin, clojure 等）**
+
 ### 8、高性能程序的开发
 要开发稳定，高性能的应用程序需要遵循以下的规则：
 1. 在读取数据的时候，尽可能的读取 key-value 形式的 cache，而不是复杂的 SQL
