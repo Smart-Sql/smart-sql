@@ -97,118 +97,103 @@ public class MyDdlUtil implements Serializable {
 
             if (lst_caches != null) {
 
-                if (myLog != null)
-                {
-                    IgniteTransactions transactions = ignite.transactions();
-                    Transaction tx = null;
-                    String transSession = UUID.randomUUID().toString();
+                IgniteTransactions transactions = ignite.transactions();
+                Transaction tx = null;
 
-                    try {
-                        tx = transactions.txStart();
-                        myLog.createSession(transSession);
+                try {
+                    tx = transactions.txStart();
 
-                        ArrayList<String> lst = (ArrayList<String>) map.get(Keyword.intern("sql"));
-                        lst.stream().forEach(sql -> {
-
-                            MySmartDll mySmartDll = new MySmartDll(sql);
-                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
-                        });
-
-                        for (int i = 0; i < lst_caches.size(); i++) {
-                            MyCacheEx myCacheEx = (MyCacheEx) lst_caches.get(i);
-                            switch (myCacheEx.getSqlType()) {
-                                case UPDATE:
-                                    myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
-                                    myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
-                                    break;
-                                case INSERT:
-                                    myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
-                                    myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
-                                    break;
-                                case DELETE:
-                                    myCacheEx.getCache().remove(myCacheEx.getKey());
-                                    myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
-                                    break;
-                            }
-                        }
-
-                        myLog.commit(transSession);
-                        tx.commit();
-
-                    } catch (Exception ex) {
-                        if (tx != null) {
-
-                            myLog.rollback(transSession);
-                            tx.rollback();
-
-                            if (map.containsKey(Keyword.intern("un_sql"))) {
-                                ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll());
-                            }
-                        }
-                    } finally {
-                        if (tx != null) {
-                            tx.close();
+                    for (int i = 0; i < lst_caches.size(); i++) {
+                        MyCacheEx myCacheEx = (MyCacheEx) lst_caches.get(i);
+                        switch (myCacheEx.getSqlType()) {
+                            case UPDATE:
+                                myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                                break;
+                            case INSERT:
+                                myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                                break;
+                            case DELETE:
+                                myCacheEx.getCache().remove(myCacheEx.getKey());
+                                break;
                         }
                     }
-                }
-                else
-                {
-                    IgniteTransactions transactions = ignite.transactions();
-                    Transaction tx = null;
 
-                    try {
-                        tx = transactions.txStart();
+                    tx.commit();
 
-                        for (int i = 0; i < lst_caches.size(); i++) {
-                            MyCacheEx myCacheEx = (MyCacheEx) lst_caches.get(i);
-                            switch (myCacheEx.getSqlType()) {
-                                case UPDATE:
-                                    myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
-                                    break;
-                                case INSERT:
-                                    myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
-                                    break;
-                                case DELETE:
-                                    myCacheEx.getCache().remove(myCacheEx.getKey());
-                                    break;
-                            }
+                } catch (Exception ex) {
+                    if (tx != null) {
+
+                        tx.rollback();
+
+                        if (map.containsKey(Keyword.intern("un_sql"))) {
+                            ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll());
                         }
-
-                        tx.commit();
-
-                    } catch (Exception ex) {
-                        if (tx != null) {
-
-                            tx.rollback();
-
-                            if (map.containsKey(Keyword.intern("un_sql"))) {
-                                ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll());
-                            }
-                        }
-                    } finally {
-                        if (tx != null) {
-                            tx.close();
-                        }
+                    }
+                } finally {
+                    if (tx != null) {
+                        tx.close();
                     }
                 }
             }
         }
     }
 
-    public static void runDdl(final Ignite ignite, final PersistentArrayMap map)
+    public static void runDdlDs(final Ignite ignite, final String code)
+    {
+        if (myLog != null)
+        {
+            String transSession = UUID.randomUUID().toString();
+            try {
+                myLog.createSession(transSession);
+                MySmartDll mySmartDll = new MySmartDll(code);
+                myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
+                myLog.commit(transSession);
+            }
+            catch (Exception e)
+            {
+                myLog.rollback(transSession);
+            }
+        }
+    }
+
+    public static void runDdl(final Ignite ignite, final PersistentArrayMap map, final String code)
     {
         boolean flag = false;
         IgniteCache cache = ignite.cache("public_meta");
         if (map.containsKey(Keyword.intern("sql")))
         {
+            String transSession = UUID.randomUUID().toString();
             try {
-                ArrayList<String> lst = (ArrayList<String>) map.get(Keyword.intern("sql"));
-                lst.stream().forEach(sql -> cache.query(new SqlFieldsQuery(sql)).getAll());
-                //cache.query(new SqlFieldsQuery(map.get(Keyword.intern("sql")).toString())).getAll();
-                flag = true;
+                if (myLog != null)
+                {
+                    myLog.createSession(transSession);
+                    ArrayList<String> lst = (ArrayList<String>) map.get(Keyword.intern("sql"));
+                    lst.stream().forEach(sql -> {
+                        cache.query(new SqlFieldsQuery(sql)).getAll();
+                    });
+
+                    MySmartDll mySmartDll = new MySmartDll(code);
+                    myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
+
+                    myLog.commit(transSession);
+                    //cache.query(new SqlFieldsQuery(map.get(Keyword.intern("sql")).toString())).getAll();
+
+                    flag = true;
+                }
+                else {
+                    ArrayList<String> lst = (ArrayList<String>) map.get(Keyword.intern("sql"));
+                    lst.stream().forEach(sql -> cache.query(new SqlFieldsQuery(sql)).getAll());
+                    //cache.query(new SqlFieldsQuery(map.get(Keyword.intern("sql")).toString())).getAll();
+
+                    flag = true;
+                }
             }
             catch (Exception e)
             {
+                if (myLog != null)
+                {
+                    myLog.rollback(transSession);
+                }
                 if (map.containsKey(Keyword.intern("un_sql"))) {
                     ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> cache.query(new SqlFieldsQuery(sql)).getAll());
                 }

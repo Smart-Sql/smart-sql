@@ -169,7 +169,7 @@
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^String dataset_name]
     (let [{sql :sql un_sql :un_sql lst_cachex :lst_cachex} (create-index-obj ignite dataset_name sql_line)]
         (if-not (nil? lst_cachex)
-            (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql (doto (ArrayList.) (.add un_sql)) :lst_cachex lst_cachex})
+            (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql (doto (ArrayList.) (.add un_sql)) :lst_cachex lst_cachex} code)
             (throw (Exception. "没有执行语句的权限！")))
         ))
 

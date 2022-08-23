@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * sql 和 nosql 的增删改
+ * */
 public class MyCacheExUtil implements Serializable {
     private static final long serialVersionUID = 7714300623488330841L;
 

@@ -87,7 +87,7 @@
 ; 实时数据集
 (defn run_ddl_real_time [^Ignite ignite ^String data_set_name ^String sql_line]
     (let [{sql :sql lst_cachex :lst_cachex} (drop-index-obj ignite data_set_name sql_line)]
-        (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex})))
+        (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex} sql_line)))
 
 ; 删除表索引
 ; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id

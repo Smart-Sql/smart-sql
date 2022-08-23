@@ -28,118 +28,94 @@ public class MyCreateTableUtil implements Serializable {
         return new CacheConfiguration<>("public_meta").setSqlSchema("PUBLIC");
     }
 
-    public static void run_ddl_dml(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table, final MyNoSqlCache noSqlCache)
+    public static void run_ddl_dml(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table, final MyNoSqlCache noSqlCache, final String code)
     {
         boolean flag = false;
-        IgniteCache cache = ignite.getOrCreateCache(getCfg());
-        try {
-            lst_ddl.stream().forEach(map ->
-            {
-                PersistentArrayMap pmap = ((PersistentArrayMap) map);
-                String sql = pmap.get(Keyword.intern("sql")).toString();
-                SqlFieldsQuery sqlFieldsQuery = new SqlFieldsQuery(sql);
-                cache.query(sqlFieldsQuery).getAll();
-            });
-            //cache.query(new SqlFieldsQuery(map.get(Keyword.intern("sql")).toString())).getAll();
-            flag = true;
-        }
-        catch (Exception e)
+        if (myLog != null)
         {
-            lst_ddl.stream().forEach(map -> cache.query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
-            throw e;
-        }
+            IgniteCache cache = ignite.getOrCreateCache(getCfg());
+            String transSession = UUID.randomUUID().toString();
+            try {
+                lst_ddl.stream().forEach(map ->
+                {
+                    PersistentArrayMap pmap = ((PersistentArrayMap) map);
+                    String sql = pmap.get(Keyword.intern("sql")).toString();
+                    SqlFieldsQuery sqlFieldsQuery = new SqlFieldsQuery(sql);
+                    cache.query(sqlFieldsQuery).getAll();
+                });
 
-        if (flag)
-        {
-            saveCache(ignite, lst_ddl, lst_dml_table, noSqlCache);
+                myLog.createSession(transSession);
+                MySmartDll mySmartDll = new MySmartDll(code);
+                myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
+                myLog.commit(transSession);
+
+                //cache.query(new SqlFieldsQuery(map.get(Keyword.intern("sql")).toString())).getAll();
+                flag = true;
+            } catch (Exception e) {
+                myLog.rollback(transSession);
+                lst_ddl.stream().forEach(map -> cache.query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
+                throw e;
+            }
+
+            if (flag) {
+                saveCache(ignite, lst_ddl, lst_dml_table, noSqlCache);
+            }
+        }
+        else {
+            IgniteCache cache = ignite.getOrCreateCache(getCfg());
+            try {
+                lst_ddl.stream().forEach(map ->
+                {
+                    PersistentArrayMap pmap = ((PersistentArrayMap) map);
+                    String sql = pmap.get(Keyword.intern("sql")).toString();
+                    SqlFieldsQuery sqlFieldsQuery = new SqlFieldsQuery(sql);
+                    cache.query(sqlFieldsQuery).getAll();
+                });
+                //cache.query(new SqlFieldsQuery(map.get(Keyword.intern("sql")).toString())).getAll();
+                flag = true;
+            } catch (Exception e) {
+                lst_ddl.stream().forEach(map -> cache.query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
+                throw e;
+            }
+
+            if (flag) {
+                saveCache(ignite, lst_ddl, lst_dml_table, noSqlCache);
+            }
         }
     }
 
     private static void saveCache(final Ignite ignite, final ArrayList lst_ddl, final ArrayList lst_dml_table, final MyNoSqlCache noSqlCache)
     {
-        if (myLog != null) {
-            MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
-            lst_dml_table.add(kvCache);
-            IgniteTransactions transactions = ignite.transactions();
-            Transaction tx = null;
-            String transSession = UUID.randomUUID().toString();
-            try {
-                tx = transactions.txStart();
-                myLog.createSession(transSession);
-
-                lst_ddl.stream().forEach(map ->
-                {
-                    PersistentArrayMap pmap = ((PersistentArrayMap) map);
-                    String sql = pmap.get(Keyword.intern("sql")).toString();
-                    MySmartDll mySmartDll = new MySmartDll(sql);
-                    myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
-                });
-
-                for (int i = 0; i < lst_dml_table.size(); i++) {
-                    MyCacheEx myCacheEx = (MyCacheEx) lst_dml_table.get(i);
-                    switch (myCacheEx.getSqlType()) {
-                        case UPDATE:
-                            myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
-                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
-                            break;
-                        case INSERT:
-                            myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
-                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
-                            break;
-                        case DELETE:
-                            myCacheEx.getCache().remove(myCacheEx.getKey());
-                            myLog.saveTo(transSession, MyCacheExUtil.objToBytes(myCacheEx.getData()));
-                            break;
-                    }
-                }
-
-                myLog.commit(transSession);
-                tx.commit();
-            } catch (Exception ex) {
-                if (tx != null) {
-                    myLog.rollback(transSession);
-                    tx.rollback();
-
-                    lst_ddl.stream().forEach(map -> ignite.getOrCreateCache(new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META")).query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
-                }
-            } finally {
-                if (tx != null) {
-                    tx.close();
+        MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
+        lst_dml_table.add(kvCache);
+        IgniteTransactions transactions = ignite.transactions();
+        Transaction tx = null;
+        try {
+            tx = transactions.txStart();
+            for (int i = 0; i < lst_dml_table.size(); i++) {
+                MyCacheEx myCacheEx = (MyCacheEx) lst_dml_table.get(i);
+                switch (myCacheEx.getSqlType()) {
+                    case UPDATE:
+                        myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                        break;
+                    case INSERT:
+                        myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                        break;
+                    case DELETE:
+                        myCacheEx.getCache().remove(myCacheEx.getKey());
+                        break;
                 }
             }
-        }
-        else {
-            MyCacheEx kvCache = new MyCacheEx(ignite.cache(noSqlCache.getCache_name()), noSqlCache.getKey(), noSqlCache.getValue(), noSqlCache.getSqlType(), noSqlCache);
-            lst_dml_table.add(kvCache);
-            IgniteTransactions transactions = ignite.transactions();
-            Transaction tx = null;
-            try {
-                tx = transactions.txStart();
-                for (int i = 0; i < lst_dml_table.size(); i++) {
-                    MyCacheEx myCacheEx = (MyCacheEx) lst_dml_table.get(i);
-                    switch (myCacheEx.getSqlType()) {
-                        case UPDATE:
-                            myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
-                            break;
-                        case INSERT:
-                            myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
-                            break;
-                        case DELETE:
-                            myCacheEx.getCache().remove(myCacheEx.getKey());
-                            break;
-                    }
-                }
-                tx.commit();
-            } catch (Exception ex) {
-                if (tx != null) {
-                    tx.rollback();
+            tx.commit();
+        } catch (Exception ex) {
+            if (tx != null) {
+                tx.rollback();
 
-                    lst_ddl.stream().forEach(map -> ignite.getOrCreateCache(new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META")).query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
-                }
-            } finally {
-                if (tx != null) {
-                    tx.close();
-                }
+                lst_ddl.stream().forEach(map -> ignite.getOrCreateCache(new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META")).query(new SqlFieldsQuery(((PersistentArrayMap) map).get(Keyword.intern("un_sql")).toString())).getAll());
+            }
+        } finally {
+            if (tx != null) {
+                tx.close();
             }
         }
     }

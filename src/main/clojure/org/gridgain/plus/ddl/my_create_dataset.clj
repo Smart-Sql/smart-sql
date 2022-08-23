@@ -6,6 +6,7 @@
              (org.apache.ignite.configuration CacheConfiguration)
              (cn.myservice MyInitFuncService)
              (cn.plus.model.ddl MyDataSet)
+             (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery))
     (:gen-class
         ; 生成 class 的类名
@@ -36,7 +37,9 @@
                                                                  (.setSqlSchema data_set_name_u))))
                             (let [id (.incrementAndGet (.atomicSequence ignite "my_dataset" 0 true))]
                                 (if (nil? (.put ds-cache id (MyDataSet. id data_set_name_u)))
-                                    (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u))))
+                                    (do
+                                        (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u)
+                                        (MyDdlUtil/runDdlDs ignite sql)))))
                         (throw (Exception. "该数据集已经存在了！"))))
                 )
             (throw (Exception. "创建数据集语句的错误！")))

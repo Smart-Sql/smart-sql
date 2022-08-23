@@ -518,8 +518,8 @@
 ; lst_ddl： [ddl]
 ; lst_dml_table: [{:table "表名" :key PK_ID :value 值}]
 ; 转成 ArrayList 用 java 来执行
-(defn run_ddl_dml [^Ignite ignite lst_ddl lst_dml_table no-sql-cache]
-    (MyCreateTableUtil/run_ddl_dml ignite (my-lexical/to_arryList lst_ddl) lst_dml_table no-sql-cache))
+(defn run_ddl_dml [^Ignite ignite lst_ddl lst_dml_table no-sql-cache code]
+    (MyCreateTableUtil/run_ddl_dml ignite (my-lexical/to_arryList lst_ddl) lst_dml_table no-sql-cache code))
 
 ; group_id序列： group_id dataset_name group_type dataset_id
 (defn my_create_table_lst [^Ignite ignite group_id ^String descrip lst]
@@ -527,7 +527,7 @@
         (if-let [{schema_name :schema_name table_name :table_name pk-data :pk-data lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lsts ignite lst (str/lower-case (second group_id)))]
             (if-let [lst_dml_table (to_mycachex ignite (get_my_table_lst ignite table_name descrip lst lst_table_item 0))]
                 (if (true? (.isMultiUserGroup (.configuration ignite)))
-                    (run_ddl_dml ignite lst_ddl lst_dml_table (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) pk-data (SqlType/INSERT))))
+                    (run_ddl_dml ignite lst_ddl lst_dml_table (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) pk-data (SqlType/INSERT)) (str/join " " lst)))
                 (throw (Exception. "创建表的语句错误！")))
             (throw (Exception. "创建表的语句错误！")))
         (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
@@ -535,7 +535,7 @@
                 (if (and (not (my-lexical/is-eq? schema_name "my_meta")) (my-lexical/is-eq? schema_name (second group_id)))
                     (if-let [lst_dml_table (to_mycachex ignite (get_my_table_lst ignite table_name descrip lst lst_table_item (last group_id)))]
                         (if (true? (.isMultiUserGroup (.configuration ignite)))
-                            (run_ddl_dml ignite lst_ddl lst_dml_table (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) pk-data (SqlType/INSERT))))
+                            (run_ddl_dml ignite lst_ddl lst_dml_table (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) pk-data (SqlType/INSERT)) (str/join " " lst)))
                         (throw (Exception. "创建表的语句错误！"))
                         )
                     )

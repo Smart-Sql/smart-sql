@@ -151,7 +151,7 @@
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line group_id]
     (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (alter-table-obj ignite (second group_id) sql_line)]
         (if-not (nil? lst_cachex)
-            (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql})
+            (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql} sql_line)
             ;(if (true? (.isMultiUserGroup (.configuration ignite)))
             ;    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql})
             ;    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql}))

@@ -6,6 +6,7 @@
     (:import (org.apache.ignite Ignite IgniteCache)
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
+             (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
              (cn.myservice MyInitFuncService)
              )
     (:gen-class
@@ -41,7 +42,8 @@
                     (do
                         (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case data_set_name))
                         (.destroy ds-cache)
-                        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "delete from my_dataset where dataset_name = ?") (to-array [(str/lower-case data_set_name)])))))
+                        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "delete from my_dataset where dataset_name = ?") (to-array [(str/lower-case data_set_name)]))))
+                        (MyDdlUtil/runDdlDs ignite sql))
                     (throw (Exception. "数据集中还存在表！不能删除！")))))
         (throw (Exception. "没有执行语句的权限！"))))
 
@@ -53,6 +55,7 @@
                     (do
                         (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case data_set_name))
                         (.destroy ds-cache)
-                        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "delete from my_dataset where dataset_name = ?") (to-array [(str/lower-case data_set_name)])))))
+                        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "delete from my_dataset where dataset_name = ?") (to-array [(str/lower-case data_set_name)]))))
+                        (MyDdlUtil/runDdlDs ignite (str/join " " lst)))
                     (throw (Exception. "数据集中还存在表！不能删除！")))))
         (throw (Exception. "没有执行语句的权限！"))))
