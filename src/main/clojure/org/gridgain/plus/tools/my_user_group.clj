@@ -30,6 +30,8 @@
         :name org.gridgain.plus.tools.MyUserGroup
         ; 是否生成 class 的 main 方法
         :main false
+        :methods [^:static [getUserGroup [org.apache.ignite.Ignite String] Object]
+                  ^:static [getUserGroupById [org.apache.ignite.Ignite Long] Object]]
         ))
 
 
@@ -54,3 +56,42 @@
         [0 "MY_META" "all" -1]
         (if-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [user-group-id])))))]
             (cons user-group-id m))))
+
+
+(defn -getUserGroup [ignite user_token]
+    (get_user_group ignite user_token))
+
+(defn -getUserGroupById [ignite user-group-id]
+    (get-user-group-by-id ignite user-group-id))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

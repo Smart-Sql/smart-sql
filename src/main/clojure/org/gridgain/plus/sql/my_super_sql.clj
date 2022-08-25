@@ -37,6 +37,7 @@
              (java.math BigDecimal)
              )
     (:gen-class
+        :implements [org.gridgain.superservice.IMySmartSql]
         ; 生成 class 的类名
         :name org.gridgain.plus.sql.MySuperSql
         ; 是否生成 class 的 main 方法
@@ -85,14 +86,14 @@
              (conj lst (str/join stack-lst))))))
 
 ; 通过 userToken 获取 group_id
-(defn get_group_id [^Ignite ignite ^String userToken]
-    (if (my-lexical/is-eq? userToken (.getRoot_token (.configuration ignite)))
-        [0 "MY_META" "ALL" -1]
-        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select g.id, m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.user_token = ?") (to-array [userToken])))))]
-            m))
-    )
+;(defn get_group_id [^Ignite ignite ^String userToken]
+;    (if (my-lexical/is-eq? userToken (.getRoot_token (.configuration ignite)))
+;        [0 "MY_META" "ALL" -1]
+;        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select g.id, m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.user_token = ?") (to-array [userToken])))))]
+;            m))
+;    )
 
-(def my_group_id (memoize get_group_id))
+;(def my_group_id (memoize get_group_id))
 
 ; 是否 select 语句
 (defn has-from? [[f & r]]
@@ -208,6 +209,10 @@
     (let [[group_id dataset_name group_type dataset_id] (my-user-group/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
+
+(defn -recovery_ddl [this ^Ignite ignite ^String line]
+    (let [userToken (.getRoot_token (.configuration ignite))]
+        (super-sql-line ignite userToken line)))
 
 ; 传入 [["select" "name" ...], ["update" ...], ["insert" ...]]
 (defn -superSql [^Ignite ignite ^Object userToken ^Object lst-sql]

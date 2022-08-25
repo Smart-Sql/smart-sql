@@ -166,7 +166,7 @@
 (defn alter_table [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= (first group_id) 0)
-            (run_ddl_real_time ignite sql_code group_id)
+            (run_ddl_real_time ignite sql_line group_id)
             (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
                 (run_ddl_real_time ignite sql_code group_id)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))

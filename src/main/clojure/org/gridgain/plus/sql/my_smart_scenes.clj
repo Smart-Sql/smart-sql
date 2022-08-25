@@ -108,10 +108,10 @@
         (apply (eval (read-string code)) ignite group_id ps)))
 
 ; 首先调用方法，如果不存在，在从 cache 中读取数据在执行
-(defn -invokeScenes [this ^Ignite ignite group_id ^String method-name ^List ps]
+(defn -invokeScenes [^Ignite ignite group_id ^String method-name ^List ps]
     (my-invoke-scenes ignite group_id method-name ps))
 
-(defn -invokeScenesLink [this ^Ignite ignite group_id ^String method-name ^List ps]
+(defn -invokeScenesLink [^Ignite ignite group_id ^String method-name ^List ps]
     (my-invoke-scenes-link ignite group_id method-name ps))
 
 (defn -myInvokeScenes [this ^Ignite ignite ^Long a ^Long b]

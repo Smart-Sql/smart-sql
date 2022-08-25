@@ -16,11 +16,12 @@
              (com.google.common.base Strings)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyCallScenesPk MyCallScenes MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
-             (cn.plus.model MyNoSqlCache MyCacheEx MyKeyValue MyLogCache MCron SqlType)
+             (cn.plus.model MySmartDll MyNoSqlCache MyCacheEx MyKeyValue MyLogCache MCron SqlType)
              (cn.plus.model.ddl MyUserFunc MyFunc MyViewsPk MyInsertViews MySelectViews MyUpdateViews MyDeleteViews)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (org.gridgain.smart.view MyViewAstPK)
              (org.gridgain.nosql MyNoSqlUtil)
+             (org.gridgain.myservice MySmartSqlService)
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
              )
@@ -31,7 +32,8 @@
         :main false
         ; 生成 java 静态的方法
         :methods [^:static [smart_view [org.apache.ignite.Ignite Object String String] String]
-                  ^:static [initJob [org.apache.ignite.Ignite] void]]
+                  ^:static [initJob [org.apache.ignite.Ignite] void]
+                  ^:static [recoveryToCluster [org.apache.ignite.Ignite Object] void]]
         ))
 
 (defn cron-to-str
@@ -169,7 +171,7 @@
         (throw (Exception. "只有 root 用户才能对删除用户组权限！")))
     )
 
-; 通过 userToken 获取 group_id
+; 通过 group_id 获取 group_id 的对象
 (defn get_group_id [^Ignite ignite ^Long group_id]
     (if (= group_id 0)
         [0 "MY_META" "ALL" -1]
@@ -340,6 +342,21 @@
 
 (defn -smart_view [^Ignite ignite group_id ^String group_name ^String code]
     (smart-view ignite group_id group_name code))
+
+; 恢复数据
+(defn recovery-to-cluster [^Ignite ignite data]
+    (if-let [m (MyCacheExUtil/restore data)]
+        (cond (instance? MySmartDll m) (.recovery_ddl (.getInstance MySmartSqlService) ignite (.getSql m))
+              (instance? MyNoSqlCache m) (MyCacheExUtil/restoreNoSqlCache ignite m)
+              (instance? MyLogCache m) (MyCacheExUtil/restoreLogCache ignite m)
+              (my-lexical/is-seq? m) (MyCacheExUtil/restoreListData ignite m)
+              )))
+
+; 恢复数据 java 调用
+(defn -recoveryToCluster [^Ignite ignite data]
+    (recovery-to-cluster ignite data))
+
+
 
 
 

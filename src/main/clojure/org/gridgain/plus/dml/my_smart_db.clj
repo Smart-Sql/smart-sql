@@ -33,8 +33,12 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        ;:methods [^:static [superSql [org.apache.ignite.Ignite Object Object] String]
-        ;          ^:static [getGroupId [org.apache.ignite.Ignite String] Boolean]]
+        :methods [^:static [insertToCache [org.apache.ignite.Ignite Object Object Object] Object]
+                  ^:static [insertToCacheNoAuthority [org.apache.ignite.Ignite Object Object Object] Object]
+                  ^:static [updateToCache [org.apache.ignite.Ignite Object Object Object] Object]
+                  ^:static [updateToCacheNoAuthority [org.apache.ignite.Ignite Object Object Object] Object]
+                  ^:static [deleteToCache [org.apache.ignite.Ignite Object Object Object] Object]
+                  ^:static [deleteToCacheNoAuthority [org.apache.ignite.Ignite Object Object Object] Object]]
         ))
 
 (declare my-create my-get-value my-insert my-insert-tran my-update my-update-tran my-delete my-delete-tran my-drop)
@@ -519,6 +523,24 @@
              (recur ignite group_id r (concat lst-rs m))
              (recur ignite group_id r lst-rs))
          (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList (to-all-lst lst-rs))))))
+
+(defn -insertToCache [ignite group_id sql args]
+    (insert-to-cache ignite group_id sql args))
+
+(defn -insertToCacheNoAuthority [ignite group_id sql args]
+    (insert-to-cache-no-authority ignite group_id sql args))
+
+(defn -updateToCache [ignite group_id sql args]
+    (update-to-cache ignite group_id sql args))
+
+(defn -updateToCacheNoAuthority [ignite group_id sql args]
+    (update-to-cache-no-authority ignite group_id sql args))
+
+(defn -deleteToCache [ignite group_id sql args]
+    (delete-to-cache ignite group_id sql args))
+
+(defn -deleteToCacheNoAuthority [ignite group_id sql args]
+    (delete-to-cache-no-authority ignite group_id sql args))
 
 ;(defn trans
 ;    ([ignite group_id lst] (trans ignite group_id lst []))

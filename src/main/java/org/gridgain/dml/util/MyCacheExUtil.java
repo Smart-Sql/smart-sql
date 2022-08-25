@@ -300,6 +300,75 @@ public class MyCacheExUtil implements Serializable {
         return (String)restore(bytes);
     }
 
+    public static void restoreNoSqlCache(final Ignite ignite, final MyNoSqlCache myNoSqlCache)
+    {
+        MyCacheEx myCacheEx = convertToCacheEx_noSql(ignite, myNoSqlCache);
+        switch (myCacheEx.getSqlType())
+        {
+            case INSERT:
+                myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                break;
+            case DELETE:
+                myCacheEx.getCache().remove(myCacheEx.getKey());
+                break;
+            case UPDATE:
+                myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                break;
+        }
+    }
+
+    public static void restoreLogCache(final Ignite ignite, final MyLogCache myLogCache) throws Exception {
+        MyCacheEx myCacheEx = convertToCacheEx_logCache(ignite, myLogCache);
+        switch (myCacheEx.getSqlType())
+        {
+            case INSERT:
+                myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                break;
+            case DELETE:
+                myCacheEx.getCache().remove(myCacheEx.getKey());
+                break;
+            case UPDATE:
+                myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                break;
+        }
+    }
+
+    public static void restoreListData(final Ignite ignite, final List lst)
+    {
+        IgniteTransactions transactions = ignite.transactions();
+        Transaction tx = null;
+        try {
+            tx = transactions.txStart();
+
+            for (Object m : lst)
+            {
+                MyCacheEx myCacheEx = convertToCacheEx(ignite, m);
+                switch (myCacheEx.getSqlType())
+                {
+                    case INSERT:
+                        myCacheEx.getCache().put(myCacheEx.getKey(), myCacheEx.getValue());
+                        break;
+                    case DELETE:
+                        myCacheEx.getCache().remove(myCacheEx.getKey());
+                        break;
+                    case UPDATE:
+                        myCacheEx.getCache().replace(myCacheEx.getKey(), myCacheEx.getValue());
+                        break;
+                }
+            }
+
+            tx.commit();
+        } catch (Exception ex) {
+            if (tx != null) {
+                tx.rollback();
+            }
+        } finally {
+            if (tx != null) {
+                tx.close();
+            }
+        }
+    }
+
 //    /**
 //     * 对象转变成二进制
 //     * */

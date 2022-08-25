@@ -94,9 +94,9 @@
 (defn drop_index [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= (first group_id) 0)
-            (run_ddl_real_time ignite (second group_id) sql_code)
+            (run_ddl_real_time ignite (second group_id) sql_line)
             (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
-                (run_ddl_real_time ignite (second group_id) sql_code)
+                (run_ddl_real_time ignite (second group_id) sql_line)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 

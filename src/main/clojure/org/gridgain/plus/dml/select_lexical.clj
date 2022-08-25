@@ -786,6 +786,36 @@
                   ))
         ))
 
+; 判断函数里面的参数是否有 ? 号
+(defn my-ast-has-ps-items [ast]
+    (letfn [(get-ast-map-items [ast-map]
+                (cond (and (contains? ast-map :item_name) (= (-> ast-map :item_name) "?")) true
+                      :else
+                      (loop [[f & r] (keys ast-map)]
+                          (if (some? f)
+                              (if-let [f-m (get-ast-items (get ast-map f))]
+                                  (if (true? f-m)
+                                      true
+                                      (recur r))
+                                  (recur r))
+                              ))
+                      ))
+            (get-ast-lst-items
+                [[f & r]]
+                (if (some? f)
+                    (if-let [f-m (get-ast-items f)]
+                        (if (true? f-m)
+                            true
+                            (recur r))
+                        (recur r))
+                    ))
+            (get-ast-items [ast]
+                (cond (map? ast) (get-ast-map-items ast)
+                      (is-seq? ast) (get-ast-lst-items ast)
+                      ))]
+        (get-ast-items ast)
+        ))
+
 (defn to-smart-sql-type [f-type]
     (cond (re-find #"^(?i)FLOAT$" f-type) "double"
           (re-find #"^(?i)DATETIME$" f-type) "TIMESTAMP"
