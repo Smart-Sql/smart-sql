@@ -53,13 +53,62 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        ;:methods [^:static [superSql [org.apache.ignite.Ignite Object Object] String]
-        ;          ^:static [getGroupId [org.apache.ignite.Ignite String] Boolean]]
+        :methods [^:static [invokeAllFuncScenes [org.apache.ignite.Ignite Object String java.util.List] Object]]
         ))
 
 ; PreparedStatement 调用所有方法 参数用 ? 来传递，
-(defn invoke-all-func-scenes [^Ignite ignite group_id ^String method-name ^List ps]
-    )
+(defn invoke-all-func-scenes [^Ignite ignite group_id ^String func-name ^List ps]
+    (if-not (Strings/isNullOrEmpty func-name)
+        (if-let [my-lexical-func (my-lexical/smart-func func-name)]
+            (apply (eval (read-string my-lexical-func)) ps)
+            (cond (my-lexical/is-eq? "println" func-name) (apply (eval (read-string "my-lexical/my-show-msg")) [(my-lexical/gson (first ps))])
+                  (contains? #{"first" "rest" "next" "second" "last"} (str/lower-case func-name)) (apply (eval (read-string (str/lower-case func-name))) ps)
+                  (my-lexical/is-eq? func-name "query_sql") (apply (eval (read-string "query_sql")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "empty?") (apply (eval (read-string "empty?")) ps)
+                  (my-lexical/is-eq? func-name "noSqlCreate") (apply (eval (read-string "my-lexical/no-sql-create")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "noSqlGet") (apply (eval (read-string "my-lexical/no-sql-get-vs")) (concat [ignite group_id] ps))
+
+                  (my-lexical/is-eq? func-name "noSqlInsertTran") (apply (eval (read-string "my-lexical/no-sql-insert-tran")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "noSqlUpdateTran") (apply (eval (read-string "my-lexical/no-sql-update-tran")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "noSqlDeleteTran") (apply (eval (read-string "my-lexical/no-sql-delete-tran")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "noSqlDrop") (apply (eval (read-string "my-lexical/no-sql-drop")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "noSqlInsert") (apply (eval (read-string "my-lexical/no-sql-insert")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "noSqlUpdate") (apply (eval (read-string "my-lexical/no-sql-update")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "noSqlDelete") (apply (eval (read-string "my-lexical/no-sql-delete")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "auto_id") (apply (eval (read-string "my-lexical/auto_id")) (concat [ignite] ps))
+
+                  (my-lexical/is-eq? func-name "trans") (apply (eval (read-string "my-smart-db/trans")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "my_view") (apply (eval (read-string "smart-func/smart-view")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "rm_view") (apply (eval (read-string "smart-func/rm-smart-view")) (concat [ignite group_id] ps))
+
+                  (my-lexical/is-eq? func-name "add_scenes_to") (apply (eval (read-string "smart-func/add-scenes-to")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "rm_scenes_from") (apply (eval (read-string "smart-func/rm-scenes-from")) (concat [ignite group_id] ps))
+
+                  (my-lexical/is-eq? func-name "add_job") (apply (eval (read-string "smart-func/add-job")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "remove_job") (apply (eval (read-string "smart-func/remove-job")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "job_snapshot") (apply (eval (read-string "smart-func/get-job-snapshot")) (concat [ignite group_id] ps))
+
+                  (my-lexical/is-eq? func-name "add_func") (apply (eval (read-string "smart-func/add_func")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "remove_func") (apply (eval (read-string "smart-func/remove_func")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "recovery_to_cluster") (apply (eval (read-string "smart-func/recovery-to-cluster")) (concat [ignite] ps))
+
+                  (my-lexical/is-func? ignite func-name) (if-not (empty? ps)
+                                                             (apply (eval (read-string "my-smart-scenes/my-invoke-func")) (concat [ignite (format "%s" func-name)] [ps]))
+                                                             (apply (eval (read-string "my-smart-scenes/my-invoke-func-no-ps")) [ignite (format "%s" func-name)]))
+
+                  (my-lexical/is-scenes? ignite group_id func-name) (if-not (empty? ps)
+                                                                        (apply (eval (read-string "my-smart-scenes/my-invoke-scenes")) (concat [ignite group_id (format "%s" func-name)] [ps]))
+                                                                        (apply (eval (read-string "my-smart-scenes/my-invoke-scenes-no-ps")) [ignite group_id (format "%s" func-name)]))
+                  (my-lexical/is-call-scenes? ignite group_id func-name) (if-not (empty? ps)
+                                                                             (apply (eval (read-string "my-smart-scenes/my-invoke-scenes")) (concat [ignite group_id (format "%s" func-name)] [ps]))
+                                                                             (apply (eval (read-string "my-smart-scenes/my-invoke-scenes-no-ps")) [ignite group_id (format "%s" func-name)]))
+                  (my-lexical/is-eq? func-name "loadCode") (apply (eval (read-string "my-load-smart-sql/load-smart-sql")) (concat [ignite group_id] ps))
+                  :else
+                  (throw (Exception. (format "%s 不存在，或没有权限！" func-name)))
+                  ))))
+
+(defn -invokeAllFuncScenes [^Ignite ignite group_id ^String func-name ^List ps]
+    (invoke-all-func-scenes ignite group_id func-name ps))
 
 
 

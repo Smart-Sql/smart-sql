@@ -4,6 +4,7 @@
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
         [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
+        [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -499,6 +500,11 @@
                             )
                       true))
               )))
+
+(defn is-jdbc-preparedStatement [lst]
+    (if-let [ast (my-select-plus/sql-to-ast lst)]
+        (if (and (contains? ast :func-name) (contains? ast :lst_ps) (my-lexical/my-ast-has-ps-items (-> ast :lst_ps)))
+            ())))
 
 (defn smart-lst-to-clj [^Ignite ignite group_id ^clojure.lang.LazySeq lst]
     (let [smart-lst (re-fn lst)]

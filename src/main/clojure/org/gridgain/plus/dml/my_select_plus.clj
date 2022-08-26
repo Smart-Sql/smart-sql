@@ -39,7 +39,7 @@
 (defn get-scenes [^Ignite ignite ^String scenes_name]
     (scenesObj. nil nil))
 
-(declare sql-to-ast get-my-sql-to-ast my-get-items ar-to-sql my-array-to-sql func-args ast_to_sql)
+(declare sql-to-ast get-my-sql-to-ast my-get-items ar-to-sql my-array-to-sql ast_to_sql)
 
 (defn get-my-sql-to-ast [m]
     (try
@@ -682,71 +682,68 @@
 
 ; PreparedStatement 调用所有方法 参数用 ? 来传递
 ; 返回函数名 和 参数列表，通过 (apply (eval (read-string func-name)) ignite group_id ps) 来调用
-(defn func-args [^Ignite ignite group_id m]
-    (let [{func-name :func-name lst_ps :lst_ps} m]
-        (if-let [my-lexical-func (my-lexical/smart-func func-name)]
-            my-lexical-func ;{:func-name my-lexical-func :args [(ast_to_sql ignite group_id lst_ps)]}
-            (cond
-                ;(my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
-                (my-lexical/is-eq? "println" func-name) "my-lexical/my-show-msg" ; {:func-name "my-lexical/my-show-msg" :args [(my-lexical/gson (ast_to_sql ignite group_id lst_ps))]}
-                (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
-                                              (if (> (count lst_ps) 0)
-                                                  {:func-name (my-lexical/smart-func method-name) :args [(my-lexical/get-value let-name) (ast_to_sql ignite group_id lst_ps)]}
-                                                  {:func-name (my-lexical/smart-func method-name) :args [(my-lexical/get-value let-name)]})
-                                              )
-                ; 系统函数
-                (contains? #{"first" "rest" "next" "second" "last"} (str/lower-case func-name)) {:func-name (str/lower-case func-name) :args [(ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "query_sql") (cond (= (count lst_ps) 1) {:func-name "my-smart-db/query_sql" :args [ignite group_id (ast_to_sql ignite group_id lst_ps) nil]}
-                                                                (> (count lst_ps) 1) {:func-name "my-smart-db/query_sql" :args [group_id (ast_to_sql ignite group_id (first lst_ps)) [(ast_to_sql ignite group_id (rest lst_ps))]]}
-                                                                )
-                (my-lexical/is-eq? func-name "empty?") {:func-name "empty?" :args [(ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "notEmpty?") {:func-name "my-lexical/not-empty?" :args [(ast_to_sql ignite group_id lst_ps)]}
-
-                (my-lexical/is-eq? func-name "noSqlCreate") {:func-name "my-lexical/no-sql-create" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "noSqlGet") {:func-name "my-lexical/no-sql-get-vs" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-
-                (my-lexical/is-eq? func-name "noSqlInsertTran") {:func-name "my-lexical/no-sql-insert-tran" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "noSqlUpdateTran") {:func-name "my-lexical/no-sql-update-tran" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "noSqlDeleteTran") {:func-name "my-lexical/no-sql-delete-tran" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "noSqlDrop") {:func-name "my-lexical/no-sql-drop" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "noSqlInsert") {:func-name "my-lexical/no-sql-insert" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "noSqlUpdate") {:func-name "my-lexical/no-sql-update" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "noSqlDelete") {:func-name "my-lexical/no-sql-delete" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "auto_id") {:func-name "my-lexical/auto_id" :args [ignite (ast_to_sql ignite group_id lst_ps)]}
-
-                (my-lexical/is-eq? func-name "trans") {:func-name "my-smart-db/trans" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "my_view") {:func-name "smart-func/smart-view" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "rm_view") {:func-name "smart-func/rm-smart-view" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-
-                (my-lexical/is-eq? func-name "add_scenes_to") {:func-name "smart-func/add-scenes-to" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "rm_scenes_from") {:func-name "smart-func/rm-scenes-from" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-
-                (my-lexical/is-eq? func-name "add_job") {:func-name "smart-func/add-job" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "remove_job") {:func-name "smart-func/remove-job" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "job_snapshot") {:func-name "smart-func/get-job-snapshot" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-
-                (my-lexical/is-eq? func-name "add_func") {:func-name "smart-func/add_func" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "remove_func") {:func-name "smart-func/remove_func" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
-                (my-lexical/is-eq? func-name "recovery_to_cluster") {:func-name "smart-func/recovery-to-cluster" :args [ignite (ast_to_sql ignite group_id lst_ps)]}
-
-                (my-lexical/is-func? ignite func-name) (if-not (empty? lst_ps)
-                                                {:func-name "my-smart-scenes/my-invoke-func" :args [ignite (format "\"%s\"" func-name) [(ast_to_sql ignite group_id lst_ps)]]}
-                                                {:func-name "my-smart-scenes/my-invoke-func-no-ps" :args [ignite (format "\"%s\"" func-name)]})
-                (my-lexical/is-scenes? ignite group_id func-name) (if-not (empty? lst_ps)
-                                                           {:func-name "my-smart-scenes/my-invoke-scenes" :args [ignite group_id (format "\"%s\"" func-name) [(ast_to_sql ignite group_id lst_ps)]]}
-                                                           {:func-name "my-smart-scenes/my-invoke-scenes-no-ps" :args [ignite group_id (format "\"%s\"" func-name)]})
-                (my-lexical/is-call-scenes? ignite group_id func-name) (if-not (empty? lst_ps)
-                                                                {:func-name "my-smart-scenes/my-invoke-scenes" :args [ignite group_id (format "\"%s\"" func-name) [(ast_to_sql ignite group_id lst_ps)]]}
-                                                                {:func-name "my-smart-scenes/my-invoke-scenes-no-ps" :args [ignite group_id (format "\"%s\"" func-name)]})
-
-                ;(my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
-                :else
-                (throw (Exception. (format "%s 不存在，或没有权限！" func-name)))
-                ))
-        ))
-
-(defn invoke-all-func-scenes [^Ignite ignite group_id ^String method-name ^List ps]
-    )
+;(defn func-args [^Ignite ignite group_id m]
+;    (let [{func-name :func-name lst_ps :lst_ps} m]
+;        (if-let [my-lexical-func (my-lexical/smart-func func-name)]
+;            my-lexical-func ;{:func-name my-lexical-func :args [(ast_to_sql ignite group_id lst_ps)]}
+;            (cond
+;                ;(my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+;                (my-lexical/is-eq? "println" func-name) "my-lexical/my-show-msg" ; {:func-name "my-lexical/my-show-msg" :args [(my-lexical/gson (ast_to_sql ignite group_id lst_ps))]}
+;                (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
+;                                              (if (> (count lst_ps) 0)
+;                                                  {:func-name (my-lexical/smart-func method-name) :args [(my-lexical/get-value let-name) (ast_to_sql ignite group_id lst_ps)]}
+;                                                  {:func-name (my-lexical/smart-func method-name) :args [(my-lexical/get-value let-name)]})
+;                                              )
+;                ; 系统函数
+;                (contains? #{"first" "rest" "next" "second" "last"} (str/lower-case func-name)) {:func-name (str/lower-case func-name) :args [(ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "query_sql") (cond (= (count lst_ps) 1) {:func-name "my-smart-db/query_sql" :args [ignite group_id (ast_to_sql ignite group_id lst_ps) nil]}
+;                                                                (> (count lst_ps) 1) {:func-name "my-smart-db/query_sql" :args [group_id (ast_to_sql ignite group_id (first lst_ps)) [(ast_to_sql ignite group_id (rest lst_ps))]]}
+;                                                                )
+;                (my-lexical/is-eq? func-name "empty?") {:func-name "empty?" :args [(ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "notEmpty?") {:func-name "my-lexical/not-empty?" :args [(ast_to_sql ignite group_id lst_ps)]}
+;
+;                (my-lexical/is-eq? func-name "noSqlCreate") {:func-name "my-lexical/no-sql-create" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "noSqlGet") {:func-name "my-lexical/no-sql-get-vs" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;
+;                (my-lexical/is-eq? func-name "noSqlInsertTran") {:func-name "my-lexical/no-sql-insert-tran" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "noSqlUpdateTran") {:func-name "my-lexical/no-sql-update-tran" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "noSqlDeleteTran") {:func-name "my-lexical/no-sql-delete-tran" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "noSqlDrop") {:func-name "my-lexical/no-sql-drop" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "noSqlInsert") {:func-name "my-lexical/no-sql-insert" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "noSqlUpdate") {:func-name "my-lexical/no-sql-update" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "noSqlDelete") {:func-name "my-lexical/no-sql-delete" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "auto_id") {:func-name "my-lexical/auto_id" :args [ignite (ast_to_sql ignite group_id lst_ps)]}
+;
+;                (my-lexical/is-eq? func-name "trans") {:func-name "my-smart-db/trans" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "my_view") {:func-name "smart-func/smart-view" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "rm_view") {:func-name "smart-func/rm-smart-view" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;
+;                (my-lexical/is-eq? func-name "add_scenes_to") {:func-name "smart-func/add-scenes-to" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "rm_scenes_from") {:func-name "smart-func/rm-scenes-from" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;
+;                (my-lexical/is-eq? func-name "add_job") {:func-name "smart-func/add-job" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "remove_job") {:func-name "smart-func/remove-job" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "job_snapshot") {:func-name "smart-func/get-job-snapshot" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;
+;                (my-lexical/is-eq? func-name "add_func") {:func-name "smart-func/add_func" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "remove_func") {:func-name "smart-func/remove_func" :args [ignite group_id (ast_to_sql ignite group_id lst_ps)]}
+;                (my-lexical/is-eq? func-name "recovery_to_cluster") {:func-name "smart-func/recovery-to-cluster" :args [ignite (ast_to_sql ignite group_id lst_ps)]}
+;
+;                (my-lexical/is-func? ignite func-name) (if-not (empty? lst_ps)
+;                                                {:func-name "my-smart-scenes/my-invoke-func" :args [ignite (format "\"%s\"" func-name) [(ast_to_sql ignite group_id lst_ps)]]}
+;                                                {:func-name "my-smart-scenes/my-invoke-func-no-ps" :args [ignite (format "\"%s\"" func-name)]})
+;                (my-lexical/is-scenes? ignite group_id func-name) (if-not (empty? lst_ps)
+;                                                           {:func-name "my-smart-scenes/my-invoke-scenes" :args [ignite group_id (format "\"%s\"" func-name) [(ast_to_sql ignite group_id lst_ps)]]}
+;                                                           {:func-name "my-smart-scenes/my-invoke-scenes-no-ps" :args [ignite group_id (format "\"%s\"" func-name)]})
+;                (my-lexical/is-call-scenes? ignite group_id func-name) (if-not (empty? lst_ps)
+;                                                                {:func-name "my-smart-scenes/my-invoke-scenes" :args [ignite group_id (format "\"%s\"" func-name) [(ast_to_sql ignite group_id lst_ps)]]}
+;                                                                {:func-name "my-smart-scenes/my-invoke-scenes-no-ps" :args [ignite group_id (format "\"%s\"" func-name)]})
+;
+;                ;(my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
+;                :else
+;                (throw (Exception. (format "%s 不存在，或没有权限！" func-name)))
+;                ))
+;        ))
 
 ; ast to sql
 (defn ast_to_sql [ignite group_id ast]
@@ -835,7 +832,10 @@
                                                                                                            (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] lst-ps-items [")" " as"] [(-> m :alias)])
                                                                                                            (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] [")" " as"] [(-> m :alias)]))
                               :else
-                              (concat [(-> m :func-name) "("] lst-ps-items [")" " as"] [(-> m :alias)])
+                              ;(concat [(-> m :func-name) "("] lst-ps-items [")" " as"] [(-> m :alias)])
+                              (if-not (empty? (-> m :lst_ps))
+                                  (concat ["my_invoke_all(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] lst-ps-items [")" " as"] [(-> m :alias)])
+                                  (concat ["my_invoke_all(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] [")" " as"] [(-> m :alias)]))
                               ))
                     (let [lst-ps-items (map (partial token-to-sql ignite group_id) (-> m :lst_ps))]
                         (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
@@ -845,7 +845,10 @@
                                                                                                            (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] lst-ps-items [")"])
                                                                                                            (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] [")"]))
                               :else
-                              (concat [(-> m :func-name) "("] lst-ps-items [")"])
+                              ;(concat [(-> m :func-name) "("] lst-ps-items [")"])
+                              (if-not (empty? (-> m :lst_ps))
+                                  (concat ["my_invoke_all(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] lst-ps-items [")"])
+                                  (concat ["my_invoke_all(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] [")"]))
                               ))))
             ;(func-link-to-line [ignite group_id m]
             ;    (let [[fn-line args] (my-smart-token-clj/func-link-clj ignite group_id (-> m :func-link))]

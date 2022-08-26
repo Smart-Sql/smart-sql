@@ -43,8 +43,9 @@
         params))
 
 (defn gson [m]
-    (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
-        (.toJson gs m)))
+    (cond (or (string? m) (integer? m) (double? m) (boolean? m)) m
+          :else (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                    (.toJson gs m))))
 
 ; 判断字符串不为空
 (defn is-str-not-empty? [^String line]

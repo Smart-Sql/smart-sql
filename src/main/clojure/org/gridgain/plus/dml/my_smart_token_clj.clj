@@ -146,11 +146,11 @@
             (cond
                   ;(my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
                   (my-lexical/is-eq? "println" func-name) (format "(my-lexical/my-show-msg (my-lexical/gson %s))" (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
-                                                (if (> (count lst_ps) 0)
-                                                    (format "(%s (my-lexical/get-value %s) %s)" (my-lexical/smart-func method-name) let-name (get-lst-ps-vs ignite group_id lst_ps my-context))
-                                                    (format "(%s (my-lexical/get-value %s))" (my-lexical/smart-func method-name) let-name))
-                                                )
+                  ;(re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
+                  ;                              (if (> (count lst_ps) 0)
+                  ;                                  (format "(%s (my-lexical/get-value %s) %s)" (my-lexical/smart-func method-name) let-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  ;                                  (format "(%s (my-lexical/get-value %s))" (my-lexical/smart-func method-name) let-name))
+                  ;                              )
                   ; 系统函数
                   (contains? #{"first" "rest" "next" "second" "last"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
                   ; inner function
