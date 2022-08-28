@@ -503,8 +503,8 @@
 
 (defn is-jdbc-preparedStatement [lst]
     (if-let [ast (my-select-plus/sql-to-ast lst)]
-        (if (and (contains? ast :func-name) (contains? ast :lst_ps) (my-lexical/my-ast-has-ps-items (-> ast :lst_ps)))
-            ())))
+        (if (and (map? ast) (contains? ast :func-name) (contains? ast :lst_ps) (my-lexical/my-ast-has-ps-items (-> ast :lst_ps)))
+            ast)))
 
 (defn smart-lst-to-clj [^Ignite ignite group_id ^clojure.lang.LazySeq lst]
     (let [smart-lst (re-fn lst)]
@@ -521,8 +521,7 @@
                         (apply (eval (read-string (format "(fn [ignite group_id] (do %s))" my-smart-code))) [ignite group_id]))
                     ))
             )
-        )
-    )
+        ))
 
 ;(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
 ;    (let [smart-lst (re-fn lst)]

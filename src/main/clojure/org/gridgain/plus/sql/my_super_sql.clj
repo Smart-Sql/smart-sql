@@ -130,9 +130,19 @@
 ;                                                                                                                                 (eval (read-string sql)))
 ;          ))
 
+(defn to-sql [lst]
+    (loop [[f & r] lst rs []]
+        (if (some? f)
+            (if (string? f)
+                (recur r (concat rs [f]))
+                (recur r (concat rs (to-sql f))))
+            rs)))
+
 ; smart-code-lst = (my-lexical/to-back sql)
 (defn my-smart-sql [^Ignite ignite group_id ^clojure.lang.LazySeq smart-code-lst]
-    (my-smart-clj/smart-lst-to-clj ignite group_id smart-code-lst))
+    (if-let [func-ast (my-smart-clj/is-jdbc-preparedStatement smart-code-lst)]
+        {:sql (str/join (to-sql (my-select/ast_to_sql ignite group_id func-ast)))}
+        (my-smart-clj/smart-lst-to-clj ignite group_id smart-code-lst)))
 
 (defn super-sql-lst
     ([^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type ^Long dataset_id lst] (super-sql-lst ignite [group_id dataset_name group_type dataset_id] lst []))
@@ -191,8 +201,14 @@
                                                                                                                                                      )
                    :else
                    (if (string? (first lst))
-                       (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id lst))))
-                       (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" (my-smart-sql ignite group_id (apply concat lst)))))
+                       (let [smart-sql-obj (my-smart-sql ignite group_id lst)]
+                           (if (map? smart-sql-obj)
+                               (recur ignite group_id r (conj lst-rs (format "select %s;" (-> smart-sql-obj :sql))))
+                               (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" smart-sql-obj)))))
+                       (let [smart-sql-obj (my-smart-sql ignite group_id (apply concat lst))]
+                           (if (map? smart-sql-obj)
+                               (recur ignite group_id r (conj lst-rs (format "select %s;" (-> smart-sql-obj :sql))))
+                               (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" smart-sql-obj)))))
                        )
                    ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                    ))
@@ -221,8 +237,7 @@
             (cond (string? m-obj) (super-sql-line ignite (MyCacheExUtil/restoreToLine userToken) m-obj)
                   ;(my-lexical/is-seq? m-obj) (super-sql ignite (MyCacheExUtil/restoreToLine userToken) (my-smart-sql/re-super-smart-segment m-obj))
                   (my-lexical/is-seq? m-obj) (super-sql ignite (MyCacheExUtil/restoreToLine userToken) (my-smart-sql/re-super-smart-segment m-obj))
-                  )
-            )
+                  ))
         (throw (Exception. "没有权限不能访问数据库！"))))
 
 (defn -getGroupId [^Ignite ignite ^String userToken]
