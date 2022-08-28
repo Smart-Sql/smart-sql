@@ -457,6 +457,8 @@ public class MyPulsTime {
 add_func({"method_name":"my_println","java_method_name":"myPrintln","cls_name":"org.example.plus.MyPulsTime","return_type":"void","descrip":"打印输入结果","lst":[{"ps_index":1,"ps_type":"String"}]});
 ```
 
+**下面两个类是 MyUserFunc 和 MyFuncPs。当 root 用户执行 add_func 方法的时候，可以先用 Gson 将 MyUserFunc 序列化为 json 对象，在传递到 add_func 方法中**
+
 ```java
 // 参数描述
 public class MyFuncPs implements Serializable {

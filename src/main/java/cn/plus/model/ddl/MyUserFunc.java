@@ -27,6 +27,9 @@ public class MyUserFunc implements Serializable {
         }
     }
 
+    public MyUserFunc()
+    {}
+
     public String getMethod_name() {
         return method_name;
     }

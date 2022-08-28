@@ -2,7 +2,7 @@ package org.gridgain.dml.util;
 
 import clojure.lang.*;
 import cn.plus.model.*;
-import cn.smart.service.IMyLogTransaction;
+import cn.smart.service.IMyLogTrans;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class MyCacheExUtil implements Serializable {
     private static final long serialVersionUID = 7714300623488330841L;
 
-    private static IMyLogTransaction myLog = MyLogService.getInstance().getMyLog();
+    private static IMyLogTrans myLog = MyLogService.getInstance().getMyLog();
 
 //    public static void transLogCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
 //    {

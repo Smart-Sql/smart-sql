@@ -6,7 +6,7 @@ import cn.plus.model.MyNoSqlCache;
 import cn.plus.model.MySmartCache;
 import cn.plus.model.ddl.MyCachePK;
 import cn.plus.model.ddl.MyCaches;
-import cn.smart.service.IMyLogTransaction;
+import cn.smart.service.IMyLogTrans;
 import com.google.common.base.Strings;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -32,7 +32,7 @@ import java.util.UUID;
  * */
 public class MyNoSqlUtil {
 
-    private static IMyLogTransaction myLog = MyLogService.getInstance().getMyLog();
+    private static IMyLogTrans myLog = MyLogService.getInstance().getMyLog();
 
     public static CacheConfiguration getCfg(final String cacheName)
     {

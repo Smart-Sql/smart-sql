@@ -4,7 +4,7 @@ namespace java org.gridgain.smart.log
  * log trans
  * thrift -r --gen java /Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/thrift/log_trans.thrift
 */
-service MyLogTrans
+service MyLogTransService
 {
     void createSession(1: string tranSession),
 

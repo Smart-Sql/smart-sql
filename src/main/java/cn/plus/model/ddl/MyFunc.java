@@ -35,13 +35,13 @@ public class MyFunc implements Serializable {
         }
     }
 
-    public MyFunc(final MyUserFunc m)
-    {
-        new MyFunc(m.getMethod_name(), m.getJava_method_name(), m.getCls_name(), m.getReturn_type(), m.getLst(), m.getDescrip());
-    }
-
     public MyFunc()
     {}
+
+    public static MyFunc fromUserFunc(final MyUserFunc m)
+    {
+        return new MyFunc(m.getMethod_name(), m.getJava_method_name(), m.getCls_name(), m.getReturn_type(), m.getLst(), m.getDescrip());
+    }
 
     public List<MyFuncPs> getLst() {
         return lst;

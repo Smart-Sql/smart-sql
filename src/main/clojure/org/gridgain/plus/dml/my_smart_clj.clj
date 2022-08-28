@@ -510,14 +510,15 @@
     (let [smart-lst (re-fn lst)]
         (let [ast (first (my-smart-sql/my-get-ast-lst smart-lst))]
             (println lst)
+            (println "*******************")
             (println ast)
             (println "*******************")
             (if (has-func ignite group_id ast)
                 (if-let [my-smart-code (my-ast-to-clj ignite group_id ast nil)]
                     (do
                         (println "my-clj code:")
-                        (println (format "(fn [ignite group_id] %s)" my-smart-code))
-                        (apply (eval (read-string (format "(fn [ignite group_id] %s)" my-smart-code))) [ignite group_id]))
+                        (println (format "(fn [ignite group_id] (do %s))" my-smart-code))
+                        (apply (eval (read-string (format "(fn [ignite group_id] (do %s))" my-smart-code))) [ignite group_id]))
                     ))
             )
         )

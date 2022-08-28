@@ -337,7 +337,10 @@
           (my-lexical/is-seq? m) (func-link-to-ps-seq-clj m)))
 
 (defn func-link-to-ps-map-clj [m]
-    (cond (and (contains? m :item_name) (false? (-> m :const))) (cond (= (-> m :table_alias) "") {:args [(-> m :item_name)] :ast m}
+    (cond (and (contains? m :item_name) (false? (-> m :const))) (cond (= (-> m :table_alias) "") (if (= (-> m :item_name) "?")
+                                                                                                     (let [ps-line (format "%s" (gensym "ps"))]
+                                                                                                         {:args [ps-line] :ast (assoc m :item_name ps-line)})
+                                                                                                     {:args [(-> m :item_name)] :ast m})
                                                                       :else {:args [(format "%s_%s" (-> m :table_alias) (-> m :item_name))] :ast (assoc m :item_name (format "%s_%s" (-> m :table_alias) (-> m :item_name)) :table_alias "")})
           (and (contains? m :item_name) (true? (-> m :const))) {:args [] :ast m}
           :else

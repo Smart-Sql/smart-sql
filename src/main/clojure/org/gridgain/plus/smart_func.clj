@@ -327,7 +327,7 @@
             (let [cache (.cache ignite "my_func")]
                 (if (.containsKey cache (.getMethod_name m))
                     (throw (Exception. "扩展方法已经存在，如果要添加，请将旧方法先删除！"))
-                    (.put cache (.getMethod_name m) (MyFunc. m))))
+                    (.put cache (.getMethod_name m) (MyFunc/fromUserFunc m))))
             (throw (Exception. "参数输入错误！输入的参数需要符合 MyUserFunc 的 json 对象！")))
         (throw (Exception. "只有 root 用户才能添加扩展方法！"))))
 

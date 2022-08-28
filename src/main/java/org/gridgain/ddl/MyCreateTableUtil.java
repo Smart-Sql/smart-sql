@@ -4,7 +4,7 @@ import clojure.lang.*;
 import cn.plus.model.MyCacheEx;
 import cn.plus.model.MyNoSqlCache;
 import cn.plus.model.MySmartDll;
-import cn.smart.service.IMyLogTransaction;
+import cn.smart.service.IMyLogTrans;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -21,7 +21,7 @@ import java.util.UUID;
 public class MyCreateTableUtil implements Serializable {
     private static final long serialVersionUID = 1484107803014288212L;
 
-    private static IMyLogTransaction myLog = MyLogService.getInstance().getMyLog();
+    private static IMyLogTrans myLog = MyLogService.getInstance().getMyLog();
 
     public static CacheConfiguration getCfg()
     {

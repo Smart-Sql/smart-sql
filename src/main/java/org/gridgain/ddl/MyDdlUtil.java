@@ -7,7 +7,7 @@ import cn.plus.model.MyNoSqlCache;
 import cn.plus.model.MySmartCache;
 import cn.plus.model.MySmartDll;
 import cn.plus.model.ddl.MySchemaTable;
-import cn.smart.service.IMyLogTransaction;
+import cn.smart.service.IMyLogTrans;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -29,7 +29,7 @@ import java.util.UUID;
 public class MyDdlUtil implements Serializable {
     private static final long serialVersionUID = 3140120621889292506L;
 
-    private static IMyLogTransaction myLog = MyLogService.getInstance().getMyLog();
+    private static IMyLogTrans myLog = MyLogService.getInstance().getMyLog();
 
     private static void saveCache_0(final Ignite ignite, final PersistentArrayMap map)
     {
