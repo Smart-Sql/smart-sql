@@ -48,6 +48,7 @@
         (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
         (java.math BigDecimal)
         (com.google.gson Gson)
+        (org.gridgain.plus.init SmartInit)
         (org.gridgain.plus.dml MySmartSql)
         )
 

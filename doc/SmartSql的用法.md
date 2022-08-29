@@ -74,16 +74,126 @@ function get_data_set_id(name:string)
     id;
 } 
 
--- 添加用户组
+-- 判断是否存在 DDL, DML, ALL 这三个字符
+function has_user_token_type(user_token_type:string)
+{
+    let flag = false;
+    -- user_token_type 只能取
+    let lst = ["ddl", "dml", "all"];
+    match {
+        lst.contains?(user_token_type.toLowerCase()): flag = true;
+    }
+    flag;
+}
+
+-- 1、创建查询用户组的方法 get_user_group
+-- 首先、查询缓存，如果缓存中存在，则返回
+-- 如果没有查询到，就查询数据库并将查询的结果保存到，缓存中
+function get_user_group(user_token:string)
+{
+    let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token});
+    match {
+        notEmpty?(vs): vs;
+        else let rs = query_sql("select g.id, m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.user_token = ?", [user_token]);
+             let result;
+             for (r in rs)
+             {
+                -- 如果存在就保存在缓存中，并且返回
+                noSqlInsert({"table_name": "user_group_cache", "key": user_token, "value": r});
+                result = r;
+             }
+             result;
+    }
+}
+
+function get_user_token(group_name:string)
+{
+     let group_token;
+     let rs = query_sql("select m.id, m.user_token from my_users_group m where m.group_name = ?", [group_name]);
+     for (r in rs)
+     {
+        group_token = r;
+     }
+     group_token;
+}
+
+-- 2、添加用户组，同时为用户组的 get_user_group
 function add_user_group(group_name:string, user_token:string, group_type:string, data_set_name:string)
 {
-    -- 通过 data set name 获取 data set 的 id
-    let data_set_id = get_data_set_id(data_set_name);
     match {
-        -- data set id 大于 0 时，插入到 my_users_group 表中
-        data_set_id > 0: query_sql("insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (auto_id(?), ?, ?, ?, ?)", ["my_users_group", group_name, data_set_id, user_token, group_type]);
-        else false;
+        has_user_token_type(group_type): match {
+                                            notNullOrEmpty?(get_user_group(user_token)): "已经存在了该 user_token 不能重复插入！";
+                                            else  -- 通过 data set name 获取 data set 的 id
+                                                  let data_set_id = get_data_set_id(data_set_name);
+                                                  match {
+                                                      data_set_id > 0:
+                                                                       -- data set id 大于 0 时，插入到 my_users_group 表中
+                                                                       let user_group_id = auto_id("my_users_group");
+                                                                       let lst = [["insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (?, ?, ?, ?, ?)", [user_group_id, group_name, data_set_id, user_token, group_type]]];
+                                                                       -- 同时对 user_group_id 赋予 get_user_group 的访问权限
+                                                                       lst.add(["insert into call_scenes (group_id, to_group_id, scenes_name) values (?, ?, ?)", [0, user_group_id, "get_user_group"]]);
+                                                                       -- 执行事务
+                                                                       trans(lst);
+                                                                       -- 添加访问权限
+                                                                       -- 用户组只能访问自己数据集里面的 cache
+                                                                       -- 用户组只能访问自己数据集里面的 cache
+                                                                       my_view(group_name, format("select * from my_meta.my_caches where dataset_name = '%s'", data_set_name));
+                                                                       -- 用户只能查看别人赋予他的方法
+                                                                       my_view(group_name, format("select * from my_meta.call_scenes where to_group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的定时任务
+                                                                       my_view(group_name, format("select * from my_meta.my_cron where group_id = '%s'", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 delete 权限视图
+                                                                       my_view(group_name, format("select * from my_meta.my_delete_views where group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 insert 权限视图
+                                                                       my_view(group_name, format("select * from my_meta.my_insert_views where group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 update 权限视图
+                                                                       my_view(group_name, format("select * from my_meta.my_update_views where group_id = %s", user_group_id));
+                                                                       -- 用户组只能访问自己用户组里面的 select 权限视图
+                                                                       my_view(group_name, format("select * from my_meta.my_select_views where group_id = %s", user_group_id));
+                                                                       -- 不能访问用户组，其它用户的 user_token
+                                                                       my_view(group_name, "select id, group_name, data_set_id, group_type from my_meta.my_users_group");
+                                                      else false;
+                                                  }
+                                         }
     }
+}
+
+-- 修改用户组，在这里我们要修改的是 group_type
+function update_user_group(group_name:string, group_type:string)
+{
+    let user_token = get_user_token(group_name);
+    let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token.last()});
+    match {
+       null?(vs): query_sql("update my_users_group set group_type = ? where group_name = ?", [group_type, group_name]);
+       else let new_vs = vs.set(2, group_type);
+            let lst = [["update my_users_group set group_type = ? where group_name = ?", [group_type, group_name]]];
+            lst.add([noSqlUpdateTran({"table_name": "user_group_cache", "key": user_token.last(), "value": new_vs})]);
+            -- 执行事务
+            trans(lst);
+    }
+}
+
+-- 删除用户组
+function delete_user_group(group_name:string)
+{
+    let user_token = get_user_token(group_name);
+
+    rm_view(group_name, 'my_meta.my_caches', 'select');
+    rm_view(group_name, 'my_meta.call_scenes', 'select');
+    rm_view(group_name, 'my_meta.my_cron', 'select');
+    rm_view(group_name, 'my_meta.my_delete_views', 'select');
+    rm_view(group_name, 'my_meta.my_insert_views', 'select');
+    rm_view(group_name, 'my_meta.my_update_views', 'select');
+    rm_view(group_name, 'my_meta.my_select_views', 'select');
+    rm_view(group_name, 'my_meta.my_users_group', 'select');
+
+    let lst = [["delete from my_users_group where group_name = ?", [group_name]]];
+    lst.add(["delete from call_scenes where to_group_id = ?", [user_token.first()]]);
+    lst.add(noSqlDeleteTran({"table_name": "user_group_cache", "key": user_token.last()}));
+    --lst.add([noSqlDeleteTran({"table_name": "user_group_cache", "key": user_token})]);
+    -- 执行事务
+    trans(lst);
+
 }
 ```
 *实际上用户可以自己实现这些方法*
@@ -419,7 +529,7 @@ job_snapshot('get_cron_time');
 
 ### 7、自定义扩展的方法
 在使用 Smart Sql 中，用户自己可以扩展 Smart Sql 中的方法。具体做法分两步：
-1. 用户自己把程序打包成 jar 包，当到安装文件夹下面的 cls 文件下。
+1. 用户自己把程序打包成 jar 包，放到安装文件夹 lib 目录下面的 cls 文件夹下。
 2. 调用 add_func 将 jar 包中的方法，注册到 Smart Sql。
 完成这两步后，注册的方法就会像 Smart Sql 自己的方法一样，可以在标准 SQL 和 Smart Sql 脚本中使用。
 
@@ -612,6 +722,42 @@ remove_func(my_println)；
 1. 在读取数据的时候，尽可能的读取 key-value 形式的 cache，而不是复杂的 SQL
 2. 尽量将所有业务逻辑都用 Smart Sql 来实现，外部程序可能通过 JDBC ，直接调用其方法。
 3. 尽量用函数式架构思想来，设计和实现程序。
+
+### 9、如何用 jdbc 访问 Smart Sql 数据库
+Smart Sql 扩展了 JDBC 的用法。让 jdbc 可以直接调用里面的方法，除此之外，用 JDBC 访问 Smart Sql 和访问其它数据库一样。
+例如：使用 root 用户的 jdbc 链接可以访问 get_user_group 内置方法，输入用户 token 查询结果
+```java
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
+        String url = "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=dafu";
+        Connection conn = DriverManager.getConnection(url);
+        
+        PreparedStatement stmt = conn.prepareStatement("get_user_group(?)");
+        stmt.setObject(1, "wudafu_token");
+
+        ResultSet rs = stmt.executeQuery();
+
+        String line = "";
+        while (rs.next()) {
+            line = rs.getString(1);
+            System.out.println(line);
+        }
+        rs.close();
+        stmt.close();
+        conn.close();
+```
+或者
+```java
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
+        String url = "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=dafu";
+        Connection conn = DriverManager.getConnection(url);
+        
+        try (Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery("get_user_group('wudafu_token')")) {
+                while (rs.next())
+                    System.out.println(rs.getString(1));
+            }
+        }
+```
 
 
 

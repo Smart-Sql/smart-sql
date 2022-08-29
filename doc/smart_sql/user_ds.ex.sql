@@ -6,7 +6,7 @@
 -- 如果没有查询到，就查询数据库并将查询的结果保存到，缓存中
 
 -- 创建一个 Cache
---noSqlCreate({"table_name": "user_group_cache", "is_cache": true, "mode": "replicated", "maxSize": 10000});
+noSqlCreate({"table_name": "user_group_cache", "is_cache": true, "mode": "replicated", "maxSize": 10000});
 
 -- 输入 data set name 获取 data set 的 id
 function get_data_set_id(name:string)
