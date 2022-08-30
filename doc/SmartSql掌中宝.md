@@ -247,19 +247,40 @@ loadCode('Smart Sql 的脚本');
 | put(key, item);             | 将 key -item 保存到 hashtable                                |
 | get(item);                  | 获取序列中的 item索引，或者是获取 hashtable 的 key = item 的数据。 |
 | remove(item);               | 删除序列中的 item数据，或者是删除 hashtable 的 key = item 的数据。 |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
+| pop();                      | 弹出序列最后一个 item                                        |
+| peek(); 和 last(); 一样     | 获取序列最后一个 item                                        |
+| takeLast(num);              | 获取序列最后 num 个 item，后返回剩余的的                     |
+| dropLast(num);              | 删除序列最后 num 个 item，后返回剩余的的                     |
 
+#### 9.2、判断的函数
 
+| 函数                | 说明                                                  |
+| ------------------- | ----------------------------------------------------- |
+| null?(m)            | 判断 m 是否为空                                       |
+| notNull?(m)         | 判断 m 是否不为空                                     |
+| empty?(list)        | 判断 list 序列是否为空                                |
+| notEmpty?(list)     | 判断 list 序列是否不为空                              |
+| nullOrEmpty?(m);    | 判断对象 m 是否为空。m 可以是序列，字符串或其它对象   |
+| notNullOrEmpty?(m); | 判断对象 m 是否不为空。m 可以是序列，字符串或其它对象 |
 
+#### 9.3、字符串和正则式函数
 
+| 函数名      | 说明                                                         |
+| ----------- | ------------------------------------------------------------ |
+| format      | 字符串的 format 方法，用法：format('%s是大帅哥！', '吴大富'); |
+| str_replace | 替换字符串。将 red 替换成 blue：str_replace('The color is red', regular('red'), 'blue'); 输入正则式需要 regular 函数，例如：regular('red')。 |
+| str_split   | 分割字符串。例如：按数字将字符串分割 "abc12de3fg5h"：str_split('abc12de3fg5h', regular('\\d+'));  结果：["abc" "de" "fg" "h"] |
+| str_find    | 找字符串，str_find(regular('\\d+'), 'abc12de3fg5h');         |
+| lower       | 将字符串全部转换为小写：lower('Abc');                        |
+| upper       | 将字符串全部转换为大写：upper('Abc');                        |
 
+#### 9.4、常用方法
+
+| 函数名 | 说明                                                         |
+| ------ | ------------------------------------------------------------ |
+| range  | 根据输入的数字生成相应的序列，这个主要用于，for 循环中需求序列下标的场景 |
+|        | range(int);  例如： range(5);                                |
+|        | range(int, int);  例如： range(5, 10);                       |
 
 
 

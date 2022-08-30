@@ -128,7 +128,7 @@
                 (org.apache.ignite.internal IgnitionEx)
                 (org.gridgain.smart MyVar)
                 (com.google.common.base Strings)
-                (org.tools MyConvertUtil KvSql MyPlusUtil)
+                (org.tools MyConvertUtil MyPlusUtil KvSql MyDbUtil MyGson MyTools MyFunction)
                 (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
                 (cn.plus.model.ddl MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyUpdateViews)
                 (org.gridgain.dml.util MyCacheExUtil)
@@ -139,7 +139,6 @@
                 (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
                 (java.util List ArrayList Date Iterator Hashtable)
                 (java.sql Timestamp)
-                (org.tools MyTools MyFunction)
                 (java.math BigDecimal)
                 )
         (require

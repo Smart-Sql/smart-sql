@@ -32,7 +32,7 @@
         (org.gridgain.smart MyVar)
         (org.gridgain.nosql MyNoSqlUtil)
         (com.google.common.base Strings)
-        (org.tools MyConvertUtil MyPlusUtil KvSql MyDbUtil MyGson MyTools)
+        (org.tools MyConvertUtil MyPlusUtil KvSql MyDbUtil MyGson MyTools MyFunction)
         (org.gridgain.smart.view MyViewAstPK)
         (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
         (cn.plus.model.ddl MyViewsPk MySchemaTable MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyUpdateViews)

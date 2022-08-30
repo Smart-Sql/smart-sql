@@ -345,7 +345,8 @@
     (.subList lst 0 (- (count lst) index)))
 
 (defn list-peek [^ArrayList lst]
-    (.get lst (- (.size lst) 1)))
+    ;(.get lst (- (.size lst) 1))
+    (last lst))
 
 (defn list-pop [^ArrayList lst]
     (.subList lst 0 (- (count lst) 1)))
@@ -549,6 +550,9 @@
 (defn my-show-msg [msg]
     msg)
 
+(defn my-regular [line]
+    (eval (read-string (format "#\"%s\"" line))))
+
 (defn auto_id [^Ignite ignite ^String cache-name]
     (.incrementAndGet (.atomicSequence ignite cache-name 0 true)))
 
@@ -565,7 +569,7 @@
           (is-eq? func-name "put") ".put"
           (is-eq? func-name "get") "my-lexical/map-list-get"
           (is-eq? func-name "remove") "my-lexical/list-remove"
-          (is-eq? func-name "pop") "my-lexical/list-peek"
+          (is-eq? func-name "pop") "my-lexical/list-pop"
           (is-eq? func-name "peek") "my-lexical/list-peek"
           (is-eq? func-name "takeLast") "my-lexical/list-take-last"
           (is-eq? func-name "dropLast") "my-lexical/list-drop-last"
@@ -575,7 +579,12 @@
           (is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
           (is-eq? func-name "nullOrEmpty?") "my-lexical/null-or-empty?"
           (is-eq? func-name "notNullOrEmpty?") "my-lexical/not-null-or-empty?"
+          (is-eq? func-name "str_replace") "str/replace"
+          (is-eq? func-name "str_split") "str/split"
+          (is-eq? func-name "str_find") "re-find"
           (is-eq? func-name "format") "format"
+          (is-eq? func-name "regular") "my-lexical/my-regular"
+          (is-eq? func-name "range") "range"
           (is-eq? func-name "abs") "MyFunction/abs"
           (is-eq? func-name "acos") "my-lexical/my-acos"
           (is-eq? func-name "asin") "my-lexical/my-asin"
