@@ -5,7 +5,7 @@ SmartSql 是一个超融合的新函数式理念，它要实现的功能相当�
 
 #### 1、设置多用户组
 
-![multiUserGroup](/Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/smart_sql_img/multiUserGroup.jpg)
+![multiUserGroup](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/multiUserGroup.jpg)
 
 设置多用户组为 true 后，就可以设置不同的数据集 (data set)。数据集是数据表的集合，也就是说数据集包含了一个或多个表。一个用户组只属于一个 DataSet。另外还有一个 public 数据集为公共数据集。
 *数据集可以理解为一个子系统的数据库*
@@ -201,14 +201,14 @@ function delete_user_group(group_name:string)
 **注意**
 **如果是使用 DBeaver 可以使用一个特有的函数 loadFromNative(本地 sql 文件的地址) 将 sql 文件的里面的代码，全部放到服务器端执行。**
 
-![loadFromNative](/Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/smart_sql_img/loadFromNative.jpg)
+![loadFromNative](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/loadFromNative.jpg)
 user_ds.sql 里面的内容：
 
-![user_ds](/Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/smart_sql_img/user_ds.jpg)
+![user_ds](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/user_ds.jpg)
 
 **执行 loadFromNative 程序后，可以在 MY_META 数据集的 MY_SCENES 表中查看是否已经运行成功了。例如：上面代码的运行结果：
 **
-![smart_sql_my_scenes](/Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/smart_sql_img/smart_sql_my_scenes.jpg)
+![smart_sql_my_scenes](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/smart_sql_my_scenes.jpg)
 
 例如：我们添加三个数据集，并且给它们添加用户组，这里用 add_user_group 方法来添加用户组。add_user_group 需要输入四个参数：group_name: 用户组的名称，user_token：用户组连接数据库的 token ，
 ```sql
@@ -271,7 +271,7 @@ rm_view('wudafu_group', 'public.Categories', 'select');
 
 #### 3、设置 Log 保存的程序
 
-![myLogCls](/Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/smart_sql_img/myLogCls.jpg)
+![myLogCls](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/myLogCls.jpg)
 
 **用于两地三中心，这种高可用场景。这个程序需要用户自己来实现。因为不同的用户对这个问题有不同的需求。**
 
@@ -315,7 +315,7 @@ tableColumn := columnName columnType [DEFAULT(defaultValue)] [PRIMARY KEY] [auto
    例如：
    
 
-![create_table_template](/Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/smart_sql_img/create_table_template.jpg)
+![create_table_template](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/create_table_template.jpg)
 
 
 | 值   | 说明                                         |

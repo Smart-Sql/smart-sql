@@ -108,10 +108,10 @@
                     (if (.hasNext it)
                         (if-let [row (.next it)]
                             (do
-                                (println m-obj)
-                                (println pk_lst)
-                                (println (MyLogCache. table_name schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE)))
-                                (println "**********************")
+                                ;(println m-obj)
+                                ;(println pk_lst)
+                                ;(println (MyLogCache. table_name schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE)))
+                                ;(println "**********************")
                                 (recur it (conj lst-rs (MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE)))))
                             ;(recur it (conj lst-rs (MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-delete-key row pk_lst) nil (SqlType/DELETE))))
                             )

@@ -372,7 +372,7 @@
 (defn func-link-clj [ignite group_id m]
     (let [{lst-ps :args my-ast :ast} (func-link-to-ps-clj m)]
         (let [func-body (func-link-to-clj ignite group_id (-> my-ast :func-link) nil)]
-            [(format "(fn [ignite group_id %s]\n     %s)" (str/join " " lst-ps) func-body) lst-ps])))
+            [(format "(fn [ignite group_id %s]\n     (do %s))" (str/join " " lst-ps) func-body) lst-ps])))
 
 ;(defn map-obj-to-clj [ignite group_id m my-context]
 ;    (loop [[f & r] m lst-rs []]
