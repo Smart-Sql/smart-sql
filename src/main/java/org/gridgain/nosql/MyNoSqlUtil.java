@@ -114,14 +114,14 @@ public class MyNoSqlUtil {
 
         if (myLog != null)
         {
+            ignite.getOrCreateCache(configuration);
+
             IgniteTransactions transactions = ignite.transactions();
             Transaction tx = null;
             String transSession = UUID.randomUUID().toString();
             try {
                 tx = transactions.txStart();
                 myLog.createSession(transSession);
-
-                ignite.getOrCreateCache(configuration);
 
                 MySmartCache mySmartCache = new MySmartCache();
                 mySmartCache.setCacheDllType(CacheDllType.CREATE);
@@ -136,9 +136,9 @@ public class MyNoSqlUtil {
                 tx.commit();
             } catch (Exception ex) {
                 if (tx != null) {
-                    ignite.destroyCache(cacheName);
                     myLog.rollback(transSession);
                     tx.rollback();
+                    ignite.destroyCache(cacheName);
                 }
             } finally {
                 if (tx != null) {
@@ -167,14 +167,14 @@ public class MyNoSqlUtil {
 
         if (myLog != null)
         {
+            ignite.getOrCreateCache(configuration);
+
             IgniteTransactions transactions = ignite.transactions();
             Transaction tx = null;
             String transSession = UUID.randomUUID().toString();
             try {
                 tx = transactions.txStart();
                 myLog.createSession(transSession);
-
-                ignite.getOrCreateCache(configuration);
 
                 MySmartCache mySmartCache = new MySmartCache();
                 mySmartCache.setCacheDllType(CacheDllType.CREATE);
@@ -192,9 +192,9 @@ public class MyNoSqlUtil {
                 tx.commit();
             } catch (Exception ex) {
                 if (tx != null) {
-                    ignite.destroyCache(cacheName);
                     myLog.rollback(transSession);
                     tx.rollback();
+                    ignite.destroyCache(cacheName);
                 }
             } finally {
                 if (tx != null) {
