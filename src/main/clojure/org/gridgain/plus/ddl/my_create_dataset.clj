@@ -30,18 +30,20 @@
 (defn create_data_set [^Ignite ignite group_id ^String sql]
     (if (= (first group_id) 0)
         (if-let [data_set_name (get-dataset-name sql)]
-            (let [ds-cache (.cache ignite "my_dataset")]
-                (let [data_set_name_u (str/lower-case data_set_name)]
-                    (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_meta.my_dataset as m where m.dataset_name = ?") (to-array [data_set_name_u])))))
-                        (if (some? (.getOrCreateCache ignite (doto (CacheConfiguration. (str (str/lower-case data_set_name) "_meta"))
-                                                                 (.setSqlSchema data_set_name_u))))
-                            (let [id (.incrementAndGet (.atomicSequence ignite "my_dataset" 0 true))]
-                                (if (nil? (.put ds-cache id (MyDataSet. id data_set_name_u)))
-                                    (do
-                                        (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u)
-                                        (MyDdlUtil/runDdlDs ignite sql)))))
-                        (throw (Exception. "该数据集已经存在了！"))))
-                )
+            (if-not (my-lexical/is-eq? data_set_name "my_meta")
+                (let [ds-cache (.cache ignite "my_dataset")]
+                    (let [data_set_name_u (str/lower-case data_set_name)]
+                        (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_meta.my_dataset as m where m.dataset_name = ?") (to-array [data_set_name_u])))))
+                            (if (some? (.getOrCreateCache ignite (doto (CacheConfiguration. (str (str/lower-case data_set_name) "_meta"))
+                                                                     (.setSqlSchema data_set_name_u))))
+                                (let [id (.incrementAndGet (.atomicSequence ignite "my_dataset" 0 true))]
+                                    (if (nil? (.put ds-cache id (MyDataSet. id data_set_name_u)))
+                                        (do
+                                            (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u)
+                                            (MyDdlUtil/runDdlDs ignite sql)))))
+                            (throw (Exception. "该数据集已经存在了！"))))
+                    )
+                (throw (Exception. "该数据集已经存在了！")))
             (throw (Exception. "创建数据集语句的错误！")))
         (throw (Exception. "没有执行语句的权限！"))))
 

@@ -92,6 +92,12 @@
                   (my-lexical/is-eq? func-name "remove_func") (apply (eval (read-string "smart-func/remove_func")) (concat [ignite group_id] ps))
                   (my-lexical/is-eq? func-name "recovery_to_cluster") (apply (eval (read-string "smart-func/recovery-to-cluster")) (concat [ignite] ps))
 
+                  ; 机器学习
+                  (my-lexical/is-eq? func-name "create_train_matrix") (apply (eval (read-string "my-ml-train-data/create-train-matrix")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "has_train_matrix") (apply (eval (read-string "my-ml-train-data/has-train-matrix")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "drop_train_matrix") (apply (eval (read-string "my-ml-train-data/drop-train-matrix")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "train-matrix") (apply (eval (read-string "my-ml-train-data/train-matrix")) (concat [ignite group_id] ps))
+
                   (my-lexical/is-func? ignite func-name) (if-not (empty? ps)
                                                              (apply (eval (read-string "my-smart-scenes/my-invoke-func")) (concat [ignite (format "%s" func-name)] [ps]))
                                                              (apply (eval (read-string "my-smart-scenes/my-invoke-func-no-ps")) [ignite (format "%s" func-name)]))

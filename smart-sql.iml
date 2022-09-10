@@ -17,18 +17,42 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Leiningen: clojure-complete:0.2.5" level="project" />
     <orderEntry type="library" name="Leiningen: cn.mysuper/my-super-service:1.0-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/all:1.1.2" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/core:1.1.2" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/native_ref-java:1.1" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/native_system-java:1.1" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_ref-linux-armhf:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_ref-linux-i686:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_ref-linux-x86_64:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_ref-osx-x86_64:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_ref-win-i686:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_ref-win-x86_64:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_system-linux-armhf:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_system-linux-i686:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_system-linux-x86_64:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_system-osx-x86_64:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_system-win-i686:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil.netlib/netlib-native_system-win-x86_64:1.1:natives" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.fommil/jniloader:1.1" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.code.findbugs/jsr305:3.0.2" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.code.gson/gson:2.8.2" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.errorprone/error_prone_annotations:2.1.3" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.guava/guava:25.1-jre" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.j2objc/j2objc-annotations:1.1" level="project" />
+    <orderEntry type="library" name="Leiningen: com.zaxxer/SparseBitSet:1.0" level="project" />
     <orderEntry type="library" name="Leiningen: commons-codec:1.15" level="project" />
     <orderEntry type="library" name="Leiningen: commons-logging:1.1.1" level="project" />
     <orderEntry type="library" name="Leiningen: it.sauronsoftware.cron4j/cron4j:2.2.5" level="project" />
+    <orderEntry type="library" name="Leiningen: it.unimi.dsi/fastutil:7.0.12" level="project" />
     <orderEntry type="library" name="Leiningen: javax.cache/cache-api:1.0.0" level="project" />
     <orderEntry type="library" name="Leiningen: javax.servlet/javax.servlet-api:3.1.0" level="project" />
     <orderEntry type="library" name="Leiningen: junit:4.11" level="project" />
+    <orderEntry type="library" name="Leiningen: net.sourceforge.f2j/arpack_combined_all:0.1" level="project" />
     <orderEntry type="library" name="Leiningen: nrepl:0.6.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.commons/commons-math3:3.6.1" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.commons/commons-rng-client-api:1.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.commons/commons-rng-core:1.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.commons/commons-rng-simple:1.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.httpcomponents/httpclient:4.5.6" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.httpcomponents/httpcore:4.4.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.lucene/lucene-analyzers-common:8.11.1" level="project" />
@@ -52,6 +76,7 @@
     <orderEntry type="library" name="Leiningen: org.gridgain/ignite-core:8.8.20" level="project" />
     <orderEntry type="library" name="Leiningen: org.gridgain/ignite-h2:8.8.20" level="project" />
     <orderEntry type="library" name="Leiningen: org.gridgain/ignite-indexing:8.8.20" level="project" />
+    <orderEntry type="library" name="Leiningen: org.gridgain/ignite-ml:8.8.20" level="project" />
     <orderEntry type="library" name="Leiningen: org.gridgain/ignite-schedule:8.8.20" level="project" />
     <orderEntry type="library" name="Leiningen: org.gridgain/ignite-shmem:8.7.3" level="project" />
     <orderEntry type="library" name="Leiningen: org.gridgain/ignite-spring:8.8.20" level="project" />

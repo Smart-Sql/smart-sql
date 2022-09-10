@@ -171,6 +171,7 @@
             '[org.gridgain.plus.tools.my-util :as my-util]
             '[org.gridgain.plus.user.my-user :as my-user]
             '[org.gridgain.plus.smart-func :as smart-func]
+            '[org.gridgain.plus.ml.my-ml-train-data :as my-ml-train-data]
             '[clojure.core.reducers :as r]
             '[clojure.string :as str]
             '[clojure.walk :as w]

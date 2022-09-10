@@ -4,9 +4,7 @@
 ; 2、初始化元表
 (def my-grid-tables "
     /**
-    1、用户组中添加 数据集 id
-    group_type: DDL, DML, DDL和DML
-    DROP TABLE IF EXISTS my_users_group;
+    1、
     */
     CREATE TABLE IF NOT EXISTS my_caches (
                     dataset_name VARCHAR,
@@ -20,6 +18,18 @@
                     maxSize int,
                     PRIMARY KEY (dataset_name, table_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_caches,KEY_TYPE=cn.plus.model.ddl.MyCachePK,VALUE_TYPE=cn.plus.model.ddl.MyCaches,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+
+    /**
+        记录机器学习的训练数据集的名字
+    */
+        CREATE TABLE IF NOT EXISTS ml_train_data (
+                            dataset_name VARCHAR,
+                            -- cache 表名
+                            table_name VARCHAR(40),
+                            -- 描述
+                            describe VARCHAR,
+                            PRIMARY KEY (dataset_name, table_name)
+                            ) WITH \"template=MyMeta_template,cache_name=ml_train_data,KEY_TYPE=cn.plus.model.ddl.MyCachePK,VALUE_TYPE=cn.plus.model.ddl.MyMlCaches,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
         /**
          1、用户组中添加 数据集 id
@@ -289,7 +299,9 @@
 ")
 
 (def my-un-grid-tables
-    ["DROP TABLE IF EXISTS my_users_group"
+    ["DROP TABLE IF EXISTS ml_train_data"
+     "DROP TABLE IF EXISTS my_caches"
+     "DROP TABLE IF EXISTS my_users_group"
      "DROP TABLE IF EXISTS my_dataset"
      "DROP TABLE IF EXISTS my_meta_tables"
      "DROP TABLE IF EXISTS table_item"
@@ -316,7 +328,9 @@
      ;"DROP INDEX IF EXISTS my_log_idx"
      ])
 
-(def my-grid-tables-set #{"my_users_group"
+(def my-grid-tables-set #{"ml_train_data"
+                          "my_caches"
+                          "my_users_group"
                           "my_dataset"
                           "my_meta_tables"
                           "table_item"

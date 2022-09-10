@@ -5,6 +5,7 @@
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.ddl.my-create-table :as my-create-table]
+        [org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
@@ -105,7 +106,9 @@
 (defn run_ddl_real_time [^Ignite ignite group_id ^String sql_line ^String dataset_name]
     (if-let [m (get_drop_table_obj sql_line)]
         (cond (= (first group_id) 0) (let [schema_name (str/lower-case (-> m :schema_name)) table_name (str/lower-case (-> m :table_name))]
-                                         (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql_line)) :lst_cachex nil :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))} sql_line))
+                                         (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
+                                             (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql_line)) :lst_cachex nil :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))} sql_line)
+                                             (throw (Exception. "不能删除 MY_META 中的表语句的权限！"))))
               (not (my-lexical/is-eq? (-> m :schema_name) "my_meta")) (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (drop-table-obj ignite dataset_name sql_line)]
                                                                           (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql} sql_line))
               :else

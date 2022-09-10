@@ -4,6 +4,7 @@
         [org.gridgain.plus.dml.my-select-plus :as my-select]
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
+        [org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
         [org.gridgain.plus.ddl.my-create-table :as my-create-table]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
@@ -150,9 +151,12 @@
                          (.toString sb)))))
             ]
         (let [m (get-index-obj data_set_name sql_line)]
-            {:sql (format "%s %s_%s ON %s.%s (%s)" (-> m :create_index :create_index_line) (-> m :schema_name) (-> m :index_name) (-> m :schema_name) (-> m :table_name) (get-index-items-line (-> m :index_items_obj)))
-             :un_sql (format  "DROP INDEX IF EXISTS %s_%s" (-> m :schema_name) (-> m :index_name))
-             :lst_cachex (get-cachex ignite m (ArrayList.))})))
+            (if-not (and (my-lexical/is-eq? (-> m :schema_name) "my_meta") (contains? plus-init-sql/my-grid-tables-set (-> m :table_name)))
+                {:sql (format "%s %s_%s ON %s.%s (%s)" (-> m :create_index :create_index_line) (-> m :schema_name) (-> m :index_name) (-> m :schema_name) (-> m :table_name) (get-index-items-line (-> m :index_items_obj)))
+                 :un_sql (format  "DROP INDEX IF EXISTS %s_%s" (-> m :schema_name) (-> m :index_name))
+                 :lst_cachex (get-cachex ignite m (ArrayList.))}
+                (throw (Exception. "MY_META 数据集中的表不能被修动！")))
+            )))
 
 ; 实时数据集
 ;(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]

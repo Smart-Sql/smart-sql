@@ -193,6 +193,12 @@
                   (my-lexical/is-eq? func-name "remove_func") (format "(smart-func/remove_func ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "recovery_to_cluster") (format "(smart-func/recovery-to-cluster ignite %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
 
+                  ; 机器学习
+                  (my-lexical/is-eq? func-name "create_train_matrix") (format "(my-ml-train-data/create-train-matrix ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  (my-lexical/is-eq? func-name "has_train_matrix") (format "(my-ml-train-data/has-train-matrix ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  (my-lexical/is-eq? func-name "drop_train_matrix") (format "(my-ml-train-data/drop-train-matrix ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  (my-lexical/is-eq? func-name "train-matrix") (format "(my-ml-train-data/train-matrix ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+
                   (is-func? ignite func-name) (if-not (empty? lst_ps)
                                                   (format "(my-smart-scenes/my-invoke-func ignite \"%s\" [%s])" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
                                                   (format "(my-smart-scenes/my-invoke-func-no-ps ignite \"%s\")" func-name))

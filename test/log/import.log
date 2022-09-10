@@ -24,6 +24,7 @@
     '[org.gridgain.plus.smart-func :as smart-func]
     '[org.gridgain.plus.tools.my-user-group :as my-user-group]
     '[org.gridgain.plus.smart-jdbc-func :as smart-jdbc-func]
+    '[org.gridgain.plus.ml.my-ml-train-data :as my-ml-train-data]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
     '[clojure.walk :as w])

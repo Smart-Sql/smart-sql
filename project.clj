@@ -13,6 +13,8 @@
                  [org.gridgain/ignite-spring "8.8.20"]
                  [org.gridgain/ignite-h2 "8.8.20"]
                  [org.gridgain/ignite-schedule "8.8.20"]
+                 [org.gridgain/ignite-ml "8.8.20"]
+                 [org.apache.commons/commons-math3 "3.6.1"]
                  [cn.mysuper/my-super-service "1.0-SNAPSHOT"]
                  [org.springframework/spring-core "4.3.25.RELEASE"]
                  [org.springframework/spring-aop "4.3.25.RELEASE"]

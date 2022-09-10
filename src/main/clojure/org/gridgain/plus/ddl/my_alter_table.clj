@@ -4,6 +4,7 @@
         [org.gridgain.plus.dml.my-select-plus :as my-select]
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
+        [org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
         [org.gridgain.plus.ddl.my-create-table :as my-create-table]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
@@ -139,12 +140,14 @@
 (defn alter-table-obj [^Ignite ignite ^String data_set_name ^String sql_line]
     (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj data_set_name sql_line)]
         (let [table_name (str/lower-case my-table_name)]
-            (if-let [table_id (get-table-id ignite schema_name table_name)]
-                (cond (and (true? is_drop) (false? is_add)) {:sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :lst_cachex (get-drop-table-item ignite table_id lst_table_item) :nosql (repace-ast ignite schema_name table_name lst_table_item true)}
-                      (and (false? is_drop) (true? is_add)) {:sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :lst_cachex (get-add-table-item ignite table_id lst_table_item) :nosql (repace-ast ignite schema_name table_name lst_table_item false)}
-                      :else
-                      (throw (Exception. "修改表的语句有错误！")))
-                (throw (Exception. "要修改的表不存在！"))))
+            (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
+                (if-let [table_id (get-table-id ignite schema_name table_name)]
+                    (cond (and (true? is_drop) (false? is_add)) {:sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :lst_cachex (get-drop-table-item ignite table_id lst_table_item) :nosql (repace-ast ignite schema_name table_name lst_table_item true)}
+                          (and (false? is_drop) (true? is_add)) {:sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :lst_cachex (get-add-table-item ignite table_id lst_table_item) :nosql (repace-ast ignite schema_name table_name lst_table_item false)}
+                          :else
+                          (throw (Exception. "修改表的语句有错误！")))
+                    (throw (Exception. "要修改的表不存在！")))
+                (throw (Exception. "MY_META 数据集中的表不能被修改！"))))
         ))
 
 ; 执行实时数据集中的 ddl
@@ -152,9 +155,6 @@
     (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (alter-table-obj ignite (second group_id) sql_line)]
         (if-not (nil? lst_cachex)
             (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql} sql_line)
-            ;(if (true? (.isMultiUserGroup (.configuration ignite)))
-            ;    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql})
-            ;    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql nil :lst_cachex lst_cachex :nosql nosql}))
             (throw (Exception. "修改表的语句有错误！")))
         )
     )

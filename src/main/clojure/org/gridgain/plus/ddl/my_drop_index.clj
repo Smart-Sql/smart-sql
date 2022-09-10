@@ -5,6 +5,7 @@
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.ddl.my-create-table :as my-create-table]
+        [org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
@@ -76,8 +77,11 @@
         (let [{index_name :index_name} (get_drop_index_obj sql_line)]
             (if-let [{schema_name :schema_name lst_cachex :lst_cachex} (get-cachex ignite index_name (ArrayList.))]
                 (if-not (nil? lst_cachex)
-                    (cond (and (= schema_name "") (not (= data_set_name ""))) {:sql sql_line :lst_cachex lst_cachex}
-                          (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:sql sql_line :lst_cachex lst_cachex}
+                    (cond (and (= schema_name "") (not (= data_set_name "")) (not (my-lexical/is-eq? data_set_name "MY_META"))) {:sql sql_line :lst_cachex lst_cachex}
+                          (and (= schema_name "") (my-lexical/is-eq? data_set_name "MY_META")) (throw (Exception. "没有删除索引的权限！"))
+                          (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name) (not (my-lexical/is-eq? data_set_name "MY_META"))) {:sql sql_line :lst_cachex lst_cachex}
+                          (and (not (= schema_name "")) (not (my-lexical/is-eq? schema_name "MY_META")) (my-lexical/is-eq? data_set_name "MY_META")) {:sql sql_line :lst_cachex lst_cachex}
+                          ;(or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:sql sql_line :lst_cachex lst_cachex}
                           :else
                           (throw (Exception. "没有删除索引的权限！"))
                           )
