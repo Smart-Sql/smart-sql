@@ -5,6 +5,7 @@
         [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+        [org.gridgain.plus.ml.my-ml-train-data :as my-ml-train-data]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -509,15 +510,16 @@
 (defn smart-lst-to-clj [^Ignite ignite group_id ^clojure.lang.LazySeq lst]
     (let [smart-lst (re-fn lst)]
         (let [ast (first (my-smart-sql/my-get-ast-lst smart-lst))]
-            ;(println lst)
-            ;(println "*******************")
-            ;(println ast)
-            ;(println "*******************")
+            (println lst)
+            (println "*******************")
+            (println ast)
+            (println group_id)
+            (println "*******************")
             (if (has-func ignite group_id ast)
                 (if-let [my-smart-code (my-ast-to-clj ignite group_id ast nil)]
                     (do
-                        ;(println "my-clj code:")
-                        ;(println (format "(fn [ignite group_id] (do %s))" my-smart-code))
+                        (println "my-clj code:")
+                        (println (format "(fn [ignite group_id] (do %s))" my-smart-code))
                         (apply (eval (read-string (format "(fn [ignite group_id] (do %s))" my-smart-code))) [ignite group_id]))
                     ))
             )

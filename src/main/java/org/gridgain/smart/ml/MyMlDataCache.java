@@ -1,5 +1,6 @@
 package org.gridgain.smart.ml;
 
+import clojure.lang.PersistentVector;
 import cn.plus.model.ddl.MyCachePK;
 import cn.plus.model.ddl.MyMlCaches;
 import cn.plus.model.ddl.MyTransData;
@@ -151,9 +152,13 @@ public class MyMlDataCache {
 
         IgniteCache cache = ignite.cache(cacheName);
 
+        System.out.println(cacheName);
+        System.out.println(mlCaches);
+        System.out.println(hashtable.toString());
+
         if (cache == null) {
             CacheConfiguration<Long, Vector> trainingSetCfg = new CacheConfiguration<>();
-            trainingSetCfg.setName(getCacheName(mlCaches));
+            trainingSetCfg.setName(cacheName);
             trainingSetCfg.setCacheMode(CacheMode.PARTITIONED);
             trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
@@ -162,6 +167,24 @@ public class MyMlDataCache {
             return ignite.getOrCreateCache(trainingSetCfg);
         }
         return cache;
+    }
+
+    public static Double[] vsToDouble(final PersistentVector vs)
+    {
+        Double[] rs = new Double[vs.count()];
+        for (int i = 0; i < vs.count(); i++)
+        {
+            rs[i] = MyConvertUtil.ConvertToDouble(vs.nth(i));
+        }
+        return rs;
+    }
+
+    public static void loadTrainMatrix(final Ignite ignite, final String data_set_name, final String table_name, final PersistentVector vs)
+    {
+        String cacheName = "sm_ml_" + data_set_name + "_" + table_name;
+        Long key = Ignition.ignite().atomicSequence(cacheName, 0, true).incrementAndGet();
+        Vector vts = VectorUtils.of(vsToDouble(vs));
+        ignite.cache(cacheName).put(key, vts);
     }
 }
 

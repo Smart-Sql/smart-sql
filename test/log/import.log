@@ -51,6 +51,7 @@
         (com.google.gson Gson)
         (org.gridgain.plus.init SmartInit)
         (org.gridgain.plus.dml MySmartSql)
+        (org.gridgain.smart.ml MyMlDataCache)
         )
 
 (def ignite (IgnitionEx/start "/Users/chenfei/Documents/Java/my-grid-plus/resources/default-config.xml"))

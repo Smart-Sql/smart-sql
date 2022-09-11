@@ -7,7 +7,9 @@
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
              (cn.plus.model.db MyScenesCache MyScenesCachePk ScenesType MyScenesParams MyScenesParamsPk)
-             )
+             (com.google.common.base Strings)
+             (org.gridgain.smart.ml MyMlDataCache)
+             (java.util Hashtable))
     (:gen-class
         :implements [org.gridgain.superservice.ILoadSmartSql]
         ; 生成 class 的类名
@@ -184,9 +186,25 @@
                       )
                 (recur r)))))
 
+(defn csv-update-to-db [^Ignite ignite group_id table_name vs]
+    (MyMlDataCache/loadTrainMatrix ignite (second group_id) table_name vs))
+
+(defn load-csv [^Ignite ignite group_id ^Hashtable ht]
+    (if (some? ht)
+        (let [table_name (get ht "table_name") code (get ht "csv_code")]
+            (if-not (Strings/isNullOrEmpty code)
+                (let [lst (str/split code #"\s*\n\s*")]
+                    (loop [[f & r] lst]
+                        (if (some? f)
+                            (let [vs (str/split f #"\s*,\s*")]
+                                (csv-update-to-db ignite group_id table_name vs)
+                                (recur r)))))))))
 
 (defn -loadSmartSql [this ^Ignite ignite ^Object group_id ^String code]
     (load-smart-sql ignite group_id code))
+
+(defn -loadCsv [this ^Ignite ignite ^Object group_id ^Hashtable ht]
+    (load-csv ignite group_id ht))
 
 
 

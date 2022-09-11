@@ -15,7 +15,7 @@
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
              (org.gridgain.smart.ml MyMlDataCache)
-             (cn.plus.model.ddl MyMlCaches MyTransData)
+             (cn.plus.model.ddl MyCachePK MyMlCaches MyTransData)
              )
     (:gen-class
         ; 生成 class 的类名
@@ -28,12 +28,18 @@
         ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
         ))
 
+(defn hastable-to-cache [^Hashtable ht]
+    (doto (MyMlCaches.) (.setDataset_name (get ht "dataset_name"))))
+
 ; 定一个分布式的矩阵
 (defn create-train-matrix [^Ignite ignite group_id ^Hashtable ht]
     (let [ds-name (second group_id)]
         (cond (and (my-lexical/is-eq? ds-name "MY_META") (not (contains? ht "dataset_name"))) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
               (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (my-lexical/is-eq? (get ht "dataset_name") "MY_META")) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
-              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (not (my-lexical/is-eq? (get ht "dataset_name") "MY_META"))) (MyMlDataCache/getMlDataCache ignite ht)
+              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (not (my-lexical/is-eq? (get ht "dataset_name") "MY_META"))) (do
+                                                                                                                                                        (println ht)
+                                                                                                                                                        (println (MyMlDataCache/hashtableToCache ht))
+                                                                                                                                                        (MyMlDataCache/getMlDataCache ignite ht))
               (not (contains? ht "dataset_name")) (MyMlDataCache/getMlDataCache ignite (doto ht (.put "dataset_name" (str/lower-case ds-name))))
               (and (contains? ht "dataset_name") (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name))) (MyMlDataCache/getMlDataCache ignite ht)
               (and (contains? ht "dataset_name") (not (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！"))

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: com.github.fommil.netlib/all:1.1.2">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/github/fommil/netlib/all/1.1.2/all-1.1.2.pom!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
