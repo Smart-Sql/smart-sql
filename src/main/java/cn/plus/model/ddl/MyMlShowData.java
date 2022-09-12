@@ -4,16 +4,12 @@ import com.google.common.base.Strings;
 
 import java.io.Serializable;
 
-/**
- * 训练数据
- * */
-public class MyTransData implements Serializable {
-    private static final long serialVersionUID = 3269229930391174057L;
+public class MyMlShowData implements Serializable {
+    private static final long serialVersionUID = 8327167221293861418L;
 
     private String dataset_name;
     private String table_name;
-    private Object value;
-    private Double label;
+    private Integer item_size;
 
     public String getDataset_name() {
         return dataset_name;
@@ -35,71 +31,20 @@ public class MyTransData implements Serializable {
         }
     }
 
-    public Object getValue() {
-        return value;
+    public Integer getItem_size() {
+        return item_size;
     }
 
-    public void setValue(Object value) {
-        this.value = value;
-    }
-
-    public Double getLabel() {
-        return label;
-    }
-
-    public void setLabel(Double label) {
-        this.label = label;
+    public void setItem_size(Integer item_size) {
+        this.item_size = item_size;
     }
 
     @Override
     public String toString() {
-        return "MyTransData{" +
+        return "MyMlShowData{" +
                 "dataset_name='" + dataset_name + '\'' +
                 ", table_name='" + table_name + '\'' +
-                ", value=" + value +
-                ", label=" + label +
+                ", item_size=" + item_size +
                 '}';
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

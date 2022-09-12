@@ -8,7 +8,7 @@
     (:import (org.apache.ignite Ignite IgniteCache)
              (cn.plus.model.db MyScenesCache MyScenesCachePk ScenesType MyScenesParams MyScenesParamsPk)
              (com.google.common.base Strings)
-             (org.gridgain.smart.ml MyMlDataCache)
+             (org.gridgain.smart.ml MyTrianDataUtil)
              (java.util Hashtable))
     (:gen-class
         :implements [org.gridgain.superservice.ILoadSmartSql]
@@ -187,7 +187,7 @@
                 (recur r)))))
 
 (defn csv-update-to-db [^Ignite ignite group_id table_name vs]
-    (MyMlDataCache/loadTrainMatrix ignite (second group_id) table_name vs))
+    (MyTrianDataUtil/loadTrainMatrix ignite (second group_id) table_name vs))
 
 (defn load-csv [^Ignite ignite group_id ^Hashtable ht]
     (if (some? ht)
