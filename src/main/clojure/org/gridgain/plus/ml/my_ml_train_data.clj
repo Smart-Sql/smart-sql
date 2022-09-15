@@ -19,7 +19,7 @@
              (java.util List ArrayList Hashtable Date Iterator)
              (org.apache.ignite.ml.math.primitives.vector VectorUtils)
              (org.gridgain.smart.ml MyTrianDataUtil)
-             (cn.plus.model.ddl MyCachePK MyMlCaches MyTransData MyMlShowData)
+             (cn.plus.model.ddl MyCachePK MyMlCaches MyTransData MyMlShowData MyTransDataLoad)
              (org.tools MyConvertUtil))
     (:gen-class
         ; 生成 class 的类名
@@ -67,7 +67,7 @@
             (.setValue (get-value ht))
             (.setLabel (get-label ht)))))
 
-(defn hastable-to-show-data [^Hashtable ht]
+(defn hastable-to-data-load [^Hashtable ht]
     (letfn [(get-ds-name [^Hashtable ht]
                 (if (contains? ht "dataset_name")
                     (get ht "dataset_name")))
@@ -75,17 +75,19 @@
                 (if (contains? ht "table_name")
                     (get ht "table_name")
                     (throw (Exception. "必须有 table_name 的属性！"))))
-            (get-item-size [^Hashtable ht]
-                (if (contains? ht "item_size")
-                    (MyConvertUtil/ConvertToInt (get ht "item_size"))))]
-        (doto (MyMlShowData.) (.setDataset_name (get-ds-name ht))
+            (get-value [^Hashtable ht]
+                (if (contains? ht "value")
+                    (get ht "value")))]
+        (doto (MyTransDataLoad.) (.setDataset_name (get-ds-name ht))
                             (.setTable_name (get-table-name ht))
-                            (.setItem_size (get-item-size ht)))))
+                            (.setValue (get-value ht)))))
+(defn to-double [m]
+           (MyConvertUtil/ConvertToDouble m))
 
-(defn my-to-double [item lst]
-    (letfn [(to-double [m]
-                (MyConvertUtil/ConvertToDouble m))]
-        (double-array (cons (to-double item) (map to-double lst)))))
+(defn my-to-double
+    ([lst] (double-array (map to-double lst)))
+    ([item lst]
+     (double-array (cons (to-double item) (map to-double lst)))))
 
 (defn ml-train-matrix [^Ignite ignite ^Hashtable ht]
     (if-let [m (hashtable-to-trans-data ht)]
@@ -93,6 +95,14 @@
             (let [key (.incrementAndGet (.atomicSequence ignite cacheName 0 true))]
                 (let [vs (VectorUtils/of (my-to-double (.getLabel m) (.getValue m)))]
                     (.put (.cache ignite cacheName) key vs))))))
+
+(defn ml-train-matrix-single [^Ignite ignite ^Hashtable ht]
+    (if-let [m (hastable-to-data-load ht)]
+        (let [cacheName (MyTrianDataUtil/getCacheName m)]
+            (let [key (.incrementAndGet (.atomicSequence ignite cacheName 0 true))]
+                (if-not (nil? (.getValue m))
+                    (let [vs (VectorUtils/of (my-to-double (.getValue m)))]
+                        (.put (.cache ignite cacheName) key vs)))))))
 
 (defn ml-create-train-matrix [^Ignite ignite ^MyMlCaches mlCaches]
     (let [cacheName (MyTrianDataUtil/getCacheName mlCaches)]
@@ -148,6 +158,19 @@
             (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (not (my-lexical/is-eq? (get ht "dataset_name") "MY_META"))) (ml-train-matrix ignite ht)
             (not (contains? ht "dataset_name")) (ml-train-matrix ignite (hastable-to-cache (doto ht (.put "dataset_name" (str/lower-case ds-name)))))
             (and (contains? ht "dataset_name") (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name))) (ml-train-matrix ignite ht)
+            (and (contains? ht "dataset_name") (not (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面添加机器学习的训练数据！"))
+            :else
+            (throw (Exception. "不存在机器学习的训练数据！"))
+            )
+        ))
+
+; 为分布式矩阵添加数据 -- 在 load csv 中使用
+(defn train-matrix-single [^Ignite ignite group_id ^Hashtable ht]
+    (let [ds-name (second group_id)]
+        (cond
+            (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (not (my-lexical/is-eq? (get ht "dataset_name") "MY_META"))) (ml-train-matrix-single ignite ht)
+            (not (contains? ht "dataset_name")) (ml-train-matrix-single ignite (hastable-to-cache (doto ht (.put "dataset_name" (str/lower-case ds-name)))))
+            (and (contains? ht "dataset_name") (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name))) (ml-train-matrix-single ignite ht)
             (and (contains? ht "dataset_name") (not (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面添加机器学习的训练数据！"))
             :else
             (throw (Exception. "不存在机器学习的训练数据！"))

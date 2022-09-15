@@ -32,7 +32,7 @@
              (org.apache.ignite.cache CacheMode CacheAtomicityMode)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
-             (java.util ArrayList List Date Iterator)
+             (java.util ArrayList List Hashtable Date Iterator)
              (java.sql Timestamp)
              (java.math BigDecimal)
              )
@@ -130,6 +130,30 @@
 ;                                                                                                                                 (eval (read-string sql)))
 ;          ))
 
+
+(defn ht-to-line [^Hashtable ht]
+    (format "'%s', %s" (str/join ["sm_ml_" (get ht "dataset_name") "_" (get ht "table_name")]) (get ht "item_size")))
+
+(defn ht-to-ps [ignite group_id ^Hashtable ht]
+    (let [ds-name (second group_id)]
+        (cond (and (my-lexical/is-eq? ds-name "MY_META") (not (contains? ht "dataset_name"))) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
+              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (my-lexical/is-eq? (get ht "dataset_name") "MY_META")) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
+              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (not (my-lexical/is-eq? (get ht "dataset_name") "MY_META"))) (ht-to-line ht)
+              (not (contains? ht "dataset_name")) (ht-to-line (doto ht (.put "dataset_name" (str/lower-case ds-name))))
+              (and (contains? ht "dataset_name") (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name))) (ht-to-line ht)
+              (and (contains? ht "dataset_name") (not (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！"))
+              :else
+              (throw (Exception. "不能创建机器学习的训练数据！"))
+              )
+        ))
+
+(defn call-show-train-data [ignite group_id lst]
+    (let [{func-name :func-name lst_ps :lst_ps} (my-select/sql-to-ast lst)]
+        (if (= (count lst_ps) 1)
+            (let [ht-line (my-smart-token-clj/token-to-clj ignite group_id (first lst_ps) nil)]
+                (ht-to-ps ignite group_id (eval (read-string ht-line)))
+                ))))
+
 (defn to-sql [lst]
     (loop [[f & r] lst rs []]
         (if (some? f)
@@ -199,6 +223,8 @@
                    (and (string? (first lst)) (contains? #{"noSqlInsert" "noSqlUpdate" "noSqlDelete" "noSqlDrop"} (str/lower-case (first lst)))) (let [my-code (my-smart-clj/token-to-clj ignite group_id (my-select/sql-to-ast (cull-semicolon lst)) nil)]
                                                                                                                                                      (recur ignite group_id r (conj lst-rs (format "select show_msg('%s') as tip;" (str (eval (read-string my-code))))))
                                                                                                                                                      )
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "show_train_data")) (if-let [show-sql (call-show-train-data ignite group_id (cull-semicolon lst))]
+                                                                                                     (recur ignite group_id r (conj lst-rs (format "select show_train_data(%s) as tip;" show-sql))))
                    :else
                    (if (string? (first lst))
                        (let [smart-sql-obj (my-smart-sql ignite group_id lst)]

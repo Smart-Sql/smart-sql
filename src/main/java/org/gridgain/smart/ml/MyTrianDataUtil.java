@@ -3,9 +3,7 @@ package org.gridgain.smart.ml;
 import clojure.lang.Cons;
 import clojure.lang.ISeq;
 import clojure.lang.PersistentVector;
-import cn.plus.model.ddl.MyMlCaches;
-import cn.plus.model.ddl.MyMlShowData;
-import cn.plus.model.ddl.MyTransData;
+import cn.plus.model.ddl.*;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -21,7 +19,9 @@ import org.tools.MyConvertUtil;
 import javax.cache.Cache;
 import java.io.Serializable;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 
 public class MyTrianDataUtil implements Serializable {
     private static final long serialVersionUID = 5546137149960479638L;
@@ -51,7 +51,13 @@ public class MyTrianDataUtil implements Serializable {
      * */
     public static Boolean hasTrainMatrix(final Ignite ignite, final MyMlCaches mlCaches) {
         String cacheName = getCacheName(mlCaches);
-        return ignite.cache(cacheName) == null? false: true;
+        IgniteCache cache = ignite.cache(cacheName);
+        if (cache != null)
+        {
+            return true;
+        }
+        //return ignite.cache(cacheName) == null ? false : true;
+        return false;
     }
 
     /**
@@ -61,6 +67,7 @@ public class MyTrianDataUtil implements Serializable {
         String cacheName = getCacheName(mlCaches);
         if (hasTrainMatrix(ignite, mlCaches))
         {
+            ignite.cache("ml_train_data").remove(new MyCachePK(mlCaches.getDataset_name(), mlCaches.getTable_name()));
             ignite.destroyCache(cacheName);
         }
     }
@@ -95,6 +102,11 @@ public class MyTrianDataUtil implements Serializable {
             MyMlShowData mlCaches = (MyMlShowData) o;
             return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
         }
+        else if (o instanceof MyTransDataLoad)
+        {
+            MyTransDataLoad mlCaches = (MyTransDataLoad) o;
+            return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
+        }
         else
         {
             MyTransData mlCaches = (MyTransData) o;
@@ -102,20 +114,43 @@ public class MyTrianDataUtil implements Serializable {
         }
     }
 
-    public static ResultSet showTrainData(final Ignite ignite, final MyMlShowData m)
+    public static void train_matrix_single(final Ignite ignite, String dataset_name, String table_name, String value)
     {
-        IgniteCache cache = ignite.cache(getCacheName(m));
+        String cacheName = "sm_ml_" + dataset_name + "_" + table_name;
+        String[] lst = value.split(",");
+        Double[] rs = new Double[lst.length];
+        for (int i = 0; i < lst.length; i++)
+        {
+            rs[i] = MyConvertUtil.ConvertToDouble(lst[i]);
+        }
+
+        ignite.cache(cacheName).put(ignite.atomicSequence(cacheName, 0, true).incrementAndGet(), VectorUtils.of(rs));
+    }
+
+    public static List showTrainData(final Ignite ignite, String cacheName, Integer item_size)
+    {
+        IgniteCache cache = ignite.cache(cacheName);
 
         Iterable<Cache.Entry<Long, Vector>> locEntries = cache.localEntries(CachePeekMode.OFFHEAP);
 
+        List lst = new ArrayList();
+        int index = 0;
         for (Cache.Entry<Long, Vector> entry : locEntries) {
+
+            if (index <= item_size)
+            {
+                lst.add(entry.getValue().asArray());
+                index++;
+            }
+            else
+            {
+                break;
+            }
+
 //            assertTrue(locKeys.remove(entry.getKey()));
 //            assertEquals(data[entry.getKey()], entry.getValue());
         }
-
-        SimpleResultSet rs = new SimpleResultSet();
-
-        return rs;
+        return lst;
     }
 }
 

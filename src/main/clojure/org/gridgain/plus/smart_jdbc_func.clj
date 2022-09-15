@@ -96,7 +96,8 @@
                   (my-lexical/is-eq? func-name "create_train_matrix") (apply (eval (read-string "my-ml-train-data/create-train-matrix")) (concat [ignite group_id] ps))
                   (my-lexical/is-eq? func-name "has_train_matrix") (apply (eval (read-string "my-ml-train-data/has-train-matrix")) (concat [ignite group_id] ps))
                   (my-lexical/is-eq? func-name "drop_train_matrix") (apply (eval (read-string "my-ml-train-data/drop-train-matrix")) (concat [ignite group_id] ps))
-                  (my-lexical/is-eq? func-name "train-matrix") (apply (eval (read-string "my-ml-train-data/train-matrix")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "train_matrix") (apply (eval (read-string "my-ml-train-data/train-matrix")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "train_matrix_single") (apply (eval (read-string "my-ml-train-data/train-matrix-single")) (concat [ignite group_id] ps))
 
                   (my-lexical/is-func? ignite func-name) (if-not (empty? ps)
                                                              (apply (eval (read-string "my-smart-scenes/my-invoke-func")) (concat [ignite (format "%s" func-name)] [ps]))
