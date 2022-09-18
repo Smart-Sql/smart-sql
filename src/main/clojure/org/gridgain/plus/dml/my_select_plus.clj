@@ -479,10 +479,8 @@
                                                                         (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
                                                                             {:exists "exists" :select_sql exists-m}
                                                                             (if (= (first lst) "-")
-                                                                                (let [fu-m (get-token (rest lst))]
-                                                                                    (if (contains? fu-m :item_name)
-                                                                                        (assoc fu-m :item_name (format "-%s" (-> fu-m :item_name)))
-                                                                                        (throw (Exception. (format "%s 字符串写法不正确!" (str/join lst))))))
+                                                                                (let [fu-m-1 (get-token (rest lst))]
+                                                                                    {:parenthesis (conj [{:table_alias "", :item_name "0", :item_type "", :java_item_type java.lang.Integer, :const true} {:operation_symbol "-"}] fu-m-1)})
                                                                                 (if-let [ds-m (link-func lst)]
                                                                                     ds-m
                                                                                     (smart-item-tokens lst)))
