@@ -29,6 +29,8 @@
         [org.gridgain.plus.tools.my-util :as my-util]
         [org.gridgain.plus.user.my-user :as my-user]
         [org.gridgain.plus.smart-func :as smart-func]
+        [org.gridgain.plus.ml.my-ml-train-data :as my-ml-train-data]
+        [org.gridgain.plus.ml.my-ml-func :as my-ml-func]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -98,6 +100,8 @@
                   (my-lexical/is-eq? func-name "drop_train_matrix") (apply (eval (read-string "my-ml-train-data/drop-train-matrix")) (concat [ignite group_id] ps))
                   (my-lexical/is-eq? func-name "train_matrix") (apply (eval (read-string "my-ml-train-data/train-matrix")) (concat [ignite group_id] ps))
                   (my-lexical/is-eq? func-name "train_matrix_single") (apply (eval (read-string "my-ml-train-data/train-matrix-single")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "fit") (apply (eval (read-string "my-ml-func/ml-fit")) (concat [ignite group_id] ps))
+                  (my-lexical/is-eq? func-name "predict") (apply (eval (read-string "my-ml-func/ml-predict")) (concat [ignite group_id] ps))
 
                   (my-lexical/is-func? ignite func-name) (if-not (empty? ps)
                                                              (apply (eval (read-string "my-smart-scenes/my-invoke-func")) (concat [ignite (format "%s" func-name)] [ps]))

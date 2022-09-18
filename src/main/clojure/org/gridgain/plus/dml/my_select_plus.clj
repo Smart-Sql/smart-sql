@@ -478,9 +478,15 @@
                                                                     (let [exists-m (parenthesis (rest lst))]
                                                                         (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
                                                                             {:exists "exists" :select_sql exists-m}
-                                                                            (if-let [ds-m (link-func lst)]
-                                                                                ds-m
-                                                                                (smart-item-tokens lst)))))))))
+                                                                            (if (= (first lst) "-")
+                                                                                (let [fu-m (get-token (rest lst))]
+                                                                                    (if (contains? fu-m :item_name)
+                                                                                        (assoc fu-m :item_name (format "-%s" (-> fu-m :item_name)))
+                                                                                        (throw (Exception. (format "%s 字符串写法不正确!" (str/join lst))))))
+                                                                                (if-let [ds-m (link-func lst)]
+                                                                                    ds-m
+                                                                                    (smart-item-tokens lst)))
+                                                                            )))))))
                                                 )))))
                             )
                         ;(cond (and (= (count lst) 1) (string? (first lst))) (get-token-line (first lst))

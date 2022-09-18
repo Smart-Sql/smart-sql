@@ -17,9 +17,11 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.smart.service.MyLogService;
 import org.apache.ignite.transactions.Transaction;
 import org.gridgain.dml.util.MyCacheExUtil;
+import org.gridgain.smart.ml.model.MyMModelKey;
 import org.tools.MyConvertUtil;
 
 import java.util.ArrayList;
@@ -275,6 +277,12 @@ public class MyNoSqlUtil {
 
     public static void initCaches(final Ignite ignite)
     {
+        CacheConfiguration<MyMModelKey, IgniteModel> cfg = new CacheConfiguration<>();
+        cfg.setName("my_ml_model");
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+
+        ignite.getOrCreateCache(cfg);
+
         SqlFieldsQuery sqlFieldsQuery = new SqlFieldsQuery("select m.dataset_name, m.table_name, m.is_cache, m.mode, m.maxSize from MY_META.my_caches m");
         sqlFieldsQuery.setLazy(true);
         Iterator<List<?>> iterator = ignite.cache("my_caches").query(sqlFieldsQuery).iterator();
