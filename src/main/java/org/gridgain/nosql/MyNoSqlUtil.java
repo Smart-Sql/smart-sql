@@ -22,6 +22,7 @@ import org.apache.ignite.smart.service.MyLogService;
 import org.apache.ignite.transactions.Transaction;
 import org.gridgain.dml.util.MyCacheExUtil;
 import org.gridgain.smart.ml.model.MyMModelKey;
+import org.gridgain.smart.ml.model.MyMlModel;
 import org.tools.MyConvertUtil;
 
 import java.util.ArrayList;
@@ -277,7 +278,7 @@ public class MyNoSqlUtil {
 
     public static void initCaches(final Ignite ignite)
     {
-        CacheConfiguration<MyMModelKey, IgniteModel> cfg = new CacheConfiguration<>();
+        CacheConfiguration<MyMModelKey, MyMlModel> cfg = new CacheConfiguration<>();
         cfg.setName("my_ml_model");
         cfg.setCacheMode(CacheMode.PARTITIONED);
 

@@ -19,7 +19,6 @@ import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.gridgain.smart.ml.model.MyMLMethodName;
 import org.gridgain.smart.ml.model.MyMModelKey;
-import org.tools.MyConvertUtil;
 
 import java.util.List;
 
