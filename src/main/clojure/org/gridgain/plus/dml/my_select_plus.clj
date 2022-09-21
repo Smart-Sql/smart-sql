@@ -300,8 +300,9 @@
                 )
             ; 2、处理函数
             (func-fn [[f & rs]]
-                (if (some? f) (let [m (is-operate-fn? rs)]
-                                  (if (some? m) {:func-name f :lst_ps (func-lst-ps m)}))))
+                (if (and (some? f) (not (= f "-")))
+                    (let [m (is-operate-fn? rs)]
+                        (if (some? m) {:func-name f :lst_ps (func-lst-ps m)}))))
             ; 输入 line 获取 token
             (get-token-line [line]
                 (letfn [
@@ -348,8 +349,14 @@
             ; 处理四则运算
             ; 例如：a + b * (c - d)
             (operation [lst]
-                (when-let [m (arithmetic-fn lst)]
-                    (if (> (count m) 1) {:operation (map get-token m)})))
+                (if (= (first lst) "-")
+                    (if-let [m (arithmetic-fn (concat ["0" "-"] lst))]
+                        (if (> (count m) 1) {:operation (map get-token m)}))
+                    (if-let [m (arithmetic-fn lst)]
+                        (if (> (count m) 1) {:operation (map get-token m)})))
+                ;(when-let [m (arithmetic-fn lst)]
+                ;    (if (> (count m) 1) {:operation (map get-token m)}))
+                )
             ; 对括号的处理
             ; 例如：(a + b * c)
             (parenthesis
@@ -388,7 +395,14 @@
                                                                 (let [tk-m (get-token m)]
                                                                     (if (is-true? tk-m)
                                                                         tk-m
-                                                                        (eliminate-parentheses m)))))))))))))
+                                                                        (let [em-m (eliminate-parentheses m)]
+                                                                            (if-not (nil? em-m)
+                                                                                em-m
+                                                                                (if (= (first m) "-")
+                                                                                    (let [pc-m (get-token (concat ["0"] m))]
+                                                                                        (if-not (nil? pc-m)
+                                                                                            {:parenthesis [pc-m]}))))
+                                                                            )))))))))))))
 
                         ;(cond
                         ;    (is-sql-obj? sql-to-ast-m m)  {:parenthesis (sql-to-ast-m m)}

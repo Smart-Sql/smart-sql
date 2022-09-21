@@ -5,5 +5,6 @@ public enum MyMLMethodName {
     LinearRegressionLSQRWithMinMaxScaler,
     LinearRegressionSGD,
     LinearRegressionSGDStandard,
+    LogisticRegression,
     BaggedLogisticRegressionSGD
 }

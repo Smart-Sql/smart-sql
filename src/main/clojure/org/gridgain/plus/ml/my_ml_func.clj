@@ -21,7 +21,7 @@
              (org.gridgain.smart.ml MyTrianDataUtil)
              (cn.plus.model.ddl MyCachePK MyMlCaches MyTransData MyMlShowData MyTransDataLoad)
              (org.gridgain.smart.ml.model MyMLMethodName MyMModelKey MyMPs)
-             (org.gridgain.smart.ml.regressions.linear MyLinearRegressionLSQRUtil MyLinearRegressionSGDUtil)
+             (org.gridgain.smart.ml.regressions.linear MyLinearRegressionUtil)
              (org.tools MyConvertUtil))
     (:gen-class
         ; 生成 class 的类名
@@ -40,16 +40,17 @@
 (defn -myGetCacheName [^String dataset_name ^String table_name]
     (get-cache-name dataset_name table_name))
 
-(defn fit-model [^Ignite ignite ^String cache-name ^String func-name ^Hashtable func-ps]
-    (cond (my-lexical/is-eq? func-name "LinearRegressionLSQR") (.getMdlToCache (MyLinearRegressionLSQRUtil.) ignite cache-name)
-          (my-lexical/is-eq? func-name "LinearRegressionLSQRWithMinMaxScaler") (.getMinMaxScalerMdlToCache (MyLinearRegressionLSQRUtil.) ignite cache-name)
+(defn fit-model [^Ignite ignite ^String cache-name ^String func-name ^String preprocessor ^Hashtable func-ps]
+    (cond (and (my-lexical/is-eq? func-name "LinearRegression") (nil? preprocessor)) (MyLinearRegressionUtil/getMdlToCache ignite cache-name)
+          (and (my-lexical/is-eq? func-name "LinearRegression") (my-lexical/is-eq? preprocessor "MinMaxScaler")) (MyLinearRegressionUtil/getMinMaxMdlToCache ignite cache-name)
+          (and (my-lexical/is-eq? func-name "LinearRegression") (my-lexical/is-eq? preprocessor "StandardScaler")) (MyLinearRegressionUtil/getStandardMdlToCache ignite cache-name)
           ))
 
 ; 训练模型
 (defn ml-fit [^Ignite ignite group_id ^Hashtable ht]
-    (let [{table_name "table_name" dataset_name "dataset_name" ml_func_name "ml_func_name" ml_func_params "ml_func_params"} ht]
-        (cond (my-lexical/is-eq? dataset_name "public") (fit-model ignite (get-cache-name dataset_name table_name) ml_func_name ml_func_params)
-              (my-lexical/is-str-not-empty? dataset_name) (fit-model ignite (get-cache-name dataset_name table_name) ml_func_name ml_func_params)
+    (let [{table_name "table_name" dataset_name "dataset_name" ml_func_name "ml_func_name" preprocessor "preprocessor" ml_func_params "ml_func_params"} ht]
+        (cond (my-lexical/is-eq? dataset_name "public") (fit-model ignite (get-cache-name dataset_name table_name) ml_func_name preprocessor ml_func_params)
+              (my-lexical/is-str-not-empty? dataset_name) (fit-model ignite (get-cache-name dataset_name table_name) ml_func_name preprocessor ml_func_params)
               (my-lexical/is-eq? dataset_name (second group_id)) (throw (Exception. "没有权限训练 %s 中的数据！" dataset_name))
               )))
 

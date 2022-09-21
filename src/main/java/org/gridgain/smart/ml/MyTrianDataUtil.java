@@ -1,7 +1,5 @@
 package org.gridgain.smart.ml;
 
-import clojure.lang.Cons;
-import clojure.lang.ISeq;
 import clojure.lang.PersistentVector;
 import cn.plus.model.ddl.*;
 import org.apache.ignite.Ignite;
@@ -13,14 +11,11 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.gridgain.internal.h2.tools.SimpleResultSet;
 import org.tools.MyConvertUtil;
 
 import javax.cache.Cache;
 import java.io.Serializable;
-import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
 
 public class MyTrianDataUtil implements Serializable {
