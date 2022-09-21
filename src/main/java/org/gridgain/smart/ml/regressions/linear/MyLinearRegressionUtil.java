@@ -18,6 +18,9 @@ import org.apache.ignite.ml.preprocessing.standardscaling.StandardScalerTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -43,9 +46,17 @@ public class MyLinearRegressionUtil {
                 vectorizer
         );
 
+        double score = Evaluator.evaluate(
+                ignite.cache(cacheName),
+                split.getTestFilter(),
+                model,
+                vectorizer,
+                new RegressionMetrics()
+        );
+
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model, score));
         }
     }
 
@@ -65,9 +76,18 @@ public class MyLinearRegressionUtil {
         );
 
         LinearRegressionModel model = trainer.fit(ignite, ignite.cache(cacheName), split.getTrainFilter(), preprocessor);
+
+        double score = Evaluator.evaluate(
+                ignite.cache(cacheName),
+                split.getTestFilter(),
+                model,
+                vectorizer,
+                new RegressionMetrics()
+        );
+
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor, score));
         }
     }
 
@@ -87,9 +107,18 @@ public class MyLinearRegressionUtil {
         );
 
         LinearRegressionModel model = trainer.fit(ignite, ignite.cache(cacheName), split.getTrainFilter(), preprocessor);
+
+        double score = Evaluator.evaluate(
+                ignite.cache(cacheName),
+                split.getTestFilter(),
+                model,
+                vectorizer,
+                new RegressionMetrics()
+        );
+
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor, score));
         }
     }
 
@@ -147,9 +176,18 @@ public class MyLinearRegressionUtil {
                 vectorizer
         );
 
+        double score = Evaluator.evaluate(
+                ignite.cache(cacheName),
+                split.getTestFilter(),
+                model,
+                vectorizer,
+                new RegressionMetrics()
+        );
+
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model));
+
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model, score));
         }
     }
 
@@ -173,9 +211,18 @@ public class MyLinearRegressionUtil {
         );
 
         LinearRegressionModel model = trainer.fit(ignite, ignite.cache(cacheName), split.getTrainFilter(), preprocessor);
+
+        double score = Evaluator.evaluate(
+                ignite.cache(cacheName),
+                split.getTestFilter(),
+                model,
+                vectorizer,
+                new RegressionMetrics()
+        );
+
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor, score));
         }
     }
 
@@ -198,9 +245,18 @@ public class MyLinearRegressionUtil {
         );
 
         LinearRegressionModel model = trainer.fit(ignite, ignite.cache(cacheName), split.getTrainFilter(), preprocessor);
+
+        double score = Evaluator.evaluate(
+                ignite.cache(cacheName),
+                split.getTestFilter(),
+                model,
+                vectorizer,
+                new RegressionMetrics()
+        );
+
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQRWithMinMaxScaler), new MyMlModel(model, preprocessor, score));
         }
     }
 
