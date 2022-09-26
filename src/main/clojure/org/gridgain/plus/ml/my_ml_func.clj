@@ -22,6 +22,8 @@
              (cn.plus.model.ddl MyCachePK MyMlCaches MyTransData MyMlShowData MyTransDataLoad)
              (org.gridgain.smart.ml.model MyMLMethodName MyMModelKey MyMPs)
              (org.gridgain.smart.ml.regressions.linear MyLinearRegressionUtil)
+             (org.gridgain.smart.ml.regressions.logistic MyLogisticRegressionUtil)
+             (org.gridgain.smart.ml.svm MySVMLinearClassificationUtil)
              (org.tools MyConvertUtil))
     (:gen-class
         ; 生成 class 的类名
@@ -41,9 +43,9 @@
     (get-cache-name dataset_name table_name))
 
 (defn fit-model [^Ignite ignite ^String cache-name ^String func-name ^String preprocessor ^Hashtable func-ps]
-    (cond (and (my-lexical/is-eq? func-name "LinearRegression") (nil? preprocessor)) (MyLinearRegressionUtil/getMdlToCache ignite cache-name)
-          (and (my-lexical/is-eq? func-name "LinearRegression") (my-lexical/is-eq? preprocessor "MinMaxScaler")) (MyLinearRegressionUtil/getMinMaxMdlToCache ignite cache-name)
-          (and (my-lexical/is-eq? func-name "LinearRegression") (my-lexical/is-eq? preprocessor "StandardScaler")) (MyLinearRegressionUtil/getStandardMdlToCache ignite cache-name)
+    (cond (or (my-lexical/is-eq? func-name "LinearRegression") (my-lexical/is-eq? func-name "LinearRegressionLSQR") (my-lexical/is-eq? func-name "LinearRegressionLSQR")) (MyLinearRegressionUtil/getMdl ignite cache-name func-name preprocessor func-ps)
+          (my-lexical/is-eq? func-name "LogisticRegression") (MyLogisticRegressionUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "svm") (MySVMLinearClassificationUtil/getMdlToCache ignite cache-name)
           ))
 
 ; 训练模型
@@ -64,8 +66,8 @@
 ; 预测数据
 (defn predict-model [^Ignite ignite ^String cache-name ^String func-name params]
     (let [cache (.cache ignite "my_ml_model")]
-        (cond (my-lexical/is-eq? func-name "LinearRegressionLSQR") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegressionLSQR))) (to-ml-double params))
-              (my-lexical/is-eq? func-name "LinearRegressionLSQRWithMinMaxScaler") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegressionLSQRWithMinMaxScaler))) (to-ml-double params))
+        (cond (my-lexical/is-eq? func-name "LinearRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegression))) (to-ml-double params))
+              ;(my-lexical/is-eq? func-name "LinearRegressionLSQRWithMinMaxScaler") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegression))) (to-ml-double params))
               )))
 
 ; 预测数据

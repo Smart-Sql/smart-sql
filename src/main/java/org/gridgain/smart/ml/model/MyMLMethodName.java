@@ -1,10 +1,11 @@
 package org.gridgain.smart.ml.model;
 
 public enum MyMLMethodName {
-    LinearRegressionLSQR,
-    LinearRegressionLSQRWithMinMaxScaler,
+    LinearRegression,
     LinearRegressionSGD,
-    LinearRegressionSGDStandard,
+    LinearRegressionLSQR,
     LogisticRegression,
-    BaggedLogisticRegressionSGD
+    BaggedLogisticRegressionSGD,
+    DecisionTreeClassification,
+    DecisionTreeRegression
 }
