@@ -7,5 +7,7 @@ public enum MyMLMethodName {
     LogisticRegression,
     BaggedLogisticRegressionSGD,
     DecisionTreeClassification,
-    DecisionTreeRegression
+    DecisionTreeRegression,
+    RandomForestClassification,
+    RandomForestRegression
 }

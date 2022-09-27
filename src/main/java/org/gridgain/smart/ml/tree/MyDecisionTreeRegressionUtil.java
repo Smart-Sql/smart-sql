@@ -13,16 +13,34 @@ import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.gridgain.smart.ml.model.MyMLMethodName;
 import org.gridgain.smart.ml.model.MyMModelKey;
 import org.gridgain.smart.ml.model.MyMlModel;
+import org.tools.MyConvertUtil;
 
 import javax.cache.Cache;
+import java.util.Hashtable;
 
 public class MyDecisionTreeRegressionUtil {
 
     /**
      * 获取 model
      * */
-    public static void getMdlToCache(final Ignite ignite, final String cacheName, final int maxDeep, final double minImpurityDecrease)
+    public static void getMdlToCache(final Ignite ignite, final String cacheName, final Hashtable<String, Object> funcPs)
     {
+        int maxDeep = 5;
+        double minImpurityDecrease = 0D;
+
+        if (funcPs != null)
+        {
+            if (funcPs.containsKey("maxDeep"))
+            {
+                maxDeep = MyConvertUtil.ConvertToInt(funcPs.get("maxDeep"));
+            }
+
+            if (funcPs.containsKey("minImpurityDecrease"))
+            {
+                minImpurityDecrease = MyConvertUtil.ConvertToDouble(funcPs.get("minImpurityDecrease"));
+            }
+        }
+
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease);
 
         Vectorizer<Long, Vector, Integer, Double> vectorizer = new DummyVectorizer<Long>()

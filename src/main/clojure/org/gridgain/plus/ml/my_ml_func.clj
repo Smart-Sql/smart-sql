@@ -24,6 +24,8 @@
              (org.gridgain.smart.ml.regressions.linear MyLinearRegressionUtil)
              (org.gridgain.smart.ml.regressions.logistic MyLogisticRegressionUtil)
              (org.gridgain.smart.ml.svm MySVMLinearClassificationUtil)
+             (org.gridgain.smart.ml.tree MyDecisionTreeClassificationUtil MyDecisionTreeRegressionUtil)
+             (org.gridgain.smart.ml.tree.randomforest MyRandomForestClassifierUtil MyRandomForestRegressionUtil)
              (org.tools MyConvertUtil))
     (:gen-class
         ; 生成 class 的类名
@@ -46,6 +48,10 @@
     (cond (or (my-lexical/is-eq? func-name "LinearRegression") (my-lexical/is-eq? func-name "LinearRegressionLSQR") (my-lexical/is-eq? func-name "LinearRegressionLSQR")) (MyLinearRegressionUtil/getMdl ignite cache-name func-name preprocessor func-ps)
           (my-lexical/is-eq? func-name "LogisticRegression") (MyLogisticRegressionUtil/getMdlToCache ignite cache-name func-ps)
           (my-lexical/is-eq? func-name "svm") (MySVMLinearClassificationUtil/getMdlToCache ignite cache-name)
+          (my-lexical/is-eq? func-name "DecisionTreeClassification") (MyDecisionTreeClassificationUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "DecisionTreeRegression") (MyDecisionTreeRegressionUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "RandomForestClassification") (MyRandomForestClassifierUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "RandomForestRegression") (MyRandomForestRegressionUtil/getMdlToCache ignite cache-name func-ps)
           ))
 
 ; 训练模型
