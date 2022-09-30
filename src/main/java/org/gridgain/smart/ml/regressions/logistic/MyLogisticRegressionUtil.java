@@ -10,6 +10,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.gridgain.smart.ml.model.MyMLMethodName;
@@ -74,15 +75,23 @@ public class MyLogisticRegressionUtil {
                 vectorizer
         );
 
-        double accuracy = Evaluator.evaluate(
+//        double accuracy = Evaluator.evaluate(
+//                ignite.cache(cacheName),
+//                model,
+//                vectorizer
+//        ).accuracy();
+
+        double rmse = Evaluator.evaluate(
                 ignite.cache(cacheName),
+                split.getTestFilter(),
                 model,
-                vectorizer
-        ).accuracy();
+                vectorizer,
+                new RegressionMetrics()
+        );
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LogisticRegression), new MyMlModel(model, accuracy));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LogisticRegression), new MyMlModel(model, "LogisticRegression 的均方根误差：" + String.valueOf(rmse)));
         }
     }
 

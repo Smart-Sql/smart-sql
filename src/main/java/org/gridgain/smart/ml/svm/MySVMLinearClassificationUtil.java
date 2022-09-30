@@ -57,7 +57,7 @@ public class MySVMLinearClassificationUtil {
 
         if (mdl != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LogisticRegression), new MyMlModel(mdl, accuracy));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.SVM), new MyMlModel(mdl, "SVM 的准确率：" + String.valueOf(accuracy)));
         }
     }
 }

@@ -98,7 +98,7 @@ public class MyRandomForestRegressionUtil {
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.RandomForestClassification), new MyMlModel(model, score));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.RandomForestRegression), new MyMlModel(model, "RandomForestRegression 的准确率" + String.valueOf(score)));
         }
     }
 }

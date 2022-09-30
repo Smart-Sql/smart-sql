@@ -110,7 +110,7 @@ public class MyLinearRegressionUtil {
                 preprocessor
         );
 
-        double score = Evaluator.evaluate(
+        double rmse = Evaluator.evaluate(
                 ignite.cache(cacheName),
                 split.getTestFilter(),
                 model,
@@ -120,7 +120,7 @@ public class MyLinearRegressionUtil {
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionSGD), new MyMlModel(model, score));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionSGD), new MyMlModel(model, "LinearRegressionSGD 的均方根误差：" + String.valueOf(rmse)));
         }
     }
 
@@ -182,7 +182,7 @@ public class MyLinearRegressionUtil {
                 normalizationPreprocessor
         );
 
-        double score = Evaluator.evaluate(
+        double rmse = Evaluator.evaluate(
                 ignite.cache(cacheName),
                 split.getTestFilter(),
                 model,
@@ -192,7 +192,7 @@ public class MyLinearRegressionUtil {
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionSGD), new MyMlModel(model, score));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionSGD), new MyMlModel(model, "LinearRegressionSGD 的均方根误差：" + String.valueOf(rmse)));
         }
     }
 
@@ -216,7 +216,7 @@ public class MyLinearRegressionUtil {
                 preprocessor
         );
 
-        double score = Evaluator.evaluate(
+        double rmse = Evaluator.evaluate(
                 ignite.cache(cacheName),
                 split.getTestFilter(),
                 model,
@@ -226,7 +226,7 @@ public class MyLinearRegressionUtil {
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model, score));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model, "LinearRegressionLSQR 的均方根误差：" + String.valueOf(rmse)));
         }
     }
 
@@ -261,7 +261,7 @@ public class MyLinearRegressionUtil {
                 normalizationPreprocessor
         );
 
-        double score = Evaluator.evaluate(
+        double rmse = Evaluator.evaluate(
                 ignite.cache(cacheName),
                 split.getTestFilter(),
                 model,
@@ -271,7 +271,7 @@ public class MyLinearRegressionUtil {
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model, score));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.LinearRegressionLSQR), new MyMlModel(model, "LinearRegressionLSQR 的均方根误差：" + String.valueOf(rmse)));
         }
     }
 }

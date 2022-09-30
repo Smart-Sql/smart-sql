@@ -79,8 +79,8 @@ public class MyRandomForestClassifierUtil {
         ModelsComposition model = trainer.fit(ignite, dataCache, vectorizer);
 
         double score = 0D;
-        int correctPredictions = 0;
-        int count = 0;
+        int amountOfErrors = 0;
+        int totalAmount = 0;
         try (QueryCursor<Cache.Entry<Long, Vector>> observations = ignite.cache(cacheName).query(new ScanQuery<>()))
         {
             for (Cache.Entry<Long, Vector> observation : observations) {
@@ -90,16 +90,16 @@ public class MyRandomForestClassifierUtil {
                 double prediction = model.predict(inputs);
 
                 if (Precision.equals(prediction, label, Precision.EPSILON)) {
-                    correctPredictions++;
+                    amountOfErrors++;
                 }
-                count++;
+                totalAmount++;
             }
-            score = correctPredictions / count;
+            score = (1 - amountOfErrors / (double)totalAmount);
         }
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.RandomForestRegression), new MyMlModel(model, score));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.RandomForestClassification), new MyMlModel(model, "RandomForestClassification 的准确率" + String.valueOf(score)));
         }
     }
 }

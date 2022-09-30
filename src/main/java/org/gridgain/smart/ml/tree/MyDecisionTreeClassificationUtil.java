@@ -72,7 +72,7 @@ public class MyDecisionTreeClassificationUtil {
 
         if (model != null)
         {
-            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.DecisionTreeClassification), new MyMlModel(model, score));
+            ignite.cache("my_ml_model").put(new MyMModelKey(cacheName, MyMLMethodName.DecisionTreeClassification), new MyMlModel(model, "DecisionTreeClassification 的精确度：" + String.valueOf(score)));
         }
     }
 }

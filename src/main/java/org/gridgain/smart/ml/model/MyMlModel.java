@@ -10,7 +10,7 @@ public class MyMlModel implements Serializable {
 
     private IgniteModel model;
     private Preprocessor preprocessor;
-    private Double score;
+    private String score;
 
     public MyMlModel()
     {}
@@ -20,7 +20,7 @@ public class MyMlModel implements Serializable {
         this.model = model;
     }
 
-    public MyMlModel(IgniteModel model, Double score)
+    public MyMlModel(IgniteModel model, String score)
     {
         this.model = model;
         this.score = score;
@@ -32,7 +32,7 @@ public class MyMlModel implements Serializable {
         this.preprocessor = preprocessor;
     }
 
-    public MyMlModel(IgniteModel model, Preprocessor preprocessor, Double score)
+    public MyMlModel(IgniteModel model, Preprocessor preprocessor, String score)
     {
         this.model = model;
         this.preprocessor = preprocessor;
@@ -55,11 +55,11 @@ public class MyMlModel implements Serializable {
         this.preprocessor = preprocessor;
     }
 
-    public Double getScore() {
+    public String getScore() {
         return score;
     }
 
-    public void setScore(Double score) {
+    public void setScore(String score) {
         this.score = score;
     }
 }

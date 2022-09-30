@@ -26,6 +26,8 @@
              (org.gridgain.smart.ml.svm MySVMLinearClassificationUtil)
              (org.gridgain.smart.ml.tree MyDecisionTreeClassificationUtil MyDecisionTreeRegressionUtil)
              (org.gridgain.smart.ml.tree.randomforest MyRandomForestClassifierUtil MyRandomForestRegressionUtil)
+             (org.gridgain.smart.ml.knn MyKNNClassificationUtil MyKNNRegressionUtil)
+             (org.gridgain.smart.ml.clustering MyKMeansUtil MyGmmUtil)
              (org.tools MyConvertUtil))
     (:gen-class
         ; 生成 class 的类名
@@ -52,6 +54,10 @@
           (my-lexical/is-eq? func-name "DecisionTreeRegression") (MyDecisionTreeRegressionUtil/getMdlToCache ignite cache-name func-ps)
           (my-lexical/is-eq? func-name "RandomForestClassification") (MyRandomForestClassifierUtil/getMdlToCache ignite cache-name func-ps)
           (my-lexical/is-eq? func-name "RandomForestRegression") (MyRandomForestRegressionUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "KNNClassification") (MyKNNClassificationUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "KNNRegression") (MyKNNRegressionUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "KMeans") (MyKMeansUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "GMM") (MyGmmUtil/getMdlToCache ignite cache-name func-ps)
           ))
 
 ; 训练模型
@@ -72,7 +78,19 @@
 ; 预测数据
 (defn predict-model [^Ignite ignite ^String cache-name ^String func-name params]
     (let [cache (.cache ignite "my_ml_model")]
-        (cond (my-lexical/is-eq? func-name "LinearRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegression))) (to-ml-double params))
+        (cond (my-lexical/is-eq? func-name "LinearRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegressionSGD))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "LinearRegressionSGD") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegressionSGD))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "LinearRegressionLSQR") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegressionLSQR))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "LogisticRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LogisticRegression))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "BaggedLogisticRegressionSGD") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/BaggedLogisticRegressionSGD))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "DecisionTreeClassification") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/DecisionTreeClassification))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "DecisionTreeRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/DecisionTreeRegression))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "RandomForestClassification") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/RandomForestClassification))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "RandomForestRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/RandomForestRegression))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "KNNClassification") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/KNNClassification))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "KNNRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/KNNRegression))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "KMeans") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/KMeans))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "GMM") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/GMM))) (to-ml-double params))
               ;(my-lexical/is-eq? func-name "LinearRegressionLSQRWithMinMaxScaler") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegression))) (to-ml-double params))
               )))
 

@@ -4,10 +4,15 @@ public enum MyMLMethodName {
     LinearRegression,
     LinearRegressionSGD,
     LinearRegressionLSQR,
+    SVM,
     LogisticRegression,
     BaggedLogisticRegressionSGD,
     DecisionTreeClassification,
     DecisionTreeRegression,
     RandomForestClassification,
-    RandomForestRegression
+    RandomForestRegression,
+    KNNClassification,
+    KNNRegression,
+    KMeans,
+    GMM
 }
