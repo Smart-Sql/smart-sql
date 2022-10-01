@@ -10,16 +10,26 @@ public class MyMlCaches implements Serializable {
     private String dataset_name;
     private String table_name;
     private String describe;
+    private Boolean is_clustering;
 
-    public MyMlCaches(final String dataset_name, final String table_name, final String describe)
+    public MyMlCaches(final String dataset_name, final String table_name, final String describe, final Boolean is_clustering)
     {
         this.dataset_name = dataset_name.toLowerCase();
         this.table_name = table_name.toLowerCase();
         this.describe = describe;
+        this.is_clustering = is_clustering;
     }
 
     public MyMlCaches()
     {}
+
+    public Boolean getIs_clustering() {
+        return is_clustering;
+    }
+
+    public void setIs_clustering(Boolean is_clustering) {
+        this.is_clustering = is_clustering;
+    }
 
     public String getDataset_name() {
         return dataset_name;
@@ -57,6 +67,7 @@ public class MyMlCaches implements Serializable {
                 "dataset_name='" + dataset_name + '\'' +
                 ", table_name='" + table_name + '\'' +
                 ", describe='" + describe + '\'' +
+                ", is_clustering=" + is_clustering +
                 '}';
     }
 }

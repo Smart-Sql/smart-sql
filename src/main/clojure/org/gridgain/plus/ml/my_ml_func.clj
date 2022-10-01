@@ -28,6 +28,7 @@
              (org.gridgain.smart.ml.tree.randomforest MyRandomForestClassifierUtil MyRandomForestRegressionUtil)
              (org.gridgain.smart.ml.knn MyKNNClassificationUtil MyKNNRegressionUtil)
              (org.gridgain.smart.ml.clustering MyKMeansUtil MyGmmUtil)
+             (org.gridgain.smart.ml.nn MyMlpUtil)
              (org.tools MyConvertUtil))
     (:gen-class
         ; 生成 class 的类名
@@ -58,6 +59,7 @@
           (my-lexical/is-eq? func-name "KNNRegression") (MyKNNRegressionUtil/getMdlToCache ignite cache-name func-ps)
           (my-lexical/is-eq? func-name "KMeans") (MyKMeansUtil/getMdlToCache ignite cache-name func-ps)
           (my-lexical/is-eq? func-name "GMM") (MyGmmUtil/getMdlToCache ignite cache-name func-ps)
+          (my-lexical/is-eq? func-name "NeuralNetwork") (MyMlpUtil/getMdlToCache ignite cache-name func-ps)
           ))
 
 ; 训练模型
@@ -91,7 +93,7 @@
               (my-lexical/is-eq? func-name "KNNRegression") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/KNNRegression))) (to-ml-double params))
               (my-lexical/is-eq? func-name "KMeans") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/KMeans))) (to-ml-double params))
               (my-lexical/is-eq? func-name "GMM") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/GMM))) (to-ml-double params))
-              ;(my-lexical/is-eq? func-name "LinearRegressionLSQRWithMinMaxScaler") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/LinearRegression))) (to-ml-double params))
+              (my-lexical/is-eq? func-name "NeuralNetwork") (.predict (.get cache (MyMModelKey. cache-name (MyMLMethodName/NeuralNetwork))) (to-ml-double params))
               )))
 
 ; 预测数据

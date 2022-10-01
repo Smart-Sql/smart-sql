@@ -14,6 +14,27 @@ public class MyTransData implements Serializable {
     private String table_name;
     private Object value;
     private Double label;
+    private Boolean is_clustering;
+
+    public MyTransData(String dataset_name, String table_name, Object value, Double label, Boolean is_clustering)
+    {
+        this.dataset_name = dataset_name;
+        this.table_name = table_name;
+        this.value = value;
+        this.label = label;
+        this.is_clustering = is_clustering;
+    }
+
+    public MyTransData()
+    {}
+
+    public Boolean getIs_clustering() {
+        return is_clustering;
+    }
+
+    public void setIs_clustering(Boolean is_clustering) {
+        this.is_clustering = is_clustering;
+    }
 
     public String getDataset_name() {
         return dataset_name;
@@ -58,6 +79,7 @@ public class MyTransData implements Serializable {
                 ", table_name='" + table_name + '\'' +
                 ", value=" + value +
                 ", label=" + label +
+                ", is_clustering=" + is_clustering +
                 '}';
     }
 }

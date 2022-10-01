@@ -26,6 +26,8 @@
                             dataset_name VARCHAR,
                             -- cache 表名
                             table_name VARCHAR(40),
+                            -- 是否是聚类
+                            is_clustering BOOLEAN DEFAULT false,
                             -- 描述
                             describe VARCHAR,
                             PRIMARY KEY (dataset_name, table_name)

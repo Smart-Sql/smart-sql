@@ -40,12 +40,17 @@
                     (throw (Exception. "必须有 table_name 的属性！"))))
             (get-describe [^Hashtable ht]
                 (if (contains? ht "describe")
-                    (get ht "describe")))]
+                    (get ht "describe")))
+            (get-is-clustering [^Hashtable ht]
+                (if (contains? ht "is_clustering")
+                    (get ht "is_clustering")
+                    false))]
         (doto (MyMlCaches.) (.setDataset_name (get-ds-name ht))
                             (.setTable_name (get-table-name ht))
-                            (.setDescribe (get-describe ht)))))
+                            (.setDescribe (get-describe ht))
+                            (.setIs_clustering (get-is-clustering ht)))))
 
-(defn hashtable-to-trans-data [^Hashtable ht]
+(defn hashtable-to-trans-data [^Ignite ignite ^Hashtable ht]
     (letfn [(get-ds-name [^Hashtable ht]
                 (if (contains? ht "dataset_name")
                     (get ht "dataset_name")))
@@ -60,12 +65,16 @@
             (get-label [^Hashtable ht]
                 (if (contains? ht "label")
                     (MyConvertUtil/ConvertToDouble (get ht "label"))
-                    (throw (Exception. "必须有 label 的属性！"))))]
+                    (throw (Exception. "必须有 label 的属性！"))))
+            (get-is-clustering [^Ignite ignite ^String ds-name ^String table-name]
+                (let [m (.get (.cache ignite "ml_train_data") (MyCachePK. ds-name table-name))]
+                    (.getIs_clustering m)))]
         (doto (MyTransData.)
             (.setDataset_name (get-ds-name ht))
             (.setTable_name (get-table-name ht))
             (.setValue (get-value ht))
-            (.setLabel (get-label ht)))))
+            (.setLabel (get-label ht))
+            (.setIs_clustering (get-is-clustering ignite (get-ds-name ht) (get-table-name ht))))))
 
 (defn hastable-to-data-load [^Hashtable ht]
     (letfn [(get-ds-name [^Hashtable ht]
@@ -77,10 +86,15 @@
                     (throw (Exception. "必须有 table_name 的属性！"))))
             (get-value [^Hashtable ht]
                 (if (contains? ht "value")
-                    (get ht "value")))]
+                    (get ht "value")))
+            (get-is-clustering [^Hashtable ht]
+                (if (contains? ht "is_clustering")
+                    (get ht "is_clustering")
+                    false))]
         (doto (MyTransDataLoad.) (.setDataset_name (get-ds-name ht))
-                            (.setTable_name (get-table-name ht))
-                            (.setValue (get-value ht)))))
+                                 (.setTable_name (get-table-name ht))
+                                 (.setValue (get-value ht))
+                                 (.setIs_clustering (get-is-clustering ht)))))
 (defn to-double [m]
            (MyConvertUtil/ConvertToDouble m))
 
@@ -90,19 +104,27 @@
      (double-array (cons (to-double item) (map to-double lst)))))
 
 (defn ml-train-matrix [^Ignite ignite ^Hashtable ht]
-    (if-let [m (hashtable-to-trans-data ht)]
+    (if-let [m (hashtable-to-trans-data ignite ht)]
         (let [cacheName (MyTrianDataUtil/getCacheName m)]
             (let [key (.incrementAndGet (.atomicSequence ignite cacheName 0 true))]
-                (let [vs (VectorUtils/of (my-to-double (.getLabel m) (.getValue m)))]
-                    (.put (.cache ignite cacheName) key vs))))))
+                (if (true? (.getIs_clustering m))
+                    (let [vs (VectorUtils/of (my-to-double 0 (.getValue m)))]
+                        (.put (.cache ignite cacheName) key vs))
+                    (let [vs (VectorUtils/of (my-to-double (.getLabel m) (.getValue m)))]
+                        (.put (.cache ignite cacheName) key vs)))
+                ))))
 
 (defn ml-train-matrix-single [^Ignite ignite ^Hashtable ht]
     (if-let [m (hastable-to-data-load ht)]
         (let [cacheName (MyTrianDataUtil/getCacheName m)]
             (let [key (.incrementAndGet (.atomicSequence ignite cacheName 0 true))]
                 (if-not (nil? (.getValue m))
-                    (let [vs (VectorUtils/of (my-to-double (.getValue m)))]
-                        (.put (.cache ignite cacheName) key vs)))))))
+                    (if (true? (.getIs_clustering m))
+                        (let [vs (VectorUtils/of (my-to-double (cons 0 (.getValue m))))]
+                            (.put (.cache ignite cacheName) key vs))
+                        (let [vs (VectorUtils/of (my-to-double (.getValue m)))]
+                            (.put (.cache ignite cacheName) key vs)))
+                    )))))
 
 (defn ml-create-train-matrix [^Ignite ignite ^MyMlCaches mlCaches]
     (let [cacheName (MyTrianDataUtil/getCacheName mlCaches)]

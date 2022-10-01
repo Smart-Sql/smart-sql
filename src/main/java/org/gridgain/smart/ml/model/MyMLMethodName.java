@@ -14,5 +14,6 @@ public enum MyMLMethodName {
     KNNClassification,
     KNNRegression,
     KMeans,
-    GMM
+    GMM,
+    NeuralNetwork
 }
