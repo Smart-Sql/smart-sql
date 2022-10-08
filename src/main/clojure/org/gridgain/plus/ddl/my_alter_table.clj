@@ -17,7 +17,7 @@
              (cn.plus.model.ddl MySchemaTable MyTableItemPK)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
-             (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
+             (org.gridgain.ddl MyDdlUtilEx MyDdlUtil)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
              (java.math BigDecimal))
@@ -67,7 +67,7 @@
 (defn get_table_alter_obj [^String sql]
     (let [alter_table (re-find #"^(?i)ALTER\s+TABLE\s+IF\s+EXISTS\s+|^(?i)ALTER\s+TABLE\s+" sql) last_line (str/replace sql #"^(?i)ALTER\s+TABLE\s+IF\s+EXISTS\s+|^(?i)ALTER\s+TABLE\s+" "")]
         (if (some? alter_table)
-            (let [table_name (str/trim (re-find #"^(?i)\w+\.\w+\s+|^(?i)\w+\s+" last_line)) last_line_1 (str/replace last_line #"^(?i)\w+\.\w+\s+|^(?i)\w+\s+" "")]
+            (let [table_name (str/trim (re-find #"^(?i)\w+\s*\.\s*\w+\s+|^(?i)\w+\s+" last_line)) last_line_1 (str/replace last_line #"^(?i)\w+\s*\.\s*\w+\s+|^(?i)\w+\s+" "")]
                 (if (some? table_name)
                     (let [add_or_drop_line (re-find #"^(?i)ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+|^(?i)DROP\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+|^(?i)ADD\s+COLUMN\s+IF\s+EXISTS\s+|^(?i)DROP\s+COLUMN\s+IF\s+EXISTS\s+|^(?i)ADD\s+COLUMN\s+|^(?i)DROP\s+COLUMN\s+|^(?i)ADD\s+|^(?i)DROP\s+" last_line_1) colums_line (str/replace last_line_1 #"^(?i)ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+|^(?i)DROP\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+|^(?i)ADD\s+COLUMN\s+IF\s+EXISTS\s+|^(?i)DROP\s+COLUMN\s+IF\s+EXISTS\s+|^(?i)ADD\s+COLUMN\s+|^(?i)DROP\s+COLUMN\s+|^(?i)ADD\s+|^(?i)DROP\s+" "")]
                         ;(println (get_items_obj colums_line))
@@ -163,16 +163,55 @@
 ; 2、判断要修改的表是否是实时数据集映射到，批处理数据集中的，如果是就不能修改，如果不是就可以修改
 ; 执行 alter table
 ; group_id: ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+;(defn alter_table [^Ignite ignite group_id ^String sql_line]
+;    (let [sql_code (str/lower-case sql_line)]
+;        (if (= (first group_id) 0)
+;            (run_ddl_real_time ignite sql_line group_id)
+;            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+;                (run_ddl_real_time ignite sql_code group_id)
+;                (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
+
+
+(defn repace-ast-add [ignite schema_name table_name data]
+    (if-let [ast (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name))]
+        (assoc ast :data (concat (-> ast :data) data))
+        ))
+
+(defn is-contains [item data]
+    (loop [[f & r] data]
+        (if (some? f)
+            (if (my-lexical/is-eq? (-> f :column_name) (-> item :column_name))
+                true
+                (recur r))
+            false)))
+
+(defn repace-ast-del [ignite schema_name table_name data]
+    (if-let [ast (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name))]
+        (loop [[f & r] (-> ast :data) my-data []]
+            (if (some? f)
+                (if (true? (is-contains f data))
+                    (recur r my-data)
+                    (recur r (conj my-data f)))
+                (assoc ast :data my-data)))))
+
+(defn alter-table-obj [^Ignite ignite ^String data_set_name ^String sql_line]
+    (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj data_set_name sql_line)]
+        (let [table_name (str/lower-case my-table_name)]
+            (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
+                (cond (and (true? is_drop) (false? is_add)) {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :pk-data (repace-ast-del ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))}
+                      (and (false? is_drop) (true? is_add)) {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :pk-data (repace-ast-add ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))}
+                      :else
+                      (throw (Exception. "修改表的语句有错误！")))
+                (throw (Exception. "MY_META 数据集中的表不能被修改！"))))
+        ))
+
 (defn alter_table [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= (first group_id) 0)
-            (run_ddl_real_time ignite sql_line group_id)
+            (MyDdlUtilEx/updateCache ignite (alter-table-obj ignite (second group_id) sql_code))
             (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
-                (run_ddl_real_time ignite sql_code group_id)
+                (MyDdlUtilEx/updateCache ignite (alter-table-obj ignite (second group_id) sql_code))
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
-
-
-
 
 
 

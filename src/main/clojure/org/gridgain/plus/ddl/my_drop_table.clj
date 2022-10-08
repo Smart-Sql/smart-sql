@@ -13,10 +13,10 @@
              (com.google.common.base Strings)
              (org.tools MyConvertUtil)
              (cn.plus.model MyNoSqlCache MyCacheEx MyKeyValue MyLogCache SqlType)
-             (cn.plus.model.ddl MySchemaTable MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK)
+             (cn.plus.model.ddl MySchemaTable MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyTableIndexPk)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
-             (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
+             (org.gridgain.ddl MyDdlUtilEx MyDdlUtil)
              (java.util ArrayList Date Iterator)
              (org.log MyCljLogger)
              (java.sql Timestamp)
@@ -84,7 +84,7 @@
                                     (loop [[index_f & index_r] (get-table-indexs-item-id ignite (-> f :index_id))]
                                         (if (some? index_f)
                                             (do
-                                                (let [my-key (MyTableItemPK. (-> index_f :index_item_id) (-> f :index_id))]
+                                                (let [my-key (MyTableIndexPk. (-> index_f :index_item_id) (-> f :index_id))]
                                                     (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
                                                         (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key nil (SqlType/DELETE) (MyLogCache. "table_index_item" "MY_META" "table_index_item" my-key nil (SqlType/DELETE)))))
                                                         (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key nil (SqlType/DELETE) nil)))))
@@ -116,14 +116,26 @@
               )
         ))
 
+(defn my-drop-table-obj [group_id ^String sql_line ^String dataset_name]
+    (if-let [m (get_drop_table_obj sql_line)]
+        (cond (= (first group_id) 0) (let [schema_name (str/lower-case (-> m :schema_name)) table_name (str/lower-case (-> m :table_name))]
+                                         (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
+                                             {:schema_name schema_name :table_name table_name :sql sql_line :pk-data nil}
+                                             (throw (Exception. "不能删除 MY_META 中的表语句的权限！"))))
+              (and (not (my-lexical/is-eq? (-> m :schema_name) "my_meta")) (my-lexical/is-eq? (-> m :schema_name) dataset_name)) {:schema_name (-> m :schema_name) :table_name (-> m :table_name) :sql sql_line :pk-data nil}
+              :else
+              (throw (Exception. "没有执行语句的权限！"))
+              )
+        ))
+
 ; 删除表
 ; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
 (defn drop_table [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= (first group_id) 0)
-            (run_ddl_real_time ignite group_id sql_line (second group_id))
+            (MyDdlUtilEx/deleteCache ignite (my-drop-table-obj group_id sql_code (second group_id)))
             (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
-                (run_ddl_real_time ignite group_id sql_line (second group_id))
+                (MyDdlUtilEx/deleteCache ignite (my-drop-table-obj group_id sql_code (second group_id)))
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 ;(defn drop_table [^Ignite ignite ^Long group_id ^String sql_line]

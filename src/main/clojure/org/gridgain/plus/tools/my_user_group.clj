@@ -38,11 +38,11 @@
 ; 通过 user_token 获取 user-group 的列表对象
 (defn get_user_group [ignite user_token]
     (if (my-lexical/is-eq? user_token (.getRoot_token (.configuration ignite)))
-        [0 "MY_META" "all" -1]
-        (let [group_id [0 "MY_META" "all" -1]]
+        [0 "MY_META" "all"]
+        (let [group_id [0 "MY_META" "all"]]
             (let [vs (my-lexical/no-sql-get-vs ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)))]
                 (cond (my-lexical/not-empty? vs) vs
-                      :else (let [rs (my-smart-db/query_sql ignite group_id "select g.id, m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.user_token = ?" [(my-lexical/to_arryList [user_token])])]
+                      :else (let [rs (my-smart-db/query_sql ignite group_id "select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [user_token])])]
                                 (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
                                     (if (.hasNext M-F-v156-I-Q157-c-Y)
                                         (let [r (.next M-F-v156-I-Q157-c-Y)]
@@ -53,9 +53,12 @@
 ; 通过 group-id 获取 user-group 的列表对象
 (defn get-user-group-by-id [ignite user-group-id]
     (if (= user-group-id 0)
-        [0 "MY_META" "all" -1]
-        (if-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [user-group-id])))))]
-            (cons user-group-id m))))
+        [0 "MY_META" "all"]
+        (if-let [m (.get (.cache ignite "my_users_group") user-group-id)]
+            [(.getId m) (.getData_set_name m) (.getGroup_type m)])
+        ;(if-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [user-group-id])))))]
+        ;    (cons user-group-id m))
+        ))
 
 
 (defn -getUserGroup [ignite user_token]

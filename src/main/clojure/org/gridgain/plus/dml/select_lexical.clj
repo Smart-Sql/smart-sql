@@ -151,21 +151,11 @@
         (get-value (.getVar m))
         m))
 
-(defn get_group_schema_name [^Ignite ignite group_id]
-    (if (= (first group_id) 0)
-        ["MY_META" "ALL"]
-        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [(first group_id)])))))]
-            m))
-    )
-
-(def my_group_schema_name (memoize get_group_schema_name))
-
 (defn get_obj_schema_name [^Ignite ignite group_id my-obj]
     (if-let [vs-obj (get-value my-obj)]
         (if (contains? vs-obj "table_name")
             (let [{schema_name :schema_name table_name :table_name} (get-schema (get vs-obj "table_name"))]
                 (if (= schema_name "")
-                    ;{:schema_name (first (my_group_schema_name ignite group_id)) :table_name table_name}
                     {:schema_name (second group_id) :table_name table_name}
                     {:schema_name schema_name :table_name table_name})))))
 
@@ -681,27 +671,6 @@
           :else
           (throw (Exception. "数据集没有该方法"))
           ))
-
-; 获取权限 code
-(defn get-code [ignite schema_name table_name my_group_id sql-token]
-    (if (= (is-eq? schema_name "public"))
-        (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
-        (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
-
-(defn get-code-insert [ignite schema_name table_name my_group_id sql-token]
-    (if (= (is-eq? schema_name "public"))
-        (first (.getAll (.query (.cache ignite "my_insert_views") (.setArgs (SqlFieldsQuery. "select m.code from my_insert_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
-        (first (.getAll (.query (.cache ignite "my_insert_views") (.setArgs (SqlFieldsQuery. "select m.code from my_insert_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
-
-(defn get-code-update [ignite schema_name table_name my_group_id sql-token]
-    (if (= (is-eq? schema_name "public"))
-        (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
-        (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
-
-(defn get-code-delete [ignite schema_name table_name my_group_id sql-token]
-    (if (= (is-eq? schema_name "public"))
-        (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
-        (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
 
 ; 获取 select 的权限 code
 (defn get-select-code [ignite schema_name table_name my_group_id]

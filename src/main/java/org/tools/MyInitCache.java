@@ -26,6 +26,14 @@ public class MyInitCache {
         cfg.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg);
 
+        CacheConfiguration<String, PersistentArrayMap> cfg_kv = new CacheConfiguration<>();
+        cfg_kv.setCacheMode(CacheMode.REPLICATED);
+        cfg_kv.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        //cfg_kv.setDataRegionName("Near_Caches_Region_Eviction");
+        cfg_kv.setName("index_ast");
+        cfg_kv.setReadFromBackup(true);
+        ignite.getOrCreateCache(cfg_kv);
+
         // insert 语句中要找到表的定义 "table_ast"
         CacheConfiguration<MyViewAstPK, PersistentArrayMap> cfg_my_select_view_ast = new CacheConfiguration<>();
         cfg_my_select_view_ast.setCacheMode(CacheMode.REPLICATED);

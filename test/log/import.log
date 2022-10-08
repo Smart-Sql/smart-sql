@@ -57,3 +57,4 @@
         )
 
 (def ignite (IgnitionEx/start "/Users/chenfei/Documents/Java/my-grid-plus/resources/default-config.xml"))
+(def group_id (my-user-group/get_user_group ignite "dafu"))

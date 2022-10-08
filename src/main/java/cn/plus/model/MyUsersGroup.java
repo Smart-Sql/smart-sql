@@ -15,9 +15,9 @@ public class MyUsersGroup implements Serializable {
      * */
     private String group_name;
     /**
-     * 数据集的 ID
+     * 数据集的名字
      * */
-    private Long data_set_id;
+    private String data_set_name;
 
     /**
      * 用户 token 这个用在连接字符串
@@ -48,12 +48,12 @@ public class MyUsersGroup implements Serializable {
         this.group_name = group_name;
     }
 
-    public Long getData_set_id() {
-        return data_set_id;
+    public String getData_set_name() {
+        return data_set_name;
     }
 
-    public void setData_set_id(Long data_set_id) {
-        this.data_set_id = data_set_id;
+    public void setData_set_name(String data_set_name) {
+        this.data_set_name = data_set_name;
     }
 
     public String getGroup_type() {
@@ -95,5 +95,17 @@ public class MyUsersGroup implements Serializable {
 
     public void setUser_token(String user_token) {
         this.user_token = user_token;
+    }
+
+    @Override
+    public String toString() {
+        return "MyUsersGroup{" +
+                "id=" + id +
+                ", group_name='" + group_name + '\'' +
+                ", data_set_name='" + data_set_name + '\'' +
+                ", user_token='" + user_token + '\'' +
+                ", group_type='" + group_type + '\'' +
+                ", myGroupSqlType=" + myGroupSqlType +
+                '}';
     }
 }

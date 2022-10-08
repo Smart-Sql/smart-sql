@@ -4,7 +4,7 @@
 ; 2、初始化元表
 (def my-grid-tables "
     /**
-    1、
+    1、用户自定义的 cache
     */
     CREATE TABLE IF NOT EXISTS my_caches (
                     dataset_name VARCHAR,
@@ -43,7 +43,7 @@
                          -- 用户组名称
                          group_name VARCHAR(40),
                          -- 数据集
-                         data_set_id BIGINT DEFAULT 0,
+                         data_set_name VARCHAR(40),
                          -- userToken
                          user_token VARCHAR,
                          -- 用户组类型
@@ -57,18 +57,17 @@
     /**
     2、数据集：my_dataset
     DROP TABLE IF EXISTS my_dataset;
-    */
     CREATE TABLE IF NOT EXISTS my_dataset (
                     id BIGINT,
                     dataset_name VARCHAR,
                     PRIMARY KEY (id)
                     ) WITH \"template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
     CREATE INDEX IF NOT EXISTS my_dataset_idx ON my_dataset (dataset_name);
+    */
 
     /**
     5、存储元表： my_meta_tables
     DROP TABLE IF EXISTS my_meta_tables;
-    */
     CREATE TABLE IF NOT EXISTS my_meta_tables (
                     id BIGINT,
                     table_name VARCHAR(50),
@@ -78,11 +77,11 @@
                     data_set_id BIGINT,
                     PRIMARY KEY (id)
     ) WITH \"template=MyMeta_template,cache_name=my_meta_tables,VALUE_TYPE=cn.plus.model.ddl.MyTable,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+    */
 
     /**
     6、元表中记录表字段的表：table_item
     DROP TABLE IF EXISTS table_item;
-    */
     CREATE TABLE IF NOT EXISTS table_item (
                     id BIGINT,
                     column_name VARCHAR(50),
@@ -96,11 +95,11 @@
                     table_id BIGINT,
                     PRIMARY KEY (id, table_id)
     ) WITH \"template=MyMeta_template,cache_name=table_item,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableItem,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+    */
 
     /**
     7、元表中记录表索引的表：table_index
     DROP TABLE IF EXISTS table_index;
-    */
     CREATE TABLE IF NOT EXISTS table_index (
                     id BIGINT,
                     index_name VARCHAR(50),
@@ -109,11 +108,11 @@
                     --ex_table_id_ BIGINT,
                     PRIMARY KEY (id, table_id)
     ) WITH \"template=MyMeta_template,cache_name=table_index,affinityKey=table_id,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableIndex,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+    */
 
     /**
     8、元表中记录表索引字段的表：table_index_item
     DROP TABLE IF EXISTS table_index_item;
-    */
     CREATE TABLE IF NOT EXISTS table_index_item (
                     id BIGINT,
                     index_item VARCHAR(50),
@@ -121,7 +120,8 @@
                     index_no BIGINT,
                     -- table_id BIGINT,
                     PRIMARY KEY (id, index_no)
-    ) WITH \"template=MyMeta_template,cache_name=table_index_item,affinityKey=index_no,KEY_TYPE=cn.plus.model.ddl.MyTableItemPK,VALUE_TYPE=cn.plus.model.ddl.MyTableIndexItem,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+    ) WITH \"template=MyMeta_template,cache_name=table_index_item,affinityKey=index_no,KEY_TYPE=cn.plus.model.ddl.MyTableIndexPk,VALUE_TYPE=cn.plus.model.ddl.MyTableIndexItem,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
+    */
 
     /**
     9、元表中预先要建的索引
@@ -129,17 +129,19 @@
     DROP INDEX IF EXISTS table_item_idx;
     DROP INDEX IF EXISTS table_index_idx;
     DROP INDEX IF EXISTS ot_ds_tname_idx;
-    */
+
     CREATE INDEX IF NOT EXISTS my_meta_tables_idx ON my_meta_tables (table_name);
     CREATE INDEX IF NOT EXISTS table_item_idx ON table_item (table_id, column_name);
     CREATE INDEX IF NOT EXISTS table_index_idx ON table_index (table_id, index_name);
+    */
 
     /*
     data_set_id 和 table_name 唯一确定一个值
     添加 data_set_id 的作用是在该数据集的用户组可以查看该数据组的表集合
     DROP INDEX IF EXISTS ot_ds_tname_idx;
-    */
+
     CREATE INDEX IF NOT EXISTS ot_ds_tname_idx ON my_meta_tables (table_name, data_set_id);
+    */
 
     /**
     10、场景表：my_scenes
@@ -191,9 +193,9 @@
     CREATE TABLE IF NOT EXISTS my_select_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    data_set_id BIGINT DEFAULT 0,
+                    dataset_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, data_set_id)
+                    PRIMARY KEY (group_id, table_name, dataset_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_select_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
@@ -203,9 +205,9 @@
     CREATE TABLE IF NOT EXISTS my_update_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    data_set_id BIGINT DEFAULT 0,
+                    dataset_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, data_set_id)
+                    PRIMARY KEY (group_id, table_name, dataset_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_update_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
@@ -215,9 +217,9 @@
     CREATE TABLE IF NOT EXISTS my_insert_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    data_set_id BIGINT DEFAULT 0,
+                    dataset_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, data_set_id)
+                    PRIMARY KEY (group_id, table_name, dataset_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_insert_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
@@ -227,9 +229,9 @@
     CREATE TABLE IF NOT EXISTS my_delete_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    data_set_id BIGINT DEFAULT 0,
+                    dataset_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, data_set_id)
+                    PRIMARY KEY (group_id, table_name, dataset_name)
                 ) WITH \"template=MyMeta_template,cache_name=my_delete_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
@@ -304,15 +306,15 @@
     ["DROP TABLE IF EXISTS ml_train_data"
      "DROP TABLE IF EXISTS my_caches"
      "DROP TABLE IF EXISTS my_users_group"
-     "DROP TABLE IF EXISTS my_dataset"
-     "DROP TABLE IF EXISTS my_meta_tables"
-     "DROP TABLE IF EXISTS table_item"
-     "DROP TABLE IF EXISTS table_index"
-     "DROP TABLE IF EXISTS table_index_item"
-     "DROP INDEX IF EXISTS my_meta_tables_idx"
-     "DROP INDEX IF EXISTS table_item_idx"
-     "DROP INDEX IF EXISTS table_index_idx"
-     "DROP INDEX IF EXISTS ot_ds_tname_idx"
+     ;"DROP TABLE IF EXISTS my_dataset"
+     ;"DROP TABLE IF EXISTS my_meta_tables"
+     ;"DROP TABLE IF EXISTS table_item"
+     ;"DROP TABLE IF EXISTS table_index"
+     ;"DROP TABLE IF EXISTS table_index_item"
+     ;"DROP INDEX IF EXISTS my_meta_tables_idx"
+     ;"DROP INDEX IF EXISTS table_item_idx"
+     ;"DROP INDEX IF EXISTS table_index_idx"
+     ;"DROP INDEX IF EXISTS ot_ds_tname_idx"
      "DROP TABLE IF EXISTS my_scenes"
      "DROP INDEX IF EXISTS scenes_group_id_idx"
      "DROP INDEX IF EXISTS scenes_params_idx"
@@ -333,11 +335,11 @@
 (def my-grid-tables-set #{"ml_train_data"
                           "my_caches"
                           "my_users_group"
-                          "my_dataset"
-                          "my_meta_tables"
-                          "table_item"
-                          "table_index"
-                          "table_index_item"
+                          ;"my_dataset"
+                          ;"my_meta_tables"
+                          ;"table_item"
+                          ;"table_index"
+                          ;"table_index_item"
                           "my_scenes"
                           "call_scenes"
                           "my_select_views"

@@ -9,13 +9,13 @@ public class MyViewsPk implements Serializable {
      * */
     private Long group_id;
     private String table_name;
-    private Long data_set_id;
+    private String dataset_name;
 
-    public MyViewsPk(final Long group_id, final String table_name, final Long data_set_id)
+    public MyViewsPk(final Long group_id, final String table_name, final String dataset_name)
     {
         this.group_id = group_id;
         this.table_name = table_name;
-        this.data_set_id = data_set_id;
+        this.dataset_name = dataset_name;
     }
 
     public MyViewsPk()
@@ -37,12 +37,12 @@ public class MyViewsPk implements Serializable {
         this.table_name = table_name;
     }
 
-    public Long getData_set_id() {
-        return data_set_id;
+    public String getDataset_name() {
+        return dataset_name;
     }
 
-    public void setData_set_id(Long data_set_id) {
-        this.data_set_id = data_set_id;
+    public void setDataset_name(String dataset_name) {
+        this.dataset_name = dataset_name;
     }
 
     @Override
@@ -50,7 +50,7 @@ public class MyViewsPk implements Serializable {
         return "MyViewsPk{" +
                 "group_id=" + group_id +
                 ", table_name='" + table_name + '\'' +
-                ", data_set_id=" + data_set_id +
+                ", dataset_name=" + dataset_name +
                 '}';
     }
 }

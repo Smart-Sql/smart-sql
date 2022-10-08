@@ -16,7 +16,7 @@
              (cn.plus.model.ddl MyDataSet MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
-             (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
+             (org.gridgain.ddl MyDdlUtilEx MyDdlUtil)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
              (java.math BigDecimal)
@@ -95,14 +95,23 @@
 
 ; 删除表索引
 ; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
-(defn drop_index [^Ignite ignite group_id ^String sql_line]
-    (let [sql_code (str/lower-case sql_line)]
-        (if (= (first group_id) 0)
-            (run_ddl_real_time ignite (second group_id) sql_line)
-            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
-                (run_ddl_real_time ignite (second group_id) sql_line)
-                (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
+;(defn drop_index [^Ignite ignite group_id ^String sql_line]
+;    (let [sql_code (str/lower-case sql_line)]
+;        (if (= (first group_id) 0)
+;            (run_ddl_real_time ignite (second group_id) sql_line)
+;            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+;                (run_ddl_real_time ignite (second group_id) sql_line)
+;                (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
+(defn drop_index [^Ignite ignite group_id ^String sql_line]
+    (if-let [{index_name :index_name} (get_drop_index_obj sql_line)]
+        (if-let [{schema_name :schema_name} (.get (.cache ignite "index_ast") index_name)]
+            (if (= (first group_id) 0)
+                (MyDdlUtilEx/deleteIndexCache ignite {:sql sql_line :index {:index_name index_name}})
+                (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+                    (if (my-lexical/is-eq? schema_name (second group_id))
+                        (MyDdlUtilEx/deleteIndexCache ignite {:sql sql_line :index {:index_name index_name}}))
+                    (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))))))
 
 
 

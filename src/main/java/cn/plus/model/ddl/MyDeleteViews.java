@@ -14,15 +14,15 @@ public class MyDeleteViews implements Serializable {
      * */
     private Long group_id;
     private String table_name;
-    private Long data_set_id;
+    private String dataset_name;
 
     private String code;
 
-    public MyDeleteViews(final Long group_id, final String table_name, final Long data_set_id, final String code)
+    public MyDeleteViews(final Long group_id, final String table_name, final String dataset_name, final String code)
     {
         this.group_id = group_id;
         this.table_name = table_name;
-        this.data_set_id = data_set_id;
+        this.dataset_name = dataset_name;
         this.code = code;
     }
 
@@ -45,12 +45,12 @@ public class MyDeleteViews implements Serializable {
         this.table_name = table_name;
     }
 
-    public Long getData_set_id() {
-        return data_set_id;
+    public String getDataset_name() {
+        return dataset_name;
     }
 
-    public void setData_set_id(Long data_set_id) {
-        this.data_set_id = data_set_id;
+    public void setDataset_name(String dataset_name) {
+        this.dataset_name = dataset_name;
     }
 
     public String getCode() {
@@ -66,7 +66,7 @@ public class MyDeleteViews implements Serializable {
         return "MyDeleteViews{" +
                 "group_id=" + group_id +
                 ", table_name='" + table_name + '\'' +
-                ", data_set_id=" + data_set_id +
+                ", dataset_name=" + dataset_name +
                 ", code='" + code + '\'' +
                 '}';
     }

@@ -129,6 +129,7 @@ public class MyDdlUtil implements Serializable {
                             ((ArrayList<String>) map.get(Keyword.intern("un_sql"))).stream().forEach(sql -> ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll());
                         }
                     }
+                    ex.printStackTrace();
                 } finally {
                     if (tx != null) {
                         tx.close();

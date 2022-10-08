@@ -1,4 +1,5 @@
 ## Smart 中的函数
+
 ### 1、访问数据库
 
 | 函数名    | 说明                                               |
@@ -6,6 +7,7 @@
 | query_sql | 在 Smart Sql 访问数据库的方法，只能执行 DML 语句。 |
 
 **用法有三种：**
+
 ```sql
 -- 1、输入 sql 和参数
 query_sql("select m.id from my_dataset m where m.dataset_name = ?", name);

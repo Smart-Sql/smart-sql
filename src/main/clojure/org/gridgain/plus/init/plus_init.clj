@@ -30,10 +30,10 @@
 
 (defn meta-ast [^Ignite ignite ^String sql]
     (if (some? (re-find #"^(?i)\s*CREATE\s+TABLE\s+" sql))
-        (let [{schema_name :schema_name table_name :table_name value :value} (my-create-table/get-meta-pk-data sql)]
+        (let [{schema_name :schema_name table_name :table_name pk-data :pk-data} (my-create-table/to_ddl_obj ignite sql "MY_META")]
             (let [table-ast-cache (.cache ignite "table_ast") my-pk (MySchemaTable. schema_name table_name)]
                 (if-not (.containsKey table-ast-cache my-pk)
-                    (.put table-ast-cache my-pk value)))
+                    (.put table-ast-cache my-pk pk-data)))
             )))
 
 ; 获取 code 序列

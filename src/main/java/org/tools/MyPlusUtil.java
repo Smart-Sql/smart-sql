@@ -47,6 +47,15 @@ public class MyPlusUtil {
     }
 
     /**
+     * 输入 ignite 获取 IgniteH2Indexing 对象
+     * */
+    public static IgniteH2Indexing getIgniteH2Indexing(final Ignite ignite)
+    {
+        GridKernalContext ctx = ((IgniteEx)ignite).context();
+        return (IgniteH2Indexing)ctx.query().getIndexing();
+    }
+
+    /**
      * 获取 IgniteScheduleProcessor
      * */
     public static IgniteScheduleProcessor getIgniteScheduleProcessor(final Ignite ignite)

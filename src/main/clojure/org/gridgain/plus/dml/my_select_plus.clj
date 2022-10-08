@@ -922,10 +922,7 @@
                         )))
             ; 获取 data_set 的名字和对应的表
             (get_data_set_name [^Ignite ignite group_id]
-                ;(when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name from my_users_group as g JOIN my_dataset as m ON m.id = g.data_set_id where g.id = ?") (to-array [group_id])))))]
-                ;    (first m))
-                (second group_id)
-                )
+                (second group_id))
             (select-to-sql
                 ([ignite group_id ast] (cond (and (some? ast) (instance? clojure.lang.LazySeq ast)) (.toString (ar-to-sql (select-to-sql ignite group_id ast []) (StringBuilder.)))
                                              (contains? ast :sql_obj) (select_to_sql_single ignite group_id (get ast :sql_obj))

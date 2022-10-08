@@ -31,16 +31,12 @@
     (if (= (first group_id) 0)
         (if-let [data_set_name (get-dataset-name sql)]
             (if-not (my-lexical/is-eq? data_set_name "my_meta")
-                (let [ds-cache (.cache ignite "my_dataset")]
-                    (let [data_set_name_u (str/lower-case data_set_name)]
-                        (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_meta.my_dataset as m where m.dataset_name = ?") (to-array [data_set_name_u])))))
+                (let [ds-cache (.cache ignite "my_meta_table")]
+                    (let [data_set_name_u (str/upper-case data_set_name)]
+                        (if (empty? (.getAll (.query ds-cache (.setArgs (SqlFieldsQuery. "SELECT m.DATA_SET_NAME FROM sys.data_set AS m WHERE m.DATA_SET_NAME = ?") (to-array [data_set_name_u])))))
                             (if (some? (.getOrCreateCache ignite (doto (CacheConfiguration. (str (str/lower-case data_set_name) "_meta"))
                                                                      (.setSqlSchema data_set_name_u))))
-                                (let [id (.incrementAndGet (.atomicSequence ignite "my_dataset" 0 true))]
-                                    (if (nil? (.put ds-cache id (MyDataSet. id data_set_name_u)))
-                                        (do
-                                            (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u)
-                                            (MyDdlUtil/runDdlDs ignite sql)))))
+                                (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u))
                             (throw (Exception. "该数据集已经存在了！"))))
                     )
                 (throw (Exception. "该数据集已经存在了！")))

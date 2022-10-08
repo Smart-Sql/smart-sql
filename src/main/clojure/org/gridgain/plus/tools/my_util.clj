@@ -7,6 +7,7 @@
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache CacheMode)
              (com.google.gson Gson GsonBuilder)
+             (org.tools MyPlusUtil)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery))
     (:gen-class
         ; 生成 class 的类名
@@ -39,7 +40,14 @@
 (defn -toList [lst]
     (to_arryList lst))
 
-
+(defn get-table-ast [^Ignite ignite ^String ds-name ^String table-name]
+    (if-let [tbl (.dataTable (.schemaManager (MyPlusUtil/getIgniteH2Indexing ignite)) (str/upper-case ds-name) (str/upper-case table-name))]
+        (loop [[f & r] (.getColumns tbl) pk [] data []]
+            (if (some? f)
+                (if (true? (.isKeyColumn (.rowDescriptor tbl) (.getColumnId f)))
+                    (recur r (conj pk {:column_name (str/lower-case (.getName f)), :column_type (.getOriginalSQL f), :pkid true}) data)
+                    (recur r pk (conj data {:column_name (str/lower-case (.getName f)), :column_type (.getOriginalSQL f), :pkid true})))
+                {:pk pk :data data}))))
 
 
 

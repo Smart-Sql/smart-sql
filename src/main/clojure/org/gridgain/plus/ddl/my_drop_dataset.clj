@@ -38,12 +38,10 @@
     (if (= (first group_id) 0)
         (if-let [data_set_name (get-dataset-name sql)]
             (if-let [ds-cache (.cache ignite (str (str/lower-case data_set_name) "_meta"))]
-                (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select mt.id from my_dataset as m, my_meta_tables as mt where m.id = mt.data_set_id and m.dataset_name = ? limit 0, 1") (to-array [(str/lower-case data_set_name)])))))
+                (if (empty? (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. "SELECT m.CACHE_ID FROM sys.TABLES AS m WHERE m.SCHEMA_NAME = ? limit 0, 1") (to-array [(str/upper-case data_set_name)])))))
                     (do
                         (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case data_set_name))
-                        (.destroy ds-cache)
-                        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "delete from my_dataset where dataset_name = ?") (to-array [(str/lower-case data_set_name)]))))
-                        (MyDdlUtil/runDdlDs ignite sql))
+                        (.destroy ds-cache))
                     (throw (Exception. "数据集中还存在表！不能删除！")))))
         (throw (Exception. "没有执行语句的权限！"))))
 
@@ -51,11 +49,9 @@
     (if (= (first group_id) 0)
         (if-let [data_set_name (get-dataset-name-lst lst)]
             (if-let [ds-cache (.cache ignite (str (str/lower-case data_set_name) "_meta"))]
-                (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select mt.id from my_dataset as m, my_meta_tables as mt where m.id = mt.data_set_id and m.dataset_name = ? limit 0, 1") (to-array [(str/lower-case data_set_name)])))))
+                (if (empty? (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. "SELECT m.CACHE_ID FROM sys.TABLES AS m WHERE m.SCHEMA_NAME = ? limit 0, 1") (to-array [(str/upper-case data_set_name)])))))
                     (do
                         (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case data_set_name))
-                        (.destroy ds-cache)
-                        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "delete from my_dataset where dataset_name = ?") (to-array [(str/lower-case data_set_name)]))))
-                        (MyDdlUtil/runDdlDs ignite (str/join " " lst)))
+                        (.destroy ds-cache))
                     (throw (Exception. "数据集中还存在表！不能删除！")))))
         (throw (Exception. "没有执行语句的权限！"))))

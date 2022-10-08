@@ -85,16 +85,6 @@
              lst
              (conj lst (str/join stack-lst))))))
 
-; 通过 userToken 获取 group_id
-;(defn get_group_id [^Ignite ignite ^String userToken]
-;    (if (my-lexical/is-eq? userToken (.getRoot_token (.configuration ignite)))
-;        [0 "MY_META" "ALL" -1]
-;        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select g.id, m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.user_token = ?") (to-array [userToken])))))]
-;            m))
-;    )
-
-;(def my_group_id (memoize get_group_id))
-
 ; 是否 select 语句
 (defn has-from? [[f & r]]
     (if (some? f)
@@ -189,7 +179,7 @@
                                                                                                                                          "select show_msg('true') as tip"
                                                                                                                                          "select show_msg('false') as tip"))
                    ; create table
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/my_create_table_lst ignite group_id "" (cull-semicolon lst))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/my_create_table_lst ignite group_id (cull-semicolon lst))]
                                                                                                                                      (if (nil? rs)
                                                                                                                                          (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
                                                                                                                                          (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))

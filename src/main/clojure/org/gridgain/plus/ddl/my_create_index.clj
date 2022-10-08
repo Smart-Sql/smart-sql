@@ -13,10 +13,10 @@
              (com.google.common.base Strings)
              (org.tools MyConvertUtil)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
-             (cn.plus.model.ddl MyTableIndex MyTableIndexItem MyTableItemPK)
+             (cn.plus.model.ddl MyTableIndex MyTableIndexItem MyTableItemPK MyTableIndexPk)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
-             (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
+             (org.gridgain.ddl MyDdlUtilEx MyDdlUtil)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
              (java.math BigDecimal)
@@ -88,7 +88,7 @@
         (if (some? create_index_line)
             (let [index_name (re-find #"^(?i)\w+\s+ON\s+" last_line) last_line_1 (str/replace last_line #"^(?i)\w+\s+ON\s+" "")]
                 (if (some? index_name)
-                    (let [table_name (re-find #"^(?i)\w+\.\w+\s+|^(?i)\w+\s+" last_line_1) last_line_2 (str/replace last_line_1 #"^(?i)\w+\.\w+\s+|^(?i)\w+\s+" "")]
+                    (let [table_name (re-find #"^(?i)\w+\s*\.\s*\w+\s+|^(?i)\w+\s+" last_line_1) last_line_2 (str/replace last_line_1 #"^(?i)\w+\s*\.\s*\w+\s+|^(?i)\w+\s+" "")]
                         (if (some? table_name)
                             (let [index_items (re-find #"(?i)(?<=^\()[\s\S]*(?=\))" last_line_2) last_line_3 (str/replace last_line_2 #"(?i)(?<=^\()[\s\S]*(?=\))" "") {schema_name :schema_name table_name :table_name} (my-lexical/get-schema (str/trim (str/lower-case table_name)))]
                                 (if (some? index_name)
@@ -117,7 +117,7 @@
                                 (if (some? f)
                                     (do
                                         (let [index_item_id (.incrementAndGet (.atomicSequence ignite "table_index_item" 0 true)) {index_item :item_name sort_order :asc_desc} f]
-                                            (let [my-key (MyTableItemPK. index_item_id index_id) my-value (MyTableIndexItem. index_item_id index_item sort_order index_id)]
+                                            (let [my-key (MyTableIndexPk. index_item_id index_id) my-value (MyTableIndexItem. index_item_id index_item sort_order index_id)]
                                                 (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
                                                     (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key my-value (SqlType/INSERT) (MyLogCache. "table_index_item" "MY_META" "table_index_item" my-key my-value (SqlType/INSERT)))))
                                                     (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") my-key my-value (SqlType/INSERT) nil))))
@@ -128,7 +128,7 @@
                                 (if-not (Strings/isNullOrEmpty (.getMyLogCls (.configuration ignite)))
                                     (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) (MyLogCache. "table_index" "MY_META" "table_index" my-key my-value (SqlType/INSERT)))))
                                     (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) nil)))))
-))))
+                        ))))
             (get-index-obj [^String data_set_name ^String sql_line]
                 (let [m (get_create_index_obj sql_line)]
                     (cond (and (= (-> m :schema_name) "") (not (= data_set_name ""))) (assoc m :schema_name data_set_name)
@@ -179,14 +179,28 @@
 
 ; 新增 index
 ; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+;(defn create_index [^Ignite ignite group_id ^String sql_line]
+;    (let [sql_code (str/lower-case sql_line)]
+;        (if (= (first group_id) 0)
+;            (run_ddl_real_time ignite sql_line (second group_id))
+;            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+;                (run_ddl_real_time ignite sql_code (second group_id))
+;                (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))
+;            )))
+
 (defn create_index [^Ignite ignite group_id ^String sql_line]
-    (let [sql_code (str/lower-case sql_line)]
-        (if (= (first group_id) 0)
-            (run_ddl_real_time ignite (second group_id) sql_line)
-            (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
-                (run_ddl_real_time ignite (second group_id) sql_code)
-                (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))
-            )))
+    (if (= (first group_id) 0)
+        (let [ast (get_create_index_obj sql_line)]
+            (let [{index_name :index_name} ast]
+                (MyDdlUtilEx/saveIndexCache ignite {:sql sql_line :index {:index_name index_name :index_ast ast}})))
+        (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
+            (let [ast (get_create_index_obj sql_line)]
+                (let [{schema_name :schema_name index_name :index_name} ast]
+                    (cond (and (not (my-lexical/is-eq? schema_name "my_meta")) (my-lexical/is-eq? schema_name (second group_id))) (MyDdlUtilEx/saveIndexCache ignite {:sql sql_line :index {:index_name index_name :index_ast ast}})
+                          (and (not (my-lexical/is-eq? schema_name "my_meta")) (not (my-lexical/is-eq? schema_name (second group_id)))) (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))
+                          (my-lexical/is-eq? schema_name "my_meta") (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))))
+            (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))
+        ))
 
 
 

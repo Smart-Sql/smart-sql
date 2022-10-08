@@ -256,7 +256,13 @@ public class MyCacheExUtil implements Serializable {
         BinaryObjectBuilder keyBuilder = ignite.binary().builder(KvSql.getKeyType(ignite, table_name));
         for (MyKeyValue m : lst)
         {
-            keyBuilder.setField(m.getName(), m.getValue());
+            if (m.getValue() != null) {
+                keyBuilder.setField(m.getName(), m.getValue());
+            }
+            else
+            {
+                keyBuilder.setField(m.getName(), null);
+            }
         }
         return keyBuilder.build();
     }
