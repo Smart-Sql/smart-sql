@@ -6,7 +6,7 @@
     /**
     1、用户自定义的 cache
     */
-    CREATE TABLE IF NOT EXISTS my_caches (
+    CREATE TABLE IF NOT EXISTS my_meta.my_caches (
                     dataset_name VARCHAR,
                     -- cache 表名
                     table_name VARCHAR(40),
@@ -22,7 +22,7 @@
     /**
         记录机器学习的训练数据集的名字
     */
-        CREATE TABLE IF NOT EXISTS ml_train_data (
+        CREATE TABLE IF NOT EXISTS my_meta.ml_train_data (
                             dataset_name VARCHAR,
                             -- cache 表名
                             table_name VARCHAR(40),
@@ -38,7 +38,7 @@
          group_type: DDL, DML, DDL和DML
          DROP TABLE IF EXISTS my_users_group;
          */
-         CREATE TABLE IF NOT EXISTS my_users_group (
+         CREATE TABLE IF NOT EXISTS my_meta.my_users_group (
                          id BIGINT,
                          -- 用户组名称
                          group_name VARCHAR(40),
@@ -51,7 +51,7 @@
                          PRIMARY KEY (id)
                          ) WITH \"template=MyMeta_template,cache_name=my_users_group,VALUE_TYPE=cn.plus.model.MyUsersGroup,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
-    CREATE INDEX IF NOT EXISTS my_users_group_user_token_idx ON my_users_group (user_token);
+    CREATE INDEX IF NOT EXISTS my_users_group_user_token_idx ON my_meta.my_users_group (user_token);
 
     
     /**
@@ -156,7 +156,7 @@
     DROP TABLE IF EXISTS my_scenes;
     DROP INDEX IF EXISTS scenes_group_id_idx;
     */
-    CREATE TABLE IF NOT EXISTS my_scenes (
+    CREATE TABLE IF NOT EXISTS my_meta.my_scenes (
                     group_id BIGINT,
                     scenes_name VARCHAR(40),
                     --sql_code VARCHAR,
@@ -167,7 +167,7 @@
                     PRIMARY KEY (scenes_name, group_id)
                     ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyScenesCachePk,VALUE_TYPE=cn.plus.model.db.MyScenesCache,cache_name=my_scenes,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
-    CREATE INDEX IF NOT EXISTS scenes_group_id_idx ON my_scenes (scenes_name, group_id);
+    CREATE INDEX IF NOT EXISTS scenes_group_id_idx ON my_meta.my_scenes (scenes_name, group_id);
 
     /**
     14、将本用户组场景的使用权限，赋给其它用户组的表：
@@ -179,7 +179,7 @@
     DROP TABLE IF EXISTS call_scenes;
     DROP INDEX IF EXISTS call_scenes_idx;
     */
-    CREATE TABLE IF NOT EXISTS call_scenes (
+    CREATE TABLE IF NOT EXISTS my_meta.call_scenes (
                     group_id BIGINT,
                     to_group_id BIGINT,
                     scenes_name VARCHAR(40),
@@ -190,7 +190,7 @@
     15、查询的权限视图：my_select_views
     DROP TABLE IF EXISTS my_select_views;
     */
-    CREATE TABLE IF NOT EXISTS my_select_views (
+    CREATE TABLE IF NOT EXISTS my_meta.my_select_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
                     dataset_name VARCHAR,
@@ -202,7 +202,7 @@
     16、更新的权限视图：my_update_views
     DROP TABLE IF EXISTS my_update_views;
     */
-    CREATE TABLE IF NOT EXISTS my_update_views (
+    CREATE TABLE IF NOT EXISTS my_meta.my_update_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
                     dataset_name VARCHAR,
@@ -214,7 +214,7 @@
     17、修改的权限视图：my_insert_views
     DROP TABLE IF EXISTS my_insert_views;
     */
-    CREATE TABLE IF NOT EXISTS my_insert_views (
+    CREATE TABLE IF NOT EXISTS my_meta.my_insert_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
                     dataset_name VARCHAR,
@@ -226,7 +226,7 @@
     18、删除的权限视图：my_delete_views
     DROP TABLE IF EXISTS my_delete_views;
     */
-    CREATE TABLE IF NOT EXISTS my_delete_views (
+    CREATE TABLE IF NOT EXISTS my_meta.my_delete_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
                     dataset_name VARCHAR,
@@ -243,7 +243,7 @@
     DROP TABLE IF EXISTS my_group_view;
     */
     /**
-    CREATE TABLE IF NOT EXISTS my_group_view (
+    CREATE TABLE IF NOT EXISTS my_meta.my_group_view (
                     id BIGINT,
                     my_group_id BIGINT,
                     view_id BIGINT,
@@ -273,7 +273,7 @@
     23、定时任务
     DROP TABLE IF EXISTS my_cron;
     */
-    CREATE TABLE IF NOT EXISTS my_cron (
+    CREATE TABLE IF NOT EXISTS my_meta.my_cron (
                       job_name VARCHAR(40),
                       group_id BIGINT,
                       cron VARCHAR,
@@ -284,7 +284,7 @@
     /**
     24、自定义方法
     */
-    CREATE TABLE IF NOT EXISTS my_func (
+    CREATE TABLE IF NOT EXISTS my_meta.my_func (
                     method_name VARCHAR(30),
                     java_method_name VARCHAR(30),
                     cls_name VARCHAR,
@@ -293,7 +293,7 @@
                     PRIMARY KEY (method_name)
                     ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.ddl.MyFunc,cache_name=my_func,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
-    CREATE TABLE IF NOT EXISTS my_func_ps (
+    CREATE TABLE IF NOT EXISTS my_meta.my_func_ps (
                     method_name VARCHAR(30),
                     ps_index INTEGER,
                     ps_type VARCHAR(20),

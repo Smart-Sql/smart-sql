@@ -2,6 +2,7 @@ package org.tools;
 
 import clojure.lang.LazySeq;
 import clojure.lang.PersistentArrayMap;
+import cn.plus.model.MyIndexAstPk;
 import cn.plus.model.ddl.MySchemaTable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,7 +27,7 @@ public class MyInitCache {
         cfg.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg);
 
-        CacheConfiguration<String, PersistentArrayMap> cfg_kv = new CacheConfiguration<>();
+        CacheConfiguration<MyIndexAstPk, PersistentArrayMap> cfg_kv = new CacheConfiguration<>();
         cfg_kv.setCacheMode(CacheMode.REPLICATED);
         cfg_kv.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         //cfg_kv.setDataRegionName("Near_Caches_Region_Eviction");

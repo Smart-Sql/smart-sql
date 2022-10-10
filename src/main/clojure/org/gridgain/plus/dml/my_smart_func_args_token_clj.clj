@@ -176,7 +176,7 @@
                   (my-lexical/is-eq? func-name "noSqlInsert") (format "(my-lexical/no-sql-insert ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "noSqlUpdate") (format "(my-lexical/no-sql-update ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "noSqlDelete") (format "(my-lexical/no-sql-delete ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
-                  (my-lexical/is-eq? func-name "auto_id") (format "(my-lexical/auto_id ignite %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                  (my-lexical/is-eq? func-name "auto_id") (format "(my-lexical/auto_id ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
 
                   (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
                   (my-lexical/is-eq? func-name "my_view") (format "(smart-func/smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
@@ -245,8 +245,10 @@
                                                                                                              )
                                        :else
                                        (format "(my-lexical/get-value %s)" (-> m :item_name)))
-          (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (my-lexical/get-java-items-vs m)
+          (and (= java.lang.String (-> m :java_item_type)) (true? (-> m :const))) (my-lexical/my-str-value (-> m :item_name))
           (and (not (= java.lang.String (-> m :java_item_type))) (true? (-> m :const))) (my-lexical/get-java-items-vs m)
+          :else
+          (-> m :item_name)
           ))
 
 ;(defn judge [ignite group_id lst args-dic]

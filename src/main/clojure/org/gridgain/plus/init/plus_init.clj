@@ -1,6 +1,7 @@
 (ns org.gridgain.plus.init.plus-init
     (:require
         [org.gridgain.plus.init.plus-init-sql :as plus-init]
+        [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.ddl.my-create-table :as my-create-table]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
@@ -30,7 +31,7 @@
 
 (defn meta-ast [^Ignite ignite ^String sql]
     (if (some? (re-find #"^(?i)\s*CREATE\s+TABLE\s+" sql))
-        (let [{schema_name :schema_name table_name :table_name pk-data :pk-data} (my-create-table/to_ddl_obj ignite sql "MY_META")]
+        (let [{schema_name :schema_name table_name :table_name pk-data :pk-data} (my-create-table/to_ddl_obj_no_tmp (my-lexical/to-back sql) "MY_META")]
             (let [table-ast-cache (.cache ignite "table_ast") my-pk (MySchemaTable. schema_name table_name)]
                 (if-not (.containsKey table-ast-cache my-pk)
                     (.put table-ast-cache my-pk pk-data)))

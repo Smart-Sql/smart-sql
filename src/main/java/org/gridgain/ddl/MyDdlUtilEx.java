@@ -2,6 +2,7 @@ package org.gridgain.ddl;
 
 import clojure.lang.Keyword;
 import clojure.lang.PersistentArrayMap;
+import cn.plus.model.MyIndexAstPk;
 import cn.plus.model.MySmartDll;
 import cn.plus.model.ddl.MySchemaTable;
 import cn.smart.service.IMyLogTrans;
@@ -116,7 +117,7 @@ public class MyDdlUtilEx {
                 myLog.createSession(transSession);
 
                 ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-                ignite.cache("index_ast").put(index_data.get(Keyword.intern("index_name")), index_data.get(Keyword.intern("index_ast")));
+                ignite.cache("index_ast").put(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()), index_data.get(Keyword.intern("index_ast")));
 
                 MySmartDll mySmartDll = new MySmartDll(sql);
                 myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
@@ -130,7 +131,7 @@ public class MyDdlUtilEx {
         else
         {
             ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-            ignite.cache("index_ast").put(index_data.get(Keyword.intern("index_name")), index_data.get(Keyword.intern("index_ast")));
+            ignite.cache("index_ast").put(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()), index_data.get(Keyword.intern("index_ast")));
         }
     }
 
@@ -173,7 +174,7 @@ public class MyDdlUtilEx {
                 myLog.createSession(transSession);
 
                 ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-                ignite.cache("index_ast").remove(index_data.get(Keyword.intern("index_name")));
+                ignite.cache("index_ast").remove(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()));
 
                 MySmartDll mySmartDll = new MySmartDll(sql);
                 myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
@@ -187,7 +188,7 @@ public class MyDdlUtilEx {
         else
         {
             ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-            ignite.cache("index_ast").remove(index_data.get(Keyword.intern("index_name")));
+            ignite.cache("index_ast").remove(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()));
         }
     }
 }

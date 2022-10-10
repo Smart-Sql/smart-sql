@@ -18,6 +18,7 @@
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
              (org.gridgain.ddl MyDdlUtilEx MyDdlUtil)
              (java.util ArrayList Date Iterator)
+             (cn.plus.model MyIndexAstPk)
              (java.sql Timestamp)
              (java.math BigDecimal)
              )
@@ -105,7 +106,7 @@
 
 (defn drop_index [^Ignite ignite group_id ^String sql_line]
     (if-let [{index_name :index_name} (get_drop_index_obj sql_line)]
-        (if-let [{schema_name :schema_name} (.get (.cache ignite "index_ast") index_name)]
+        (if-let [{schema_name :schema_name} (.get (.cache ignite "index_ast") (MyIndexAstPk. index_name))]
             (if (= (first group_id) 0)
                 (MyDdlUtilEx/deleteIndexCache ignite {:sql sql_line :index {:index_name index_name}})
                 (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))

@@ -159,7 +159,7 @@
         (my-smart-clj/smart-lst-to-clj ignite group_id smart-code-lst)))
 
 (defn super-sql-lst
-    ([^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type ^Long dataset_id lst] (super-sql-lst ignite [group_id dataset_name group_type dataset_id] lst []))
+    ([^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type lst] (super-sql-lst ignite [group_id dataset_name group_type] lst []))
     ([^Ignite ignite group_id [lst & r] lst-rs]
      (if (some? lst)
          (if-not (nil? (first lst))
@@ -232,15 +232,15 @@
              (last lst-rs)))))
 
 (defn super-sql [^Ignite ignite ^String userToken ^List lst]
-    (let [[group_id dataset_name group_type dataset_id] (my-user-group/get_user_group ignite userToken)]
+    (let [[group_id dataset_name group_type] (my-user-group/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         ;(println lst)
-        (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id lst)))
+        (super-sql-lst ignite group_id userToken dataset_name group_type lst)))
 
 (defn super-sql-line [^Ignite ignite ^String userToken ^String line]
-    (let [[group_id dataset_name group_type dataset_id] (my-user-group/get_user_group ignite userToken)]
+    (let [[group_id dataset_name group_type] (my-user-group/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
-        (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
+        (super-sql-lst ignite group_id userToken dataset_name group_type (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
 
 (defn -recovery_ddl [this ^Ignite ignite ^String line]
     (let [userToken (.getRoot_token (.configuration ignite))]

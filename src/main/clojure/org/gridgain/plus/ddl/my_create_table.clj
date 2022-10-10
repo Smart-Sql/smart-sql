@@ -264,6 +264,16 @@
             (throw (Exception. "创建表的语句错误！")))
         ))
 
+(defn get_table_line_obj_no_tmp [lst-sql]
+    (let [{schema_name :schema_name table_name :table_name items_line :items_line} (get-create-table-items lst-sql)]
+        (if-let [{lst_table_item :lst_table_item} (my_get_obj_ds (get_items_obj_lst items_line))]
+            {:schema_name schema_name
+             :table_name table_name
+             :lst_table_item lst_table_item
+             }
+            (throw (Exception. "创建表的语句错误！")))
+        ))
+
 (defn get_pk_data [lst]
     (loop [[f & r] lst dic-pk [] dic-data []]
         (if (some? f)
@@ -292,7 +302,16 @@
             (throw (Exception. "该用户组没有创建表的权限！")))
         ))
 
-
+(defn to_ddl_obj_no_tmp [lst-sql ^String data_set_name]
+    (if-let [{schema_name-0 :schema_name table_name-0 :table_name lst_table_item :lst_table_item} (get_table_line_obj_no_tmp lst-sql)]
+        (let [schema_name (str/lower-case schema_name-0) table_name (str/lower-case table_name-0)]
+            (cond (and (= schema_name "") (not (= data_set_name "")) (not (my-lexical/is-eq? data_set_name "MY_META"))) {:schema_name data_set_name :table_name table_name :pk-data (get_pk_data lst_table_item)}
+                  (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:schema_name schema_name :table_name table_name :pk-data (get_pk_data lst_table_item)}
+                  (and (= schema_name "") (my-lexical/is-eq? data_set_name "MY_META")) {:schema_name "public" :table_name table_name :pk-data (get_pk_data lst_table_item)}
+                  :else
+                  (throw (Exception. "没有创建表语句的权限！"))
+                  ))
+        (throw (Exception. "创建表的语句错误！"))))
 
 
 

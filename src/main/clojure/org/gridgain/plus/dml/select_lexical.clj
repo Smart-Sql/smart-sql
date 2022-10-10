@@ -543,8 +543,20 @@
 (defn my-regular [line]
     (eval (read-string (format "#\"%s\"" line))))
 
-(defn auto_id [^Ignite ignite ^String cache-name]
-    (.incrementAndGet (.atomicSequence ignite cache-name 0 true)))
+(defn auto_id [^Ignite ignite group_id ^String cache-name]
+    (if-let [lst (str/split cache-name #"\.")]
+        (cond (= (count lst) 1) (if (is-eq? (second group_id) "my_meta")
+                                    (.incrementAndGet (.atomicSequence ignite cache-name 0 true))
+                                    (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" (str/lower-case (second group_id)) (str/lower-case cache-name)) 0 true)))
+              (= (count lst) 2) (cond (and (is-eq? (second group_id) "my_meta") (is-eq? (first lst) "my_meta")) (.incrementAndGet (.atomicSequence ignite (second lst) 0 true))
+                                      (and (is-eq? (second group_id) "my_meta") (not (is-eq? (first lst) "my_meta"))) (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" (str/lower-case (first lst)) (str/lower-case (second lst))) 0 true))
+                                      (and (not (is-eq? (second group_id) "my_meta")) (is-eq? (first lst) "my_meta")) (throw (Exception. "不能对 MY_META 中的表添加数据！"))
+                                      :else
+                                      (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" (str/lower-case (first lst)) (str/lower-case (second lst))) 0 true))
+                                      )
+              :else
+              (throw (Exception. (format "输入表名字符串 %s 有误！" cache-name)))
+              )))
 
 (defn smart-func [func-name]
     (cond (is-eq? func-name "add") "my-lexical/list-add"
