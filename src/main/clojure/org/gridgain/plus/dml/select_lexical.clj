@@ -859,6 +859,7 @@
           (re-find #"^(?i)REAL$" column_type) "DECIMAL"
           (re-find #"^(?i)VARBINARY$" column_type) "VARBINARY"
           (re-find #"^(?i)SMALLINT$" column_type) "INTEGER"
+          (re-find #"^(?i)bit$" column_type) "BOOLEAN"
           :else
           (throw (Exception. (format "数据类型写法有误请确认正确的写法！%s" column_type)))
           ))

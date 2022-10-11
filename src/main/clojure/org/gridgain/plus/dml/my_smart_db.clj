@@ -80,9 +80,12 @@
             )))
 
 (defn re-pk_rs [ignite pk_rs schema_name table_name]
-    (if (or (nil? pk_rs) (empty? pk_rs))
-        [(get-auto-id ignite schema_name table_name)]
-        pk_rs))
+    (if-let [pk-m (get-auto-id ignite schema_name table_name)]
+        (if (or (nil? pk_rs) (empty? pk_rs))
+            [pk-m]
+            (throw (Exception. "主键已经被设置成自动递增！不能手动添加了！")))
+        pk_rs)
+    )
 
 (defn args-to-dic
     ([args] (args-to-dic args {} []))
