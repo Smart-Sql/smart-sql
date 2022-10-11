@@ -243,6 +243,27 @@
                                                                                                                                                                        {:sql (str/join " " ["select" (-> tk :sql) "from" (-> tk-1 :sql) "limit" (-> tk-3 :sql)]) :args (filter #(not (nil? %)) (concat (-> tk :args) (-> tk-1 :args) (-> tk-3 :args)))})
 
                               ))))
+            (my-select_to_sql_single [ignite group_id dic-args ast]
+                (loop [[f & r] ast sb (StringBuilder.) args []]
+                    (if (some? f)
+                        (cond (= (first f) :query-items) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
+                                                             (recur r (doto sb (.append "select ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (= (first f) :table-items) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
+                                                             (recur r (doto sb (.append " from ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :where-items) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
+                                                                                      (recur r (doto sb (.append " where ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :group-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
+                                                                                   (recur r (doto sb (.append " group by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :having) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
+                                                                                 (recur r (doto sb (.append " having ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :order-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
+                                                                                   (recur r (doto sb (.append " order by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :limit) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
+                                                                                (recur r (doto sb (.append " limit ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              :else
+                              (recur r sb args)
+                              )
+                        {:sql (.toString sb) :args args})))
             (get-map-token-to-sql [m]
                 (loop [[f & r] m lst-sql [] lst-args []]
                     (if (some? f)
@@ -367,13 +388,13 @@
                 ([ignite group_id dic-args ast]
                  (cond (and (some? ast) (instance? clojure.lang.LazySeq ast)) (let [{sql :sql args :args} (select-to-sql ignite group_id dic-args ast [] [])]
                                                                                   {:sql sql :args args})
-                       (contains? ast :sql_obj) (select_to_sql_single ignite group_id dic-args (get ast :sql_obj))
+                       (contains? ast :sql_obj) (my-select_to_sql_single ignite group_id dic-args (get ast :sql_obj))
                        :else
                        (throw (Exception. "select 语句错误！"))))
                 ([ignite group_id dic-args [f & rs] lst_rs lst-args]
                  (if (some? f)
                      (if (map? f)
-                         (cond (contains? f :sql_obj) (let [{sql :sql args :args} (select_to_sql_single ignite group_id dic-args (get f :sql_obj))]
+                         (cond (contains? f :sql_obj) (let [{sql :sql args :args} (my-select_to_sql_single ignite group_id dic-args (get f :sql_obj))]
                                                           (recur ignite group_id dic-args rs (conj lst_rs sql) (filter #(not (nil? %)) (concat lst-args args))))
                                (contains? f :keyword) (recur ignite group_id dic-args rs (conj lst_rs (get f :keyword)) lst-args)
                                :else

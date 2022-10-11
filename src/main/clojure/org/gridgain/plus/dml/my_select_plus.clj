@@ -610,6 +610,26 @@
                 ([f l]
                  (if (and (some? f) (some? l))
                      {:order-item (map get-token f) :order l})))
+
+            (to-order-obj [m]
+                (if (contains? #{"desc" "asc"} (str/lower-case (last m)))
+                    (if-let [item-obj (get-token (drop-last 1 m))]
+                        (if (map? item-obj)
+                            {:order-item item-obj :order (last m)}
+                            (throw (Exception. "order by 语法错误！")))
+                        (throw (Exception. "order by 语法错误！")))
+                    (throw (Exception. "order by 语法错误！"))))
+
+            (my-get-order-by [lst]
+                (if-let [m (get-items lst)]
+                    (loop [[f & r] m lst []]
+                        (if (some? f)
+                            (if (some? r)
+                                (recur r (concat lst [(to-order-obj f) {:comma_symbol ","}]))
+                                (recur r (concat lst [(to-order-obj f)]))
+                                )
+                            lst))))
+
             (get-group-by-tokens [group-by]
                 (if-let [tokens (get-items group-by)]
                     (if (= (count tokens) 1)
@@ -625,6 +645,11 @@
             (get-limit [lst]
                 (let [m (my-comma-fn lst)]
                     (if (= (count m) 3) (map get-token m))))
+            (my-get-limit [lst]
+                (if (my-lexical/is-eq? (first lst) "limit")
+                    (if-let [m (get-items (rest lst))]
+                        (if (= (count m) 2)
+                            [(get-token (first m)) {:comma_symbol ","} (get-token (last m))]))))
             ; query items 处理
             (get-query-items [lst]
                 (when-let [[f & rs] (pre-query-lst lst)]
@@ -633,7 +658,7 @@
                                      (concat [(assoc (get-token item-lst) :alias alias)] (get-query-items rs))))))
             (sql-to-ast-single [sql-lst]
                 (when-let [{query-items :query-items table-items :table-items where-items :where-items group-by :group-by having :having order-by :order-by limit :limit} (my-lexical/get-segments-list sql-lst)]
-                    {:query-items (get-query-items (my-lexical/to-lazy query-items)) :table-items (get-table-items (my-lexical/to-lazy table-items)) :where-items (get-token where-items) :group-by (get-group-by-tokens group-by) :having (get-token having) :order-by (get-order-by order-by) :limit (get-limit limit)}))
+                    {:query-items (get-query-items (my-lexical/to-lazy query-items)) :table-items (get-table-items (my-lexical/to-lazy table-items)) :where-items (get-token where-items) :group-by (get-group-by-tokens group-by) :having (get-token having) :order-by (my-get-order-by order-by) :limit (my-get-limit limit)}))
             (to-ast [lst]
                 (if (string? lst) {:keyword lst}
                                   {:sql_obj (sql-to-ast-single lst)}))]
@@ -808,27 +833,27 @@
                               (and (some? query-items) (some? table-items) (empty? where-items) (empty? group-by) (empty? having) (empty? order-by) (some? limit)) (.toString (ar-to-sql ["select" (lst-token-to-line ignite group_id query-items) "from" (lst-token-to-line ignite group_id table-items) "limit" (lst-token-to-line ignite group_id limit)] (StringBuilder.)))
 
                               ))))
-            (my-select_to_sql_single [ignite group_id dic-args ast]
-                (loop [[f & r] ast sb (StringBuilder.) args []]
+            (my-select_to_sql_single [ignite group_id ast]
+                (loop [[f & r] ast sb (StringBuilder.)]
                     (if (some? f)
-                        (cond (= (first f) :query-items) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-                                                             (recur r (doto sb (.append "select ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-                              (= (first f) :table-items) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-                                                             (recur r (doto sb (.append " from ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-                              (and (= (first f) :where-items) (some? (second f))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-                                                                                      (recur r (doto sb (.append " where ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-                              (and (= (first f) :group-by) (some? (second f))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-                                                                                   (recur r (doto sb (.append " group by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-                              (and (= (first f) :having) (some? (second f))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-                                                                                 (recur r (doto sb (.append " having ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-                              (and (= (first f) :order-by) (some? (second f))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-                                                                                   (recur r (doto sb (.append " order by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-                              (and (= (first f) :limit) (some? (second f))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-                                                                                (recur r (doto sb (.append " limit ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                        (cond (= (first f) :query-items) (let [tk (lst-token-to-line ignite group_id (second f))]
+                                                             (recur r (doto sb (.append "select ") (.append tk))))
+                              (= (first f) :table-items) (let [tk (lst-token-to-line ignite group_id (second f))]
+                                                             (recur r (doto sb (.append " from ") (.append tk))))
+                              (and (= (first f) :where-items) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id (second f))]
+                                                                                      (recur r (doto sb (.append " where ") (.append tk))))
+                              (and (= (first f) :group-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id (second f))]
+                                                                                   (recur r (doto sb (.append " group by ") (.append tk))))
+                              (and (= (first f) :having) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id (second f))]
+                                                                                 (recur r (doto sb (.append " having ") (.append tk))))
+                              (and (= (first f) :order-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id (second f))]
+                                                                                   (recur r (doto sb (.append " order by ") (.append tk))))
+                              (and (= (first f) :limit) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id (second f))]
+                                                                                (recur r (doto sb (.append " limit ") (.append tk))))
                               :else
-                              (recur r sb args)
+                              (recur r sb)
                               )
-                        {:sql (.toString sb) :args args})))
+                        (.toString sb))))
             (lst-token-to-line
                 ([ignite group_id lst_token] (cond (string? lst_token) lst_token
                                                    (map? lst_token) (my-array-to-sql (token-to-sql ignite group_id lst_token))
