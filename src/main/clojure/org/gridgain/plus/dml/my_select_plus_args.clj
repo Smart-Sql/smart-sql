@@ -305,7 +305,9 @@
                         (contains? m :on) (on-to-line ignite group_id dic-args m)
                         (contains? m :comma_symbol) {:sql (get m :comma_symbol) :args nil} ;(get m :comma_symbol)
                         (contains? m :order-item) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (-> m :order-item))]
-                                                      {:sql (concat sql [(-> m :order)]) :args args})
+                                                      (if (string? sql)
+                                                          {:sql (format "%s %s" sql (-> m :order)) :args args}
+                                                          {:sql (format "%s %s" (str/join sql) (-> m :order)) :args args}))
                         (contains? m :item_name) (item-to-line dic-args m)
                         (contains? m :table_name) (table-to-line ignite group_id dic-args m)
                         (contains? m :exists) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (get (get m :select_sql) :parenthesis))]

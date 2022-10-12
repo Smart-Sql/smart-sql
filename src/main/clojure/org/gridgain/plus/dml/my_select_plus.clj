@@ -637,7 +637,7 @@
                         (loop [[f & r] tokens lst []]
                             (if (some? f)
                                 (if (some? r)
-                                    (recur r (concat lst [(get-token f) (get-token ",")]))
+                                    (recur r (concat lst [(get-token f) {:comma_symbol ","}]))
                                     (recur r (concat lst [(get-token f)])))
                                 lst))
                         )))
