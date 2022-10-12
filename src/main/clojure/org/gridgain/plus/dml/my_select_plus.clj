@@ -39,7 +39,7 @@
 (defn get-scenes [^Ignite ignite ^String scenes_name]
     (scenesObj. nil nil))
 
-(declare sql-to-ast get-my-sql-to-ast my-get-items ar-to-sql my-array-to-sql ast_to_sql)
+(declare sql-to-ast get-my-sql-to-ast my-get-items my-get-items-as ar-to-sql my-array-to-sql ast_to_sql)
 
 (defn get-my-sql-to-ast [m]
     (try
@@ -72,6 +72,41 @@
                                (not (= mid-small "big")) (recur r stack mid-small (conj stack-lst f) lst)
                                )
                (= f ",") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
+                             (recur r [] nil [] (conj lst stack-lst))
+                             (recur r stack mid-small (conj stack-lst f) lst))
+               :else
+               (recur r stack mid-small (conj stack-lst f) lst)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst stack-lst)
+             lst))))
+
+(defn my-get-items-as
+    ([lst] (my-get-items-as lst [] nil [] []))
+    ([[f & r] stack mid-small stack-lst lst]
+     (if (some? f)
+         (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "small" (conj stack-lst f) lst))
+               (= f "[") (if (or (= mid-small "small") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "mid" (conj stack-lst f) lst))
+               (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "big" (conj stack-lst f) lst))
+               (= f ")") (cond (and (= (count stack) 1) (= mid-small "small")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "small")) (recur r (pop stack) "small" (conj stack-lst f) lst)
+                               (not (= mid-small "small")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "]") (cond (and (= (count stack) 1) (= mid-small "mid")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "mid")) (recur r (pop stack) "mid" (conj stack-lst f) lst)
+                               (not (= mid-small "mid")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "}") (cond (and (= (count stack) 1) (= mid-small "big")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "big")) (recur r (pop stack) "big" (conj stack-lst f) lst)
+                               (not (= mid-small "big")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (my-lexical/is-eq? f "as") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
                              (recur r [] nil [] (conj lst stack-lst))
                              (recur r stack mid-small (conj stack-lst f) lst))
                :else
@@ -577,6 +612,35 @@
                                        (get-table rs stack (conj lst f))
                                        )
                                  (if (> (count lst) 0) [{:tables (reverse lst)}]))))
+                        (my-not-contains
+                            ([lst item-name] (my-not-contains lst item-name []))
+                            ([[f & r] item-name stack]
+                             (if (some? f)
+                                 (cond (= f "(") (recur r item-name (conj stack f))
+                                       (= f ")") (if (> (count stack) 0)
+                                                     (recur r item-name (pop stack))
+                                                     (throw (Exception. "语句 from 后的语句错误！")))
+                                       :else
+                                       (if (and (my-lexical/is-eq? item-name f) (empty? stack))
+                                           true
+                                           (recur r item-name stack))
+                                       )
+                                 false)))
+                        (my-table-select-split
+                            ([lst] (if (= (first lst) "(")
+                                       (my-table-select-split lst [] [] [])))
+                            ([[f & r] stack lst lst-rs]
+                             (if (some? f)
+                                 (cond (= f "(") (recur r (conj stack f) (conj lst f) lst-rs)
+                                       (= f ")") (cond (= (count stack) 1) (recur r (pop stack) [] (conj lst-rs (conj lst f)))
+                                                       (> (count stack) 1) (recur r (pop stack) (conj lst f) lst-rs)
+                                                       :else (throw (Exception. "语句 from 后的语句错误！")))
+                                       :else
+                                       (recur r stack (conj lst f) lst-rs)
+                                       )
+                                 (if (not (empty? lst))
+                                     (conj lst-rs lst)
+                                     lst-rs))))
                         (to-table-item [lst]
                             (cond (= (count lst) 1) {:schema_name "" :table_name (first lst) :table_alias ""}
                                   (= (count lst) 2) {:schema_name "" :table_name (first lst) :table_alias (last lst)}
@@ -585,7 +649,14 @@
                                   (and (= (count lst) 4) (= (second lst) ".")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst)}
                                   (and (= (count lst) 5) (my-lexical/is-eq? (nth lst 3) "as")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst)}
                                   :else
-                                  (get-query-items lst)
+                                  (if-let [lst-m (my-get-items-as lst)]
+                                      (if (and (= (count lst-m) 2) (is-select? (first lst-m)))
+                                          {:parenthesis (get-my-sql-to-ast (get-select-line (first lst-m))) :table_alias (first (last lst-m))}
+                                          (if-let [lst-m-1 (my-table-select-split lst)]
+                                              (if (and (= (count lst-m-1) 2) (is-select? (first lst-m-1)))
+                                                  {:parenthesis (get-my-sql-to-ast (get-select-line (first lst-m-1))) :table_alias (first (last lst-m-1))}
+                                                  (get-query-items lst))))
+                                      (get-query-items lst))
                                   ))
                         ; 处理逗号类型的
                         (table-comma
@@ -599,7 +670,7 @@
                             (cond (string? m) (concat [{:schema_name "", :table_name m, :table_alias ""}])
                                   (and (my-lexical/is-seq? m) (is-select? m)) {:parenthesis (get-my-sql-to-ast (get-select-line m))}
                                   :else
-                                  (if (my-lexical/is-contains? (first table-items) "join")
+                                  (if (my-not-contains (first table-items) "join")
                                       (table-join (get-table (first table-items)))
                                       (map table-comma table-items))))
                         (map table-comma table-items)))
