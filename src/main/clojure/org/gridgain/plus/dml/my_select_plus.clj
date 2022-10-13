@@ -530,9 +530,11 @@
                                                                             (if (= (first lst) "-")
                                                                                 (let [fu-m-1 (get-token (rest lst))]
                                                                                     {:parenthesis (conj [{:table_alias "", :item_name "0", :item_type "", :java_item_type java.lang.Integer, :const true} {:operation_symbol "-"}] fu-m-1)})
-                                                                                (if-let [ds-m (link-func lst)]
-                                                                                    ds-m
-                                                                                    (smart-item-tokens lst)))
+                                                                                (if (my-lexical/is-eq? (first lst) "distinct")
+                                                                                    [{:keyword "distinct"} (get-token (rest lst))]
+                                                                                    (if-let [ds-m (link-func lst)]
+                                                                                        ds-m
+                                                                                        (smart-item-tokens lst))))
                                                                             )))))))
                                                 )))))
                             )
