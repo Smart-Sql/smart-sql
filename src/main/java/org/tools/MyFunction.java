@@ -2,10 +2,12 @@ package org.tools;
 
 import com.google.common.base.Strings;
 import org.gridgain.internal.h2.api.ErrorCode;
+import org.gridgain.internal.h2.expression.function.Function;
 import org.gridgain.internal.h2.message.DbException;
 import org.gridgain.internal.h2.util.StringUtils;
 import org.gridgain.internal.h2.value.ValueDouble;
 import org.gridgain.internal.h2.value.ValueString;
+import org.gridgain.internal.h2.value.ValueUuid;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -1301,4 +1303,87 @@ public class MyFunction {
     {
         return ps.stream().mapToDouble(i -> i.doubleValue()).average().getAsDouble();
     }
+
+    public static Long bitand(Long v0, Long v1)
+    {
+        return v0 & v1;
+    }
+
+    public static Boolean bitget(Long v0, Integer v1)
+    {
+        return (v0 & (1L << v1)) != 0;
+    }
+
+    public static Long bitor(Long v0, Long v1)
+    {
+        return v0 | v1;
+    }
+
+    public static Long bitxor(Long v0, Long v1)
+    {
+        return v0 ^ v1;
+    }
+
+    public static String random_uuid()
+    {
+        return ValueUuid.getNewRandom().toString();
+    }
+
+    public static String insert(String s1, int start, int length, String s2)
+    {
+        return Function.insert(s1, start, length, s2);
+    }
+
+    public static String left(String s, int count)
+    {
+        return Function.left(s, count);
+    }
+
+    public static String right(String s, int count)
+    {
+        return Function.right(s, count);
+    }
+
+    public static int locate(String search, String s, int start)
+    {
+        return Function.locate(search, s, start);
+    }
+
+    public static int position(String search, String s)
+    {
+        return Function.locate(search, s, 0);
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

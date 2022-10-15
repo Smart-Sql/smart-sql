@@ -270,9 +270,9 @@ loadCode('Smart Sql 的脚本');
 | 函数名      | 说明                                                         |
 | ----------- | ------------------------------------------------------------ |
 | format      | 字符串的 format 方法，用法：format('%s是大帅哥！', '吴大富'); |
-| str_replace | 替换字符串。将 red 替换成 blue：str_replace('The color is red', regular('red'), 'blue'); 输入正则式需要 regular 函数，例如：regular('red')。 |
-| str_split   | 分割字符串。例如：按数字将字符串分割 "abc12de3fg5h"：str_split('abc12de3fg5h', regular('\\d+'));  结果：["abc" "de" "fg" "h"] |
-| str_find    | 找字符串，str_find(regular('\\d+'), 'abc12de3fg5h');         |
+| str_replace | 替换字符串。将 red 替换成 blue：str_replace('The color is red', 'red', 'blue'); |
+| str_split   | 分割字符串。例如：按数字将字符串分割 "abc12de3fg5h"：str_split('abc12de3fg5h', '\\\d+');  结果：["abc" "de" "fg" "h"] |
+| str_find    | 找字符串，str_find('\\\d+', 'abc12de3fg5h');                 |
 | lower       | 将字符串全部转换为小写：lower('Abc');                        |
 | upper       | 将字符串全部转换为大写：upper('Abc');                        |
 

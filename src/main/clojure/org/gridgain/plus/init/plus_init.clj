@@ -107,4 +107,15 @@
     [this]
     (my-initialization (@(.state this) :ignite)))
 
+(def func-set #{"add" "set" "take" "drop" "nth" "concat" "contains?" "put" "get" "remove" "pop" "peek"
+                "takeLast" "dropLast" "null?" "notNull?" "empty?" "notEmpty?" "nullOrEmpty?" "notNullOrEmpty?"
+                "str_replace" "str_split" "str_find" "format" "regular" "range" "day_name" "to_number" "months_between"
+                "substrb" "lengthb" "instrb" "tolowercase" "lowercase" "toUpperCase" "uppercase" "show_msg"})
+
+(def db-func-set #{"count" "sum" "abs" "acos" "asin" "atan" "ceiling" "cos" "cosh" "cot" "degrees" "exp"
+                   "floor" "ln" "log" "log10" "pi" "radians" "roundMagic" "sign" "zero" "length" "char" "ucase"
+                   "year" "to_char" "add_months" "lpad" "rpad" "to_date" "last_day" "decode" "trunc"
+                   "substr" "ascii" "least" "greatest" "instr" "replace" "ceil" "mod" "round" "lower" "upper"
+                   "chr" "ltrim" "rtrim" "trim" "translate" "avg" "max" "min"})
+
 

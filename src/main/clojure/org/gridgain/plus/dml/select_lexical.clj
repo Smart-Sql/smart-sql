@@ -15,7 +15,7 @@
              (org.gridgain.myservice MyNoSqlFunService)
              (org.gridgain.jdbc MyJdbc)
              (org.gridgain.smart.view MyViewAstPK)
-             (java.util ArrayList Date Iterator Hashtable)
+             (java.util ArrayList Date Iterator Random Hashtable)
              (java.sql Timestamp)
              (org.tools MyTools MyFunction)
              (java.math BigDecimal)
@@ -543,6 +543,76 @@
 (defn my-regular [line]
     (eval (read-string (format "#\"%s\"" line))))
 
+; (my-str-replace "123wer" "(?i)\\d+" "吴大富")
+(defn my-str-replace [line line-re line-rs]
+    (eval (read-string (format "(str/replace \"%s\" #\"%s\" \"%s\")" line line-re line-rs))))
+
+(defn my-str-split [line line-re]
+    (eval (read-string (format "(str/split \"%s\" #\"%s\")" line line-re))))
+
+(defn my-str-find [line-re line]
+    (eval (read-string (format "(re-find #\"%s\" \"%s\")" line-re line))))
+
+(defn my-max [lst]
+    (apply max lst))
+
+(defn my-min [lst]
+    (apply min lst))
+
+(defn my-sin [num]
+    (Math/sin num))
+
+(defn my-sinh [num]
+    (Math/sinh num))
+
+(defn my-tan [num]
+    (Math/tan num))
+
+(defn my-tanh [num]
+    (Math/tanh num))
+
+(defn my-atan2 [x y]
+    (Math/atan2 x y))
+
+(defn my-sqrt [num]
+    (Math/sqrt num))
+
+(defn my-pow [a b]
+    (Math/pow a b))
+
+(defn my-rand []
+    (.nextDouble (Random.)))
+
+(defn my-bitand [a b]
+    (MyFunction/bitand (MyConvertUtil/ConvertToLong a) (MyConvertUtil/ConvertToLong b)))
+
+(defn my-bitget [a b]
+    (MyFunction/bitget (MyConvertUtil/ConvertToLong a) (MyConvertUtil/ConvertToInt b)))
+
+(defn my-bitor [a b]
+    (MyFunction/bitor (MyConvertUtil/ConvertToLong a) (MyConvertUtil/ConvertToLong b)))
+
+(defn my-bitxor [a b]
+    (MyFunction/bitxor (MyConvertUtil/ConvertToLong a) (MyConvertUtil/ConvertToLong b)))
+
+(defn my-random_uuid []
+    (MyFunction/random_uuid))
+
+(defn my-insert [s1 start length s2]
+    (MyFunction/insert (MyConvertUtil/ConvertToString s1) (MyConvertUtil/ConvertToInt start) (MyConvertUtil/ConvertToInt length) (MyConvertUtil/ConvertToString s2)))
+
+(defn my-left [s count]
+    (MyFunction/left (MyConvertUtil/ConvertToString s) (MyConvertUtil/ConvertToInt count)))
+
+(defn my-right [s count]
+    (MyFunction/right (MyConvertUtil/ConvertToString s) (MyConvertUtil/ConvertToInt count)))
+
+(defn my-locate [search s start]
+    (MyFunction/locate (MyConvertUtil/ConvertToString search) (MyConvertUtil/ConvertToString s) (MyConvertUtil/ConvertToInt start)))
+
+(defn my-position [search s]
+    (MyFunction/position (MyConvertUtil/ConvertToString search) (MyConvertUtil/ConvertToString s)))
+
 (defn auto_id [^Ignite ignite group_id ^String cache-name]
     (if-let [lst (str/split cache-name #"\.")]
         (cond (= (count lst) 1) (if (is-eq? (second group_id) "my_meta")
@@ -581,9 +651,9 @@
           (is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
           (is-eq? func-name "nullOrEmpty?") "my-lexical/null-or-empty?"
           (is-eq? func-name "notNullOrEmpty?") "my-lexical/not-null-or-empty?"
-          (is-eq? func-name "str_replace") "str/replace"
-          (is-eq? func-name "str_split") "str/split"
-          (is-eq? func-name "str_find") "re-find"
+          (is-eq? func-name "str_replace") "my-lexical/my-str-replace"
+          (is-eq? func-name "str_split") "my-lexical/my-str-split"
+          (is-eq? func-name "str_find") "my-lexical/my-str-find"
           (is-eq? func-name "format") "format"
           (is-eq? func-name "regular") "my-lexical/my-regular"
           (is-eq? func-name "range") "range"
@@ -630,6 +700,16 @@
           (is-eq? func-name "ceil") "MyFunction/ceil"
           (is-eq? func-name "floor") "MyFunction/floor"
           (is-eq? func-name "mod") "my-lexical/my-mod"
+          (is-eq? func-name "max") "my-lexical/my-max"
+          (is-eq? func-name "min") "my-lexical/my-min"
+          (is-eq? func-name "sin") "my-lexical/my-sin"
+          (is-eq? func-name "sinh") "my-lexical/my-sinh"
+          (is-eq? func-name "tan") "my-lexical/my-tan"
+          (is-eq? func-name "tanh") "my-lexical/my-tanh"
+          (is-eq? func-name "atan2") "my-lexical/my-atan2"
+          (is-eq? func-name "sqrt") "my-lexical/my-sqrt"
+          (is-eq? func-name "pow") "my-lexical/my-pow"
+          (is-eq? func-name "rand") "my-lexical/my-rand"
           (is-eq? func-name "round") "my-lexical/my-round"
           (is-eq? func-name "lower") "MyFunction/lower"
           (is-eq? func-name "upper") "MyFunction/upper"
@@ -647,6 +727,16 @@
           (is-eq? func-name "toUpperCase") "str/upper-case"
           (is-eq? func-name "uppercase") "str/upper-case"
           (is-eq? func-name "show_msg") "my-lexical/my-show-msg"
+          (is-eq? func-name "bitand") "my-lexical/my-bitand"
+          (is-eq? func-name "bitget") "my-lexical/my-bitget"
+          (is-eq? func-name "bitor") "my-lexical/my-bitor"
+          (is-eq? func-name "bitxor") "my-lexical/my-bitxor"
+          (is-eq? func-name "random_uuid") "my-lexical/my-random_uuid"
+          (is-eq? func-name "insert") "my-lexical/my-insert"
+          (is-eq? func-name "left") "my-lexical/my-left"
+          (is-eq? func-name "right") "my-lexical/my-right"
+          (is-eq? func-name "locate") "my-lexical/my-locate"
+          (is-eq? func-name "position") "my-lexical/my-position"
           ))
 
 ;(defn my-concat [[f & r]]
