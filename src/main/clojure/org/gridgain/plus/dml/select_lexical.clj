@@ -501,9 +501,6 @@
 (defn my-day-name [m]
     (MyFunction/day_name (MyConvertUtil/ConvertToTimestamp m)))
 
-(defn my-year [m]
-    (MyFunction/year (MyConvertUtil/ConvertToTimestamp m)))
-
 (defn my-to-number [m]
     (MyFunction/to_number (MyConvertUtil/ConvertToString m)))
 
@@ -634,6 +631,90 @@
 (defn my-current_timestamp []
     (MyFunction/current_timestamp))
 
+(defn my-add_year [num str-vs]
+    (MyFunction/add_year (MyConvertUtil/ConvertToLong num) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-add_quarter [num str-vs]
+    (MyFunction/add_quarter (MyConvertUtil/ConvertToLong num) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-add_month [num str-vs]
+    (MyFunction/add_month (MyConvertUtil/ConvertToLong num) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-add_date [num str-vs]
+    (MyFunction/add_date (MyConvertUtil/ConvertToLong num) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-add_hour [num str-vs]
+    (MyFunction/add_hour (MyConvertUtil/ConvertToLong num) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-add_second [num str-vs]
+    (MyFunction/add_second (MyConvertUtil/ConvertToLong num) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-add_ms [num str-vs]
+    (MyFunction/add_ms (MyConvertUtil/ConvertToLong num) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-diff_year [str-vs-0 str-vs]
+    (MyFunction/diff_year (MyConvertUtil/ConvertToString str-vs-0) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-diff_quarter [str-vs-0 str-vs]
+    (MyFunction/diff_quarter (MyConvertUtil/ConvertToString str-vs-0) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-diff_month [str-vs-0 str-vs]
+    (MyFunction/diff_month (MyConvertUtil/ConvertToString str-vs-0) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-diff_date [str-vs-0 str-vs]
+    (MyFunction/diff_date (MyConvertUtil/ConvertToString str-vs-0) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-diff_hour [str-vs-0 str-vs]
+    (MyFunction/diff_hour (MyConvertUtil/ConvertToString str-vs-0) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-diff_second [str-vs-0 str-vs]
+    (MyFunction/diff_second (MyConvertUtil/ConvertToString str-vs-0) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-diff_ms [str-vs-0 str-vs]
+    (MyFunction/diff_ms (MyConvertUtil/ConvertToString str-vs-0) (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-dayname [str-vs]
+    (MyFunction/dayname (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-day_of_month [str-vs]
+    (MyFunction/day_of_month (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-day_of_week [str-vs]
+    (MyFunction/day_of_week (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-day_of_year [str-vs]
+    (MyFunction/day_of_year (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-hour [str-vs]
+    (MyFunction/hour (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-minute [str-vs]
+    (MyFunction/minute (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-monthname [str-vs]
+    (MyFunction/monthname (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-quarter [str-vs]
+    (MyFunction/quarter (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-year [str-vs]
+    (MyFunction/year (MyConvertUtil/ConvertToString str-vs)))
+
+(defn my-month [str-vs]
+    (MyFunction/month (MyConvertUtil/ConvertToString str-vs)))
+
+(defn ifnull [a b]
+    (if (not (nil? a))
+        a b))
+
+(defn nullif [a b]
+    (if (= a b)
+        nil a))
+
+(defn nvl2 [tv a b]
+    (if (nil? tv)
+        b a))
+
 (defn auto_id [^Ignite ignite group_id ^String cache-name]
     (if-let [lst (str/split cache-name #"\.")]
         (cond (= (count lst) 1) (if (is-eq? (second group_id) "my_meta")
@@ -656,8 +737,8 @@
           (is-eq? func-name "drop") "my-lexical/list-drop"
           ;(is-eq? func-name "noSqlInsert") "my-lexical/no-sql-insert"
           (is-eq? func-name "nth") "nth"
-          (is-eq? func-name "count") "count"
           (is-eq? func-name "concat") "my-lexical/my-concat"
+          (is-eq? func-name "concat_ws") "my-lexical/my-concat"
           (is-eq? func-name "contains?") "my-lexical/is-contains?"
           (is-eq? func-name "put") ".put"
           (is-eq? func-name "get") "my-lexical/map-list-get"
@@ -678,6 +759,28 @@
           (is-eq? func-name "format") "format"
           (is-eq? func-name "regular") "my-lexical/my-regular"
           (is-eq? func-name "range") "range"
+          (is-eq? func-name "length") "my-lexical/my-length"
+          (is-eq? func-name "ucase") "my-lexical/my-ucase"
+          (is-eq? func-name "day_name") "my-lexical/my-day-name"
+          (is-eq? func-name "to_number") "my-lexical/my-to-number"
+          (is-eq? func-name "add_months") "my-lexical/my-add-months"
+          (is-eq? func-name "to_date") "MyFunction/to_date"
+          (is-eq? func-name "last_day") "MyFunction/last_day"
+          (is-eq? func-name "trunc") "my-lexical/trunc"
+          (is-eq? func-name "substr") "my-lexical/substr"
+          (is-eq? func-name "instrb") "my-lexical/my-instrb"
+          (is-eq? func-name "chr") "my-lexical/my-chr"
+          (is-eq? func-name "months_between") "MyFunction/months_between"
+          (is-eq? func-name "replace") "MyFunction/replace"
+          (is-eq? func-name "substrb") "my-lexical/my-substrb"
+          (is-eq? func-name "lengthb") "MyFunction/lengthb"
+          (is-eq? func-name "tolowercase") "str/lower-case"
+          (is-eq? func-name "lowercase") "str/lower-case"
+          (is-eq? func-name "toUpperCase") "str/upper-case"
+          (is-eq? func-name "uppercase") "str/upper-case"
+          (is-eq? func-name "show_msg") "my-lexical/my-show-msg"
+
+          (is-eq? func-name "char") "my-lexical/my-char"
           (is-eq? func-name "abs") "MyFunction/abs"
           (is-eq? func-name "acos") "my-lexical/my-acos"
           (is-eq? func-name "asin") "my-lexical/my-asin"
@@ -697,27 +800,15 @@
           (is-eq? func-name "roundMagic") "my-lexical/my-roundMagic"
           (is-eq? func-name "sign") "my-lexical/my-sign"
           (is-eq? func-name "zero") "MyFunction/zero"
-          (is-eq? func-name "length") "my-lexical/my-length"
-          (is-eq? func-name "char") "my-lexical/my-char"
-          (is-eq? func-name "ucase") "my-lexical/my-ucase"
-          (is-eq? func-name "day_name") "my-lexical/my-day-name"
-          (is-eq? func-name "year") "my-lexical/my-year"
-          (is-eq? func-name "to_number") "my-lexical/my-to-number"
+          (is-eq? func-name "count") "count"
           (is-eq? func-name "to_char") "my-lexical/to-char"
-          (is-eq? func-name "add_months") "my-lexical/my-add-months"
+          (is-eq? func-name "instr") "MyFunction/instr"
           (is-eq? func-name "lpad") "MyFunction/lpad"
           (is-eq? func-name "rpad") "MyFunction/rpad"
-          (is-eq? func-name "to_date") "MyFunction/to_date"
-          (is-eq? func-name "last_day") "MyFunction/last_day"
           (is-eq? func-name "decode") "my-lexical/decode"
-          (is-eq? func-name "trunc") "my-lexical/trunc"
-          (is-eq? func-name "substr") "my-lexical/substr"
           (is-eq? func-name "ascii") "MyFunction/ascii"
           (is-eq? func-name "least") "my-lexical/least"
           (is-eq? func-name "greatest") "my-lexical/greatest"
-          (is-eq? func-name "months_between") "MyFunction/months_between"
-          (is-eq? func-name "instr") "MyFunction/instr"
-          (is-eq? func-name "replace") "MyFunction/replace"
           (is-eq? func-name "ceil") "MyFunction/ceil"
           (is-eq? func-name "floor") "MyFunction/floor"
           (is-eq? func-name "mod") "my-lexical/my-mod"
@@ -734,20 +825,11 @@
           (is-eq? func-name "round") "my-lexical/my-round"
           (is-eq? func-name "lower") "MyFunction/lower"
           (is-eq? func-name "upper") "MyFunction/upper"
-          (is-eq? func-name "substrb") "my-lexical/my-substrb"
-          (is-eq? func-name "lengthb") "MyFunction/lengthb"
-          (is-eq? func-name "chr") "my-lexical/my-chr"
-          (is-eq? func-name "instrb") "my-lexical/my-instrb"
           (is-eq? func-name "ltrim") "my-lexical/my-ltrim"
           (is-eq? func-name "rtrim") "my-lexical/my-rtrim"
           (is-eq? func-name "trim") "MyFunction/trim"
           (is-eq? func-name "translate") "MyFunction/translate"
           (is-eq? func-name "avg") "MyFunction/my-avg"
-          (is-eq? func-name "tolowercase") "str/lower-case"
-          (is-eq? func-name "lowercase") "str/lower-case"
-          (is-eq? func-name "toUpperCase") "str/upper-case"
-          (is-eq? func-name "uppercase") "str/upper-case"
-          (is-eq? func-name "show_msg") "my-lexical/my-show-msg"
           (is-eq? func-name "bitand") "my-lexical/my-bitand"
           (is-eq? func-name "bitget") "my-lexical/my-bitget"
           (is-eq? func-name "bitor") "my-lexical/my-bitor"
@@ -765,6 +847,33 @@
           (is-eq? func-name "current_date") "my-lexical/my-current_date"
           (is-eq? func-name "current_time") "my-lexical/my-current_time"
           (is-eq? func-name "current_timestamp") "my-lexical/my-current_timestamp"
+          (is-eq? func-name "add_year") "my-lexical/my-add_year"
+          (is-eq? func-name "add_quarter") "my-lexical/my-add_quarter"
+          (is-eq? func-name "add_month") "my-lexical/my-add_month"
+          (is-eq? func-name "add_date") "my-lexical/my-add_date"
+          (is-eq? func-name "add_hour") "my-lexical/my-add_hour"
+          (is-eq? func-name "add_second") "my-lexical/my-add_second"
+          (is-eq? func-name "add_ms") "my-lexical/my-add_ms"
+          (is-eq? func-name "diff_year") "my-lexical/my-diff_year"
+          (is-eq? func-name "diff_quarter") "my-lexical/my-diff_quarter"
+          (is-eq? func-name "diff_month") "my-lexical/my-diff_month"
+          (is-eq? func-name "diff_date") "my-lexical/my-diff_date"
+          (is-eq? func-name "diff_hour") "my-lexical/my-diff_hour"
+          (is-eq? func-name "diff_second") "my-lexical/my-diff_second"
+          (is-eq? func-name "diff_ms") "my-lexical/my-diff_ms"
+          (is-eq? func-name "dayname") "my-lexical/my-dayname"
+          (is-eq? func-name "day_of_month") "my-lexical/my-day_of_month"
+          (is-eq? func-name "day_of_week") "my-lexical/my-day_of_week"
+          (is-eq? func-name "day_of_year") "my-lexical/my-day_of_year"
+          (is-eq? func-name "hour") "my-lexical/my-hour"
+          (is-eq? func-name "minute") "my-lexical/my-minute"
+          (is-eq? func-name "monthname") "my-lexical/my-monthname"
+          (is-eq? func-name "quarter") "my-lexical/my-quarter"
+          (is-eq? func-name "year") "my-lexical/my-year"
+          (is-eq? func-name "month") "my-lexical/my-month"
+          (is-eq? func-name "ifnull") "my-lexical/ifnull"
+          (is-eq? func-name "nullif") "my-lexical/nullif"
+          (is-eq? func-name "nvl2") "my-lexical/nvl2"
           ))
 
 ;(defn my-concat [[f & r]]

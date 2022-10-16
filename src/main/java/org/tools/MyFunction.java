@@ -1410,43 +1410,18 @@ public class MyFunction {
         return DateTimeFunctions.dateadd(flag, count, ts).getTimestamp();
     }
 
-    public static Long mydiff(String flag, String v1, String v2)
+    public static Long myDiff(String flag, String v1, String v2)
     {
         ValueTimestamp ts = ValueTimestamp.parse(v1);
         ValueTimestamp ts2 = ValueTimestamp.parse(v2);
 
-        long num = DateTimeFunctions.datediff(flag, ts, ts2);
-        return num;
-    }
-
-    /**
-     * 添加日期
-     * */
-    public static Timestamp date_add(long count, String v)
-    {
-//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
-//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
-//
-//        return DateTimeFunctions.dateadd("DAY", count, vt).getDate();
-        return myAdd("DAY", count, v);
-    }
-
-    /**
-     * 添加小时
-     * */
-    public static Timestamp date_hour(long count, String v)
-    {
-//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
-//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
-//
-//        return DateTimeFunctions.dateadd("HOUR", count, vt).getDate();
-        return myAdd("HOUR", count, v);
+        return DateTimeFunctions.datediff(flag, ts, ts2);
     }
 
     /**
      * 添加年度
      * */
-    public static Timestamp date_year(long count, String v)
+    public static Timestamp add_year(long count, String v)
     {
 //        ValueTimestamp ts2 = ValueTimestamp.parse(v);
 //        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
@@ -1458,7 +1433,7 @@ public class MyFunction {
     /**
      * 添加季度
      * */
-    public static Timestamp date_quarter(long count, String v)
+    public static Timestamp add_quarter(long count, String v)
     {
 //        ValueTimestamp ts2 = ValueTimestamp.parse(v);
 //        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
@@ -1470,7 +1445,7 @@ public class MyFunction {
     /**
      * 添加月份
      * */
-    public static Timestamp date_month(long count, String v)
+    public static Timestamp add_month(long count, String v)
     {
 //        ValueTimestamp ts2 = ValueTimestamp.parse(v);
 //        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
@@ -1480,9 +1455,33 @@ public class MyFunction {
     }
 
     /**
+     * 添加日期
+     * */
+    public static Timestamp add_date(long count, String v)
+    {
+//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
+//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
+//
+//        return DateTimeFunctions.dateadd("DAY", count, vt).getDate();
+        return myAdd("DAY", count, v);
+    }
+
+    /**
+     * 添加小时
+     * */
+    public static Timestamp add_hour(long count, String v)
+    {
+//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
+//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
+//
+//        return DateTimeFunctions.dateadd("HOUR", count, vt).getDate();
+        return myAdd("HOUR", count, v);
+    }
+
+    /**
      * 添加秒
      * */
-    public static Timestamp date_second(long count, String v)
+    public static Timestamp add_second(long count, String v)
     {
         return myAdd("SECOND", count, v);
     }
@@ -1490,13 +1489,151 @@ public class MyFunction {
     /**
      * 添加毫秒
      * */
-    public static Timestamp date_ms(long count, String v)
+    public static Timestamp add_ms(long count, String v)
     {
         return myAdd("MS", count, v);
     }
 
+    /**
+     * 相差年度
+     * */
+    public static Long diff_year(String v0, String v1)
+    {
+        return myDiff("YEAR", v0, v1);
+    }
 
+    /**
+     * 添加季度
+     * */
+    public static Long diff_quarter(String v0, String v1)
+    {
+        //return myAdd("QUARTER", count, v);
+        return myDiff("QUARTER", v0, v1);
+    }
 
+    /**
+     * 添加月份
+     * */
+    public static Long diff_month(String v0, String v1)
+    {
+        return myDiff("MONTH", v0, v1);
+    }
+
+    /**
+     * 添加日期
+     * */
+    public static Long diff_date(String v0, String v1)
+    {
+        return myDiff("DAY", v0, v1);
+    }
+
+    /**
+     * 添加小时
+     * */
+    public static Long diff_hour(String v0, String v1)
+    {
+        return myDiff("HOUR", v0, v1);
+    }
+
+    /**
+     * 添加秒
+     * */
+    public static Long diff_second(String v0, String v1)
+    {
+        return myDiff("SECOND", v0, v1);
+    }
+
+    /**
+     * 添加毫秒
+     * */
+    public static Long diff_ms(String v0, String v1)
+    {
+        return myDiff("MS", v0, v1);
+    }
+
+    public static String dayname(String v)
+    {
+        int dayOfWeek = DateTimeUtils.getSundayDayOfWeek(DateTimeUtils.dateAndTimeFromValue(ValueTimestamp.parse(v))[0]);
+        return DateTimeFunctions.getMonthsAndWeeks(1)[dayOfWeek];
+    }
+
+    public static long day_of_month(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        return DateTimeUtils.dayFromDateValue(ts.getDateValue());
+    }
+
+    public static long day_of_week(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        return DateTimeUtils.getSundayDayOfWeek(ts.getDateValue());
+    }
+
+    public static long day_of_year(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        return DateTimeUtils.getDayOfYear(ts.getDateValue());
+    }
+
+    public static int hour(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        java.sql.Date date = new java.sql.Date(ts.getTimestamp().getTime());
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.HOUR_OF_DAY);
+    }
+
+    public static int minute(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        java.sql.Date date = new java.sql.Date(ts.getTimestamp().getTime());
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.MINUTE);
+    }
+
+    public static String monthname(String v)
+    {
+        int month = DateTimeUtils.monthFromDateValue(DateTimeUtils.dateAndTimeFromValue(ValueTimestamp.parse(v))[0]);
+        return DateTimeFunctions.getMonthsAndWeeks(0)[month - 1];
+    }
+
+    public static int quarter(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        return (DateTimeUtils.monthFromDateValue(ts.getDateValue()) - 1) / 3 + 1;
+    }
+
+    public static int second(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        java.sql.Date date = new java.sql.Date(ts.getTimestamp().getTime());
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.SECOND);
+    }
+
+    public static int week(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        Date date = new Date(ts.getTimestamp().getTime());
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.WEEK_OF_YEAR);
+    }
+
+    public static int year(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        return DateTimeUtils.yearFromDateValue(ts.getDateValue());
+    }
+
+    public static int month(String v)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v);
+        return DateTimeUtils.monthFromDateValue(ts.getDateValue());
+    }
 }
 
 

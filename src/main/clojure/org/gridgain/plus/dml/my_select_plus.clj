@@ -1,5 +1,6 @@
 (ns org.gridgain.plus.dml.my-select-plus
     (:require
+        [org.gridgain.plus.init.plus-init :as plus-init]
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.tools.my-cache :as my-cache]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]

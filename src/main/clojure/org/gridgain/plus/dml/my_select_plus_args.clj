@@ -1,6 +1,7 @@
 (ns org.gridgain.plus.dml.my-select-plus-args
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
+        [org.gridgain.plus.init.plus-init :as plus-init]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
         [org.gridgain.plus.tools.my-cache :as my-cache]
@@ -326,6 +327,11 @@
                     ))
             (func-to-line [ignite group_id dic-args m]
                 (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                    (cond (contains? (plus-init/func-smart) (str/lower-case (-> m :func-name))) ()
+                          (contains? (plus-init/func-set) (str/lower-case (-> m :func-name))) ()
+                          (contains? (plus-init/db-func-set) (str/lower-case (-> m :func-name))) ()
+                          (contains? (plus-init/db-func-no-set) (str/lower-case (-> m :func-name))) ()
+                          )
                     (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
                         (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args}
