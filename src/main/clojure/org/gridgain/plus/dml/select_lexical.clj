@@ -613,6 +613,27 @@
 (defn my-position [search s]
     (MyFunction/position (MyConvertUtil/ConvertToString search) (MyConvertUtil/ConvertToString s)))
 
+(defn my-soundex [search]
+    (MyFunction/soundex (MyConvertUtil/ConvertToString search)))
+
+(defn my-space [s]
+    (MyFunction/space (MyConvertUtil/ConvertToInt s)))
+
+(defn my-stringencode [s]
+    (MyFunction/stringencode (MyConvertUtil/ConvertToString s)))
+
+(defn my-stringtoutf8 [s]
+    (MyFunction/stringtoutf8 s))
+
+(defn my-current_date []
+    (MyFunction/current_date))
+
+(defn my-current_time []
+    (MyFunction/current_time))
+
+(defn my-current_timestamp []
+    (MyFunction/current_timestamp))
+
 (defn auto_id [^Ignite ignite group_id ^String cache-name]
     (if-let [lst (str/split cache-name #"\.")]
         (cond (= (count lst) 1) (if (is-eq? (second group_id) "my_meta")
@@ -737,6 +758,13 @@
           (is-eq? func-name "right") "my-lexical/my-right"
           (is-eq? func-name "locate") "my-lexical/my-locate"
           (is-eq? func-name "position") "my-lexical/my-position"
+          (is-eq? func-name "soundex") "my-lexical/my-soundex"
+          (is-eq? func-name "space") "my-lexical/my-space"
+          (is-eq? func-name "stringencode") "my-lexical/my-stringencode"
+          (is-eq? func-name "stringtoutf8") "my-lexical/my-stringtoutf8"
+          (is-eq? func-name "current_date") "my-lexical/my-current_date"
+          (is-eq? func-name "current_time") "my-lexical/my-current_time"
+          (is-eq? func-name "current_timestamp") "my-lexical/my-current_timestamp"
           ))
 
 ;(defn my-concat [[f & r]]

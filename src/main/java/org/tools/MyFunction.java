@@ -2,17 +2,19 @@ package org.tools;
 
 import com.google.common.base.Strings;
 import org.gridgain.internal.h2.api.ErrorCode;
+import org.gridgain.internal.h2.expression.function.DateTimeFunctions;
 import org.gridgain.internal.h2.expression.function.Function;
 import org.gridgain.internal.h2.message.DbException;
+import org.gridgain.internal.h2.util.DateTimeUtils;
 import org.gridgain.internal.h2.util.StringUtils;
-import org.gridgain.internal.h2.value.ValueDouble;
-import org.gridgain.internal.h2.value.ValueString;
-import org.gridgain.internal.h2.value.ValueUuid;
+import org.gridgain.internal.h2.value.*;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -1225,19 +1227,19 @@ public class MyFunction {
      * insert into sql_to_java_ps (sql_to_java_id, ps_index, ps_type) values (66, 1, 'String')
      * insert into sql_to_java_ps (sql_to_java_id, ps_index, ps_type) values (66, 2, 'String')
      * */
-    public static String translate(String str, String from_str, String to_str){
-        if(str==null || from_str==null || to_str==null || to_str.equals("") || from_str.equals("") || str.equals("")){
-            return null;
-        }
-        for (int i=0;i<from_str.length();i++){
-            if(i<to_str.length()){
-                str = str.replaceAll(String.valueOf(from_str.charAt(i)),String.valueOf(to_str.charAt(i)));
-            }else{
-                str = str.replaceAll(String.valueOf(from_str.charAt(i)),"");
-            }
-        }
-        return str;
-    }
+//    public static String translate(String str, String from_str, String to_str){
+//        if(str==null || from_str==null || to_str==null || to_str.equals("") || from_str.equals("") || str.equals("")){
+//            return null;
+//        }
+//        for (int i=0;i<from_str.length();i++){
+//            if(i<to_str.length()){
+//                str = str.replaceAll(String.valueOf(from_str.charAt(i)),String.valueOf(to_str.charAt(i)));
+//            }else{
+//                str = str.replaceAll(String.valueOf(from_str.charAt(i)),"");
+//            }
+//        }
+//        return str;
+//    }
 
     /**
      * nvl 的内置函数
@@ -1353,6 +1355,148 @@ public class MyFunction {
     {
         return Function.locate(search, s, 0);
     }
+
+    public static String soundex(String s)
+    {
+        return Function.getSoundex(s);
+    }
+
+    public static String space(int v0)
+    {
+        int len = Math.max(0, v0);
+        char[] chars = new char[len];
+        for (int i = len - 1; i >= 0; i--) {
+            chars[i] = ' ';
+        }
+        return new String(chars);
+    }
+
+    public static String stringencode(String s)
+    {
+        return StringUtils.javaDecode(s);
+    }
+
+    public static byte[] stringtoutf8(String s)
+    {
+        return s.getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static String translate(String original, String findChars, String replaceChars)
+    {
+        return Function.translate(original, findChars, replaceChars);
+    }
+
+    public static Date current_date()
+    {
+        Value vs = DateTimeUtils.timestampTimeZoneFromMillis(System.currentTimeMillis()).convertTo(Value.DATE);
+        return vs.getDate();
+    }
+
+    public static Time current_time()
+    {
+        ValueTime vt = (ValueTime) DateTimeUtils.timestampTimeZoneFromMillis(System.currentTimeMillis()).convertTo(Value.TIME);
+        return vt.convertScale(false, 0).getTime();
+    }
+
+    public static Timestamp current_timestamp()
+    {
+        ValueTimestampTimeZone vt = (ValueTimestampTimeZone) DateTimeUtils.timestampTimeZoneFromMillis(System.currentTimeMillis());
+        return vt.convertScale(false, 6).convertTo(Value.TIMESTAMP).getTimestamp();
+    }
+
+    public static Timestamp myAdd(String flag, long count, String date)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(date);
+        return DateTimeFunctions.dateadd(flag, count, ts).getTimestamp();
+    }
+
+    public static Long mydiff(String flag, String v1, String v2)
+    {
+        ValueTimestamp ts = ValueTimestamp.parse(v1);
+        ValueTimestamp ts2 = ValueTimestamp.parse(v2);
+
+        long num = DateTimeFunctions.datediff(flag, ts, ts2);
+        return num;
+    }
+
+    /**
+     * 添加日期
+     * */
+    public static Timestamp date_add(long count, String v)
+    {
+//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
+//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
+//
+//        return DateTimeFunctions.dateadd("DAY", count, vt).getDate();
+        return myAdd("DAY", count, v);
+    }
+
+    /**
+     * 添加小时
+     * */
+    public static Timestamp date_hour(long count, String v)
+    {
+//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
+//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
+//
+//        return DateTimeFunctions.dateadd("HOUR", count, vt).getDate();
+        return myAdd("HOUR", count, v);
+    }
+
+    /**
+     * 添加年度
+     * */
+    public static Timestamp date_year(long count, String v)
+    {
+//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
+//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
+//
+//        return DateTimeFunctions.dateadd("YEAR", count, vt).getDate();
+        return myAdd("YEAR", count, v);
+    }
+
+    /**
+     * 添加季度
+     * */
+    public static Timestamp date_quarter(long count, String v)
+    {
+//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
+//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
+//
+//        return DateTimeFunctions.dateadd("QUARTER", count, vt).getDate();
+        return myAdd("QUARTER", count, v);
+    }
+
+    /**
+     * 添加月份
+     * */
+    public static Timestamp date_month(long count, String v)
+    {
+//        ValueTimestamp ts2 = ValueTimestamp.parse(v);
+//        ValueDate vt = (ValueDate) ts2.convertTo(Value.DATE);
+//
+//        return DateTimeFunctions.dateadd("MONTH", count, vt).getDate();
+        return myAdd("MONTH", count, v);
+    }
+
+    /**
+     * 添加秒
+     * */
+    public static Timestamp date_second(long count, String v)
+    {
+        return myAdd("SECOND", count, v);
+    }
+
+    /**
+     * 添加毫秒
+     * */
+    public static Timestamp date_ms(long count, String v)
+    {
+        return myAdd("MS", count, v);
+    }
+
+
+
 }
 
 
