@@ -1,7 +1,7 @@
 (ns org.gridgain.plus.dml.my-select-plus-args
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.init.plus-init :as plus-init]
+        [org.gridgain.plus.init.smart-func-init :as smart-func-init]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
         [org.gridgain.plus.tools.my-cache :as my-cache]
@@ -326,35 +326,50 @@
                         {:sql (str/join ["on " (str/join " " sql)]) :args args})
                     ))
             (func-to-line [ignite group_id dic-args m]
-                (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
-                    (cond (contains? (plus-init/func-smart) (str/lower-case (-> m :func-name))) ()
-                          (contains? (plus-init/func-set) (str/lower-case (-> m :func-name))) ()
-                          (contains? (plus-init/db-func-set) (str/lower-case (-> m :func-name))) ()
-                          (contains? (plus-init/db-func-no-set) (str/lower-case (-> m :func-name))) ()
-                          )
-                    (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
-                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args}
-                                                                                                {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args})
-                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")" " as"] [(-> m :alias)]) :args args}
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")" " as"] [(-> m :alias)]) :args args})
-                              :else
-                              {:sql (concat [(-> m :func-name) "("] sql [")" " as"] [(-> m :alias)]) :args args}
-                              )
-                        )
-                    (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
-                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args}
-                                                                                                {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args})
-                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")"] [(-> m :alias)]) :args args}
-                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")"] [(-> m :alias)]) :args args})
-                              :else
-                              {:sql (concat [(-> m :func-name) "("] sql [")"]) :args args}
-                              )
-                        )
-                    ))
+                (cond (contains? smart-func-init/func-smart (str/lower-case (-> m :func-name))) (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
+                                                                                                (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                                                                                                    (if-not (empty? (-> m :lst_ps))
+                                                                                                        {:sql (concat ["my_invoke_all(" (format "'%s', '%s'," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [") as " (-> m :alias)]) :args args}
+                                                                                                        {:sql (concat ["my_invoke_all(" (format "'%s', '%s'" (-> m :func-name) (MyGson/groupObjToLine group_id))] [") as " (-> m :alias)]) :args args})
+                                                                                                    (if-not (empty? (-> m :lst_ps))
+                                                                                                        {:sql (concat ["my_invoke_all(" (format "'%s', '%s'," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")"]) :args args}
+                                                                                                        {:sql (concat ["my_invoke_all(" (format "'%s', '%s'" (-> m :func-name) (MyGson/groupObjToLine group_id))] [")"]) :args args})))
+                      (contains? smart-func-init/func-set (str/lower-case (-> m :func-name))) (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
+                                                                                              (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                                                                                                  (if-not (empty? (-> m :lst_ps))
+                                                                                                      {:sql (concat ["my_invoke_all(" (format "'%s', '%s'," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [") as " (-> m :alias)]) :args args}
+                                                                                                      {:sql (concat ["my_invoke_all(" (format "'%s', '%s'" (-> m :func-name) (MyGson/groupObjToLine group_id))] [") as " (-> m :alias)]) :args args})
+                                                                                                  (if-not (empty? (-> m :lst_ps))
+                                                                                                      {:sql (concat ["my_invoke_all(" (format "'%s', '%s'," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")"]) :args args}
+                                                                                                      {:sql (concat ["my_invoke_all(" (format "'%s', '%s'" (-> m :func-name) (MyGson/groupObjToLine group_id))] [")"]) :args args})))
+                      (contains? smart-func-init/db-func-set (str/lower-case (-> m :func-name))) (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
+                                                                                                 (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                                                                                                     (if-not (empty? (-> m :lst_ps))
+                                                                                                         {:sql (concat [(format "%s(" (-> m :func-name))] sql [") as " (-> m :alias)]) :args args}
+                                                                                                         {:sql (concat [(format "%s(" (-> m :func-name))] [") as " (-> m :alias)]) :args args})
+                                                                                                     (if-not (empty? (-> m :lst_ps))
+                                                                                                         {:sql (concat [(format "%s(" (-> m :func-name))] sql [")"]) :args args}
+                                                                                                         {:sql (concat [(format "%s(" (-> m :func-name))] [")"]) :args args})))
+                      (contains? smart-func-init/db-func-no-set (str/lower-case (-> m :func-name))) (throw (Exception. (format "不存在方法 %s !" (-> m :func-name))))
+                      (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
+                                                                                        (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                                                                                            (if-not (empty? (-> m :lst_ps))
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as "] [(-> m :alias)]) :args args}
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] [")" " as "] [(-> m :alias)]) :args args})
+                                                                                            (if-not (empty? (-> m :lst_ps))
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")"]) :args args}
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] [")"]) :args args})))
+                      (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
+                                                                                                   (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                                                                                                       (if-not (empty? (-> m :lst_ps))
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', '%s'," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [") as " (-> m :alias)]) :args args}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', '%s'" (-> m :func-name) (MyGson/groupObjToLine group_id))] [") as " (-> m :alias)]) :args args})
+                                                                                                       (if-not (empty? (-> m :lst_ps))
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', '%s'," (-> m :func-name) (MyGson/groupObjToLine group_id))] sql [")"]) :args args}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', '%s'" (-> m :func-name) (MyGson/groupObjToLine group_id))] [")"]) :args args})))
+                      :else
+                      (throw (Exception. (format "不存在方法 %s !" (-> m :func-name))))
+                      ))
             (func-link-to-line [ignite group_id dic-args m]
                 (let [{sql :sql args :args} (my-lexical/my-func-line-code m)]
                     (loop [[f & r] args lst-ps [(MyGson/groupObjToLine group_id)] lst-args []]
