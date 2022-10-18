@@ -17,6 +17,8 @@
                 "str_replace" "str_split" "str_find" "format" "regular" "range" "length" "ucase" "day_name" "to_number"
                 "add_months" "to_date" "last_day" "trunc" "substr" "instrb" "chr" "months_between" "replace"
                 "substrb" "lengthb" "tolowercase" "lowercase" "toUpperCase" "uppercase" "show_msg"
+                "add_year" "add_quarter" "add_month" "add_date" "add_hour" "add_second" "add_ms"
+                "diff_year" "diff_quarter" "diff_month" "diff_date" "diff_hour" "diff_second" "diff_ms"
                 })
 
 (def db-func-set #{"avg" "count" "max" "min" "sum" "abs" "acos" "asin" "atan" "cos" "cosh" "cot" "sin" "sinh" "tan" "tanh" "atan2"
@@ -25,8 +27,7 @@
                    "floor" "ln" "log" "log10" "pi" "radians" "round" "random_uuid" "roundMagic" "sign" "zero"
                    "ascii" "char" "concat" "concat_ws" "instr" "lower" "upper" "left" "right" "locate" "position" "soundex" "space" "lpad" "rpad"
                    "ltrim" "rtrim" "trim" "stringencode" "stringtoutf8" "to_char" "current_date" "current_time" "current_timestamp"
-                   "add_year" "add_quarter" "add_month" "add_date" "add_hour" "add_second" "add_ms"
-                   "diff_year" "diff_quarter" "diff_month" "diff_date" "diff_hour" "diff_second" "diff_ms" "dayname"
+                   "dayname"
                    "day_of_month" "day_of_week" "day_of_year" "hour" "minute" "monthname" "quarter" "year" "month" "rand" "translate"
                    "decode" "greatest" "least" "ifnull" "nullif" "nvl2"})
 
