@@ -17,12 +17,14 @@
              (java.util List ArrayList Hashtable Date Iterator)
              )
     (:gen-class
+        :implements [org.gridgain.superservice.ISqlToAst]
         ; 生成 class 的类名
         :name org.gridgain.plus.dml.MySelectPlus
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [sqlToAst [java.util.ArrayList] Object]]
+        ;:methods [^:static [sqlToAst [java.util.ArrayList] Object]
+        ;          ^:static [mySqlToAst [String] Object]]
         ))
 
 
@@ -801,9 +803,12 @@
           (my-lexical/is-seq? ast) (my-lexical/to_arryList (map to-lst ast))
           ))
 
-(defn -sqlToAst [^java.util.List lst]
+(defn -sqlToAst [this ^java.util.List lst]
     (let [ast (sql-to-ast lst)]
         (to-lst ast)))
+
+(defn -mySqlToAst [this ^String sql]
+    (sql-to-ast (my-lexical/to-back sql)))
 
 ; 转换成查询字符串
 (def sql_symbol #{"(" ")" "/" "*" "-" "+" "=" ">" "<" ">=" "<=" "<>" ","})

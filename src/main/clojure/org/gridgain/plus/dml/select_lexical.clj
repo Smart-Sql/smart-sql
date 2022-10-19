@@ -911,6 +911,12 @@
           (throw (Exception. "数据集没有该方法"))
           ))
 
+; 获取 select sys 的权限 code
+(defn get-select-sys-code [ignite schema_name my_group_id]
+    ;(get-code ignite schema_name table_name my_group_id "查")
+    (.get (.cache ignite "my_sys_view_ast") (MyViewAstPK. schema_name "sys" (first my_group_id)))
+    )
+
 ; 获取 select 的权限 code
 (defn get-select-code [ignite schema_name table_name my_group_id]
     ;(get-code ignite schema_name table_name my_group_id "查")

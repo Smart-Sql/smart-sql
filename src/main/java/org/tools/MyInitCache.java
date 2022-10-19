@@ -9,6 +9,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.gridgain.myservice.MySqlToAst;
 import org.gridgain.smart.view.MyViewAstPK;
 
 public class MyInitCache {
@@ -34,6 +35,15 @@ public class MyInitCache {
         cfg_kv.setName("index_ast");
         cfg_kv.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_kv);
+
+        // insert 语句中要找到表的定义 "table_ast"
+        CacheConfiguration<MyViewAstPK, PersistentArrayMap> cfg_sys_view_ast = new CacheConfiguration<>();
+        cfg_sys_view_ast.setCacheMode(CacheMode.REPLICATED);
+        cfg_sys_view_ast.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        //cfg_sys_view_ast.setDataRegionName("Near_Caches_Region_Eviction");
+        cfg_sys_view_ast.setName("my_sys_view_ast");
+        cfg_sys_view_ast.setReadFromBackup(true);
+        ignite.getOrCreateCache(cfg_sys_view_ast);
 
         // insert 语句中要找到表的定义 "table_ast"
         CacheConfiguration<MyViewAstPK, PersistentArrayMap> cfg_my_select_view_ast = new CacheConfiguration<>();
@@ -67,5 +77,11 @@ public class MyInitCache {
         cfg_my_delete_view_ast.setName("my_delete_view_ast");
         cfg_my_delete_view_ast.setReadFromBackup(true);
         ignite.getOrCreateCache(cfg_my_delete_view_ast);
+
+        MyViewAstPK baseline_nodes = new MyViewAstPK("sys", "BASELINE_NODES");
+        if (!ignite.cache("my_sys_view_ast").containsKey(baseline_nodes))
+        {
+            ignite.cache("my_sys_view_ast").put(baseline_nodes, MySqlToAst.getInstance().getSqlToAst().mySqlToAst("SELECT * FROM sys.baseline_nodes WHERE false"));
+        }
     }
 }

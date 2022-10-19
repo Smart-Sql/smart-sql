@@ -25,6 +25,16 @@ public class MyViewAstPK implements Serializable {
         this.my_group_id = my_group_id;
     }
 
+    public MyViewAstPK(final String schema_name, final String table_name)
+    {
+        if (!Strings.isNullOrEmpty(schema_name)) {
+            this.schema_name = schema_name.toLowerCase();
+        }
+        if (!Strings.isNullOrEmpty(table_name)) {
+            this.table_name = table_name.toLowerCase();
+        }
+    }
+
     public MyViewAstPK()
     {}
 

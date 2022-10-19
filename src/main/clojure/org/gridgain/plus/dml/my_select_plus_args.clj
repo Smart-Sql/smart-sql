@@ -62,6 +62,13 @@
                                                                                                                                                                                                     {:query-items (get_query_view query-items) :where-items where-items})
                                                                                                                                                                                                 ))
                                                                                                                                                                                         (throw (Exception. "用户不存在或者没有权限！查询数据！")))
+                                  (my-lexical/is-eq? schema_name "sys") (if-let [sql_objs (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
+                                                                            (if (= (count sql_objs) 1)
+                                                                                (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                                                                    (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                                                                        {:query-items nil :where-items where-items}
+                                                                                        {:query-items (get_query_view query-items) :where-items where-items})
+                                                                                    )))
                                   ))
                         (get_query_view
                             ([query-items] (get_query_view query-items {}))
