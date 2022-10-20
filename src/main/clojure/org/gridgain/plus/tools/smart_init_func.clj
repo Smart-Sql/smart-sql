@@ -19,10 +19,13 @@
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
         [org.gridgain.plus.tools.my-user-group :as my-user-group]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
+        [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
+        [org.gridgain.plus.smart-func :as smart-func]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
              (org.apache.ignite.internal IgnitionEx)
+             (org.gridgain.smart MyVar)
              (com.google.common.base Strings)
              (org.tools MyConvertUtil KvSql MyDbUtil MyLineToBinary)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)

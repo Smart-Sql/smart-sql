@@ -180,8 +180,7 @@
              lst))))
 
 (defn sql-to-ast [^clojure.lang.LazySeq sql-lst]
-    (letfn [
-            (get-items
+    (letfn [(get-items
                 ([lst] (get-items lst [] nil [] []))
                 ([[f & r] stack mid-small stack-lst lst]
                  (if (some? f)
@@ -671,23 +670,38 @@
                                  (if (not (empty? lst))
                                      (conj lst-rs lst)
                                      lst-rs))))
-                        (to-table-item [lst]
-                            (cond (= (count lst) 1) {:schema_name "" :table_name (first lst) :table_alias ""}
-                                  (= (count lst) 2) {:schema_name "" :table_name (first lst) :table_alias (last lst)}
-                                  (= (count lst) 3) (cond (my-lexical/is-eq? (second lst) "as") {:schema_name "" :table_name (first lst) :table_alias (last lst)}
-                                                          (= (second lst) ".") {:schema_name (first lst) :table_name (last lst) :table_alias ""})
-                                  (and (= (count lst) 4) (= (second lst) ".")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst)}
-                                  (and (= (count lst) 5) (my-lexical/is-eq? (nth lst 3) "as")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst)}
-                                  :else
-                                  (if-let [lst-m (my-get-items-as lst)]
-                                      (if (and (= (count lst-m) 2) (is-select? (first lst-m)))
-                                          {:parenthesis (get-my-sql-to-ast (get-select-line (first lst-m))) :table_alias (first (last lst-m))}
-                                          (if-let [lst-m-1 (my-table-select-split lst)]
-                                              (if (and (= (count lst-m-1) 2) (is-select? (first lst-m-1)))
-                                                  {:parenthesis (get-my-sql-to-ast (get-select-line (first lst-m-1))) :table_alias (first (last lst-m-1))}
-                                                  (get-query-items lst))))
-                                      (get-query-items lst))
-                                  ))
+                        (pre-to-table-item [lst]
+                            (loop [[f & r] lst lst-rs [] indexs-stack [] indexs [] lst-index []]
+                                (if (some? f)
+                                    (cond (and (empty? lst-rs) (empty? lst-index)) (recur r (conj lst-rs f) indexs-stack indexs lst-index)
+                                          (and (not (empty? lst-rs)) (my-lexical/is-eq? "USE" f) (not (nil? r)) (my-lexical/is-eq? "INDEX" (first r))) (recur (rest r) lst-rs indexs-stack indexs (conj lst-index "USE INDEX "))
+                                          (and (not (empty? lst-rs)) (not (empty? lst-index)) (= (count lst-index) 1) (= f "(") (empty? indexs-stack)) (recur r lst-rs (conj indexs-stack f) (conj indexs f) lst-index)
+                                          (and (not (empty? indexs-stack)) (not (= f ")"))) (recur r lst-rs indexs-stack (conj indexs f) lst-index)
+                                          (and (not (empty? indexs-stack)) (= f ")")) (if (= (count indexs-stack) 1)
+                                                                                          (recur r lst-rs [] [] (concat lst-index (conj indexs f)))
+                                                                                          (recur r lst-rs (pop indexs-stack) (conj indexs f) lst-index))
+                                          :else
+                                          (recur r (conj lst-rs f) indexs-stack indexs lst-index)
+                                          )
+                                    [lst-rs lst-index])))
+                        (to-table-item [my-lst]
+                            (let [[lst lst-hint] (pre-to-table-item my-lst)]
+                                (cond (= (count lst) 1) {:schema_name "" :table_name (first lst) :table_alias "" :hints (str/join lst-hint)}
+                                      (= (count lst) 2) {:schema_name "" :table_name (first lst) :table_alias (last lst) :hints (str/join lst-hint)}
+                                      (= (count lst) 3) (cond (my-lexical/is-eq? (second lst) "as") {:schema_name "" :table_name (first lst) :table_alias (last lst) :hints (str/join lst-hint)}
+                                                              (= (second lst) ".") {:schema_name (first lst) :table_name (last lst) :table_alias "" :hints (str/join lst-hint)})
+                                      (and (= (count lst) 4) (= (second lst) ".")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst) :hints (str/join lst-hint)}
+                                      (and (= (count lst) 5) (my-lexical/is-eq? (nth lst 3) "as")) {:schema_name (first lst) :table_name (nth lst 2) :table_alias (last lst) :hints (str/join lst-hint)}
+                                      :else
+                                      (if-let [lst-m (my-get-items-as lst)]
+                                          (if (and (= (count lst-m) 2) (is-select? (first lst-m)))
+                                              {:parenthesis (get-my-sql-to-ast (get-select-line (first lst-m))) :table_alias (first (last lst-m))}
+                                              (if-let [lst-m-1 (my-table-select-split lst)]
+                                                  (if (and (= (count lst-m-1) 2) (is-select? (first lst-m-1)))
+                                                      {:parenthesis (get-my-sql-to-ast (get-select-line (first lst-m-1))) :table_alias (first (last lst-m-1))}
+                                                      (get-query-items lst))))
+                                          (get-query-items lst))
+                                      )))
                         ; 处理逗号类型的
                         (table-comma
                             [lst]
@@ -697,7 +711,7 @@
                         ]
                     (if (= (count table-items) 1)
                         (let [m (first table-items)]
-                            (cond (string? m) (concat [{:schema_name "", :table_name m, :table_alias ""}])
+                            (cond (string? m) (concat [{:schema_name "", :table_name m, :table_alias "" :hints nil}])
                                   (and (my-lexical/is-seq? m) (is-select? m)) {:parenthesis (get-my-sql-to-ast (get-select-line m))}
                                   :else
                                   (if (my-not-contains (first table-items) "join")
@@ -1063,19 +1077,32 @@
             ;                ))))
             (table-to-line [ignite group_id m]
                 (if (some? m)
-                    (if-let [{schema_name :schema_name table_name :table_name table_alias :table_alias} m]
+                    (if-let [{schema_name :schema_name table_name :table_name table_alias :table_alias hints :hints} m]
                         (if-not (Strings/isNullOrEmpty schema_name)
                             (if (Strings/isNullOrEmpty table_alias)
-                                (format "%s.%s" schema_name table_name)
-                                (str/join [(format "%s.%s" schema_name table_name) " " table_alias]))
+                                (if (Strings/isNullOrEmpty hints)
+                                    (format "%s.%s" schema_name table_name)
+                                    (format "%s.%s %s" schema_name table_name hints))
+                                (if (Strings/isNullOrEmpty hints)
+                                    (str/join [(format "%s.%s" schema_name table_name) " " table_alias])
+                                    (str/join [(format "%s.%s %s" schema_name table_name hints) " " table_alias])))
                             (if (= (first group_id) 0)
                                 (if (Strings/isNullOrEmpty table_alias)
-                                    (format "MY_META.%s" table_name)
-                                    (str/join [(format "MY_META.%s" table_name) " " table_alias]))
+                                    (if (Strings/isNullOrEmpty hints)
+                                        (format "MY_META.%s" table_name)
+                                        (format "MY_META.%s %s" table_name hints))
+                                    (if (Strings/isNullOrEmpty hints)
+                                        (str/join [(format "MY_META.%s" table_name) " " table_alias])
+                                        (str/join [(format "MY_META.%s %s" table_name hints) " " table_alias])))
                                 (let [schema_name (get_data_set_name ignite group_id)]
                                     (if (Strings/isNullOrEmpty table_alias)
-                                        (format "%s.%s" schema_name table_name)
-                                        (str/join [(format "%s.%s" schema_name table_name) " " table_alias])))))
+                                        (if (Strings/isNullOrEmpty hints)
+                                            (format "%s.%s" schema_name table_name)
+                                            (format "%s.%s %s" schema_name table_name hints))
+                                        (if (Strings/isNullOrEmpty hints)
+                                            (str/join [(format "%s.%s" schema_name table_name) " " table_alias])
+                                            (str/join [(format "%s.%s %s" schema_name table_name hints) " " table_alias]))
+                                        ))))
                         )))
             ; 获取 data_set 的名字和对应的表
             (get_data_set_name [^Ignite ignite group_id]
