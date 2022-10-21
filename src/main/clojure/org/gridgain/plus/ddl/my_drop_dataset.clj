@@ -20,15 +20,15 @@
 
 (defn get-dataset-name [^String sql]
     (let [lst (my-lexical/to-back (str/lower-case sql))]
-        (cond (and (= (count lst) 5) (= '("drop" "dataset" "if" "exists") (take 4 lst))) (last lst)
-              (and (= (count lst) 3) (= '("drop" "dataset") (take 2 lst))) (last lst)
+        (cond (and (= (count lst) 5) (= '("drop" "schema" "if" "exists") (take 4 lst))) (last lst)
+              (and (= (count lst) 3) (= '("drop" "schema") (take 2 lst))) (last lst)
               :else
               (throw (Exception. "输入字符串错误！"))
               )))
 
 (defn get-dataset-name-lst [lst]
-    (cond (and (= (count lst) 5) (= '("drop" "dataset" "if" "exists") (take 4 lst))) (last lst)
-          (and (= (count lst) 3) (= '("drop" "dataset") (take 2 lst))) (last lst)
+    (cond (and (= (count lst) 5) (= '("drop" "schema" "if" "exists") (take 4 lst))) (last lst)
+          (and (= (count lst) 3) (= '("drop" "schema") (take 2 lst))) (last lst)
           :else
           (throw (Exception. "输入字符串错误！"))
           ))

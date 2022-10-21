@@ -10,7 +10,7 @@
 (def func-smart #{"println" "first" "rest" "next" "second" "last" "query_sql" "noSqlCreate" "noSqlGet" "noSqlInsertTran" "noSqlUpdateTran" "noSqlDeleteTran"
                   "noSqlDrop" "noSqlInsert" "noSqlUpdate" "noSqlDelete" "auto_id" "trans" "my_view" "rm_view" "add_scenes_to" "rm_scenes_from"
                   "add_job" "remove_job" "job_snapshot" "add_func" "remove_func" "recovery_to_cluster" "create_train_matrix" "has_train_matrix"
-                  "drop_train_matrix" "train_matrix" "fit" "predict" "train_matrix_single" "loadCsv" "loadCode"})
+                  "drop_train_matrix" "train_matrix" "fit" "predict" "train_matrix_single" "loadCsv" "loadCode" "show_cache_name"})
 
 (def func-set #{"add" "set" "take" "drop" "nth" "concat" "concat_ws" "contains?" "put" "get" "remove" "pop" "peek"
                 "takeLast" "dropLast" "null?" "notNull?" "empty?" "notEmpty?" "nullOrEmpty?" "notNullOrEmpty?"

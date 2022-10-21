@@ -20,8 +20,8 @@
 
 (defn get-dataset-name [^String sql]
     (let [lst (my-lexical/to-back (str/lower-case sql))]
-        (cond (and (= (count lst) 6) (= '("create" "dataset" "if" "not" "exists") (take 5 lst))) (last lst)
-              (and (= (count lst) 3) (= '("create" "dataset") (take 2 lst))) (last lst)
+        (cond (and (= (count lst) 6) (= '("create" "schema" "if" "not" "exists") (take 5 lst))) (last lst)
+              (and (= (count lst) 3) (= '("create" "schema") (take 2 lst))) (last lst)
               :else
               (throw (Exception. "输入字符串错误！"))
               )))
@@ -33,7 +33,7 @@
             (if-not (my-lexical/is-eq? data_set_name "my_meta")
                 (let [ds-cache (.cache ignite "my_meta_table")]
                     (let [data_set_name_u (str/upper-case data_set_name)]
-                        (if (empty? (.getAll (.query ds-cache (.setArgs (SqlFieldsQuery. "SELECT m.DATA_SET_NAME FROM sys.data_set AS m WHERE m.DATA_SET_NAME = ?") (to-array [data_set_name_u])))))
+                        (if (empty? (.getAll (.query ds-cache (.setArgs (SqlFieldsQuery. "SELECT m.SCHEMA_NAME FROM sys.SCHEMAS AS m WHERE m.SCHEMA_NAME = ?") (to-array [data_set_name_u])))))
                             (if (some? (.getOrCreateCache ignite (doto (CacheConfiguration. (str (str/lower-case data_set_name) "_meta"))
                                                                      (.setSqlSchema data_set_name_u))))
                                 (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u))

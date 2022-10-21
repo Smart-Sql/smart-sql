@@ -237,54 +237,56 @@ graph TB;
 SmartSql 是一个超融合的新的函数式理念，它要实现的功能相当于 分布式(mysql/pg) + 大数据体系 + 分布式缓存 + 应用程序。
 
 ### Smart Sql 的设置
+
 #### 1、设置是否多用户组
 
 ![multiUserGroup](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/multiUserGroup.jpg)
 
-设置多用户组为 true 后，就可以设置不同的数据集 (data set)。数据集是数据表的集合，也就是说数据集包含了一个或多个表。一个用户组只属于一个 DataSet。另外还有一个 public 数据集为公共数据集。
+设置多用户组为 true 后，就可以设置不同的数据集 (schema)。数据集是数据表的集合，也就是说数据集包含了一个或多个表。一个用户组只属于一个 schema。另外还有一个 public 数据集为公共数据集。
 *数据集可以理解为一个子系统的数据库*
 **具体的操作**
 
-#### 1.1、添加数据集（Date Set）
+#### 1.1、添加数据集（schema）
+
 ```sql
 -- 1、
 -- 新增数据集 myy
-create dataset if not exists myy;
+create schema if not exists myy;
 -- 或者
-create dataset myy;
+create schema myy;
 
 -- 2、
 -- 新增数据集 wudafu
-create dataset if not exists wudafu;
+create schema if not exists wudafu;
 -- 或者
-create dataset wudafu;
+create schema wudafu;
 
 -- 3、
 -- 新增数据集 wudagui
-create dataset if not exists wudagui;
+create schema if not exists wudagui;
 -- 或者
-create dataset wudagui;
+create schema wudagui;
 ```
 
 如果要删除数据集
 ```sql
 -- 1、
 -- 删除数据集 myy
-drop dataset if exists myy;
+drop schema if exists myy;
 -- 或者
-drop dataset myy;
+drop schema myy;
 
 -- 2、
 -- 删除数据集 wudafu
-drop dataset if exists wudafu;
+drop schema if exists wudafu;
 -- 或者
-drop dataset wudafu;
+drop schema wudafu;
 
 -- 3、
 -- 删除数据集 wudagui
-drop dataset if exists wudagui;
+drop schema if exists wudagui;
 -- 或者
-drop dataset wudagui;
+drop schema wudagui;
 ```
 
 #### 1.2、添加用户组。(需要 root 权限)
@@ -294,30 +296,32 @@ add_user_group(group_name, user_token, group_type, data_set_name);
 
 内置方法 add_user_group 的实现：
 ```sql
--- 输入 data set name 获取 data set 的 id
-function get_data_set_id(name:string)
+function get_user_group(user_token:string)
 {
-    let id;
-    -- 使用 query_sql 访问数据库读取 id
-    for(r in query_sql("select m.id from my_dataset m where m.dataset_name = ?", name))
-    {
-        -- 读取出来的为序列，因为只有一列，所以我们就只取第一个
-        id = r.first();
-    }
-    -- SmartSql 默认最后一条语句为返回值，所以必要有 id;
-    id;
-} 
-
--- 添加用户组
-function add_user_group(group_name:string, user_token:string, group_type:string, data_set_name:string)
-{
-    -- 通过 data set name 获取 data set 的 id
-    let data_set_id = get_data_set_id(data_set_name);
+    let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token});
     match {
-        -- data set id 大于 0 时，插入到 my_users_group 表中
-        data_set_id > 0: query_sql("insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (auto_id(?), ?, ?, ?, ?)", ["my_users_group", group_name, data_set_id, user_token, group_type]);
-        else false;
+        notEmpty?(vs): vs;
+        else let rs = query_sql("select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?", [user_token]);
+             let result;
+             for (r in rs)
+             {
+                -- 如果存在就保存在缓存中，并且返回
+                noSqlInsert({"table_name": "user_group_cache", "key": user_token, "value": r});
+                result = r;
+             }
+             result;
     }
+}
+
+function get_user_token(group_name:string)
+{
+     let group_token;
+     let rs = query_sql("select m.id, m.user_token from my_users_group m where m.group_name = ?", [group_name]);
+     for (r in rs)
+     {
+        group_token = r;
+     }
+     group_token;
 }
 ```
 *实际上用户可以自己实现这些方法*
@@ -336,13 +340,13 @@ user_ds.sql 里面的内容：
 
 例如：我们添加三个数据集，并且给它们添加用户组，这里用 add_user_group 方法来添加用户组。add_user_group 需要输入四个参数：group_name: 用户组的名称，user_token：用户组连接数据库的 token ，
 ```sql
-create dataset wudafu;
+create schema wudafu;
 add_user_group('myy_group', 'myy_token', 'all', 'myy');
 
-create dataset wudafu;
+create schema wudafu;
 add_user_group('wudafu_group', 'wudafu_token', 'all', 'wudafu');
 
-create dataset wudagui;
+create schema wudagui;
 add_user_group('wudagui_group', 'wudagui_token', 'all', 'wudagui');
 ```
 
@@ -681,50 +685,51 @@ SmartSql 是一个超融合的新函数式理念，它要实现的功能相当�
 
 ![multiUserGroup](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/multiUserGroup.jpg)
 
-设置多用户组为 true 后，就可以设置不同的数据集 (data set)。数据集是数据表的集合，也就是说数据集包含了一个或多个表。一个用户组只属于一个 DataSet。另外还有一个 public 数据集为公共数据集。
+设置多用户组为 true 后，就可以设置不同的数据集 (Schema)。数据集是数据表的集合，也就是说数据集包含了一个或多个表。一个用户组只属于一个 Schema。另外还有一个 public 数据集为公共数据集。
 *数据集可以理解为一个子系统的数据库*
 **具体的操作**
 
-#### 1.1、添加数据集（Date Set）
+#### 1.1、添加数据集（Schema）
+
 ```sql
 -- 1、
 -- 新增数据集 myy
-create dataset if not exists myy;
+create schema if not exists myy;
 -- 或者
-create dataset myy;
+create schema myy;
 
 -- 2、
 -- 新增数据集 wudafu
-create dataset if not exists wudafu;
+create schema if not exists wudafu;
 -- 或者
-create dataset wudafu;
+create schema wudafu;
 
 -- 3、
 -- 新增数据集 wudagui
-create dataset if not exists wudagui;
+create schema if not exists wudagui;
 -- 或者
-create dataset wudagui;
+create schema wudagui;
 ```
 
 如果要删除数据集
 ```sql
 -- 1、
 -- 删除数据集 myy
-drop dataset if exists myy;
+drop schema if exists myy;
 -- 或者
-drop dataset myy;
+drop schema myy;
 
 -- 2、
 -- 删除数据集 wudafu
-drop dataset if exists wudafu;
+drop schema if exists wudafu;
 -- 或者
-drop dataset wudafu;
+drop schema wudafu;
 
 -- 3、
 -- 删除数据集 wudagui
-drop dataset if exists wudagui;
+drop schema if exists wudagui;
 -- 或者
-drop dataset wudagui;
+drop schema wudagui;
 ```
 
 #### 1.2、添加用户组。(需要 root 权限)
@@ -734,30 +739,32 @@ add_user_group(group_name, user_token, group_type, data_set_name);
 
 内置方法 add_user_group 的实现：
 ```sql
--- 输入 data set name 获取 data set 的 id
-function get_data_set_id(name:string)
+function get_user_group(user_token:string)
 {
-    let id;
-    -- 使用 query_sql 访问数据库读取 id
-    for(r in query_sql("select m.id from my_dataset m where m.dataset_name = ?", name))
-    {
-        -- 读取出来的为序列，因为只有一列，所以我们就只取第一个
-        id = r.first();
-    }
-    -- SmartSql 默认最后一条语句为返回值，所以必要有 id;
-    id;
-} 
-
--- 添加用户组
-function add_user_group(group_name:string, user_token:string, group_type:string, data_set_name:string)
-{
-    -- 通过 data set name 获取 data set 的 id
-    let data_set_id = get_data_set_id(data_set_name);
+    let vs = noSqlGet({"table_name": "user_group_cache", "key": user_token});
     match {
-        -- data set id 大于 0 时，插入到 my_users_group 表中
-        data_set_id > 0: query_sql("insert into my_users_group (id, group_name, data_set_id, user_token, group_type) values (auto_id(?), ?, ?, ?, ?)", ["my_users_group", group_name, data_set_id, user_token, group_type]);
-        else false;
+        notEmpty?(vs): vs;
+        else let rs = query_sql("select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?", [user_token]);
+             let result;
+             for (r in rs)
+             {
+                -- 如果存在就保存在缓存中，并且返回
+                noSqlInsert({"table_name": "user_group_cache", "key": user_token, "value": r});
+                result = r;
+             }
+             result;
     }
+}
+
+function get_user_token(group_name:string)
+{
+     let group_token;
+     let rs = query_sql("select m.id, m.user_token from my_users_group m where m.group_name = ?", [group_name]);
+     for (r in rs)
+     {
+        group_token = r;
+     }
+     group_token;
 }
 ```
 *实际上用户可以自己实现这些方法*
@@ -776,13 +783,13 @@ user_ds.sql 里面的内容：
 
 例如：我们添加三个数据集，并且给它们添加用户组，这里用 add_user_group 方法来添加用户组。add_user_group 需要输入四个参数：group_name: 用户组的名称，user_token：用户组连接数据库的 token ，
 ```sql
-create dataset wudafu;
+create schema wudafu;
 add_user_group('myy_group', 'myy_token', 'all', 'myy');
 
-create dataset wudafu;
+create schema wudafu;
 add_user_group('wudafu_group', 'wudafu_token', 'all', 'wudafu');
 
-create dataset wudagui;
+create schema wudagui;
 add_user_group('wudagui_group', 'wudagui_token', 'all', 'wudagui');
 ```
 

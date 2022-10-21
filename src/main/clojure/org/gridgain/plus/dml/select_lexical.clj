@@ -538,17 +538,20 @@
     msg)
 
 (defn my-regular [line]
-    (eval (read-string (format "#\"%s\"" line))))
+    (re-pattern line))
 
 ; (my-str-replace "123wer" "(?i)\\d+" "吴大富")
 (defn my-str-replace [line line-re line-rs]
-    (eval (read-string (format "(str/replace \"%s\" #\"%s\" \"%s\")" line line-re line-rs))))
+    (str/replace line (re-pattern line-re) line-rs))
 
 (defn my-str-split [line line-re]
-    (eval (read-string (format "(str/split \"%s\" #\"%s\")" line line-re))))
+    (str/split line (re-pattern line-re)))
 
 (defn my-str-find [line-re line]
-    (eval (read-string (format "(re-find #\"%s\" \"%s\")" line-re line))))
+    (re-find (re-pattern line-re) line))
+
+(defn show-cache-name [name]
+    (str/replace name (re-pattern "^(?i)f_\\w+_") ""))
 
 (defn my-max [lst]
     (apply max lst))
@@ -778,6 +781,7 @@
           (is-eq? func-name "lowercase") "str/lower-case"
           (is-eq? func-name "toUpperCase") "str/upper-case"
           (is-eq? func-name "uppercase") "str/upper-case"
+          (is-eq? func-name "show_cache_name") "my-lexical/show-cache-name"
           (is-eq? func-name "show_msg") "my-lexical/my-show-msg"
 
           (is-eq? func-name "char") "my-lexical/my-char"
