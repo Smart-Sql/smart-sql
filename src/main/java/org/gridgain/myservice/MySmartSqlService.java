@@ -29,6 +29,10 @@ public class MySmartSqlService {
         return MySmartSqlService.InstanceHolder.instance;
     }
 
+    public IMySmartSql getMySmartSql() {
+        return mySmartSql;
+    }
+
     /**
      * 构造函数设置为私有，只能通过 getInstance() 方法获取
      * */

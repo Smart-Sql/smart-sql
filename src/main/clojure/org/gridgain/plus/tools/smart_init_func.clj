@@ -5,7 +5,8 @@
         [org.gridgain.plus.smart-func :as smart-func]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
-    (:import (org.gridgain.smart MyVar)
+    (:import (org.apache.ignite Ignite)
+             (org.gridgain.smart MyVar)
              (java.util ArrayList List Hashtable Date Iterator))
     (:gen-class
         :implements [org.gridgain.superservice.ISmartFuncInit]
@@ -54,7 +55,7 @@
                                   (throw (Exception. "for 循环只能处理列表或者是执行数据库的结果")))
                             result)))))
 
-(defn -getUserGroup [this ^Ignite ignite group_id ^String user_token]
+(defn -getUserGroup [this ^Ignite ignite ^Object group_id ^String user_token]
     (get_user_group ignite group_id user_token))
 
 (defn get_user_token [ignite group_id group_name]
@@ -80,7 +81,7 @@
                       (throw (Exception. "for 循环只能处理列表或者是执行数据库的结果")))
                 group_token))))
 
-(defn -getUserToken [this ^Ignite ignite group_id ^String group_name]
+(defn -getUserToken [this ^Ignite ignite ^Object group_id ^String group_name]
     (get_user_token ignite group_id group_name))
 
 (defn add_user_group [ignite group_id group_name user_token group_type data_set_name]

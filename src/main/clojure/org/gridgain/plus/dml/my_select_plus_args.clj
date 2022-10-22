@@ -118,8 +118,8 @@
                                     (recur r (assoc rs f my-vs)))
                                 )
                             rs))))
-            (my-query-items [authority-ast m]
-                (cond (my-lexical/is-seq? m) (map (partial my-query-items authority-ast) m)
+            (my-query-items [authority-ast index m]
+                (cond (my-lexical/is-seq? m) (map (partial my-query-items authority-ast (+ index 1)) m)
                       (map? m) (if (and (contains? m :item_name) (false? (-> m :const)))
                                    (if-let [ar-query-items (-> (get authority-ast (-> m :table_alias)) :query-items)]
                                        (if (my-lexical/is-seq-contains? (keys ar-query-items) (-> m :item_name))
@@ -131,8 +131,8 @@
                                    (loop [[f & r] (keys m) rs m]
                                        (if (some? f)
                                            (let [vs (get m f)]
-                                               (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (my-query-items authority-ast vs)))
-                                                     (map? vs) (recur r (assoc rs f (my-query-items authority-ast vs)))
+                                               (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (my-query-items authority-ast (+ index 1) vs)))
+                                                     (map? vs) (recur r (assoc rs f (my-query-items authority-ast (+ index 1) vs)))
                                                      :else
                                                      (recur r rs)
                                                      ))
@@ -154,7 +154,7 @@
                 (cond (my-lexical/is-seq? ast) (map (partial re-all-sql-obj ignite group_id) ast)
                       (map? ast) (if (contains? ast :sql_obj)
                                      (if-let [authority-ast (my-table-items ignite group_id (-> ast :sql_obj))]
-                                         (let [new-sql-obj (assoc (-> ast :sql_obj) :query-items (my-query-items authority-ast (-> ast :sql_obj :query-items)) :where-items (my-where-items authority-ast (-> ast :sql_obj)))]
+                                         (let [new-sql-obj (assoc (-> ast :sql_obj) :query-items (my-query-items authority-ast 0 (-> ast :sql_obj :query-items)) :where-items (my-where-items authority-ast (-> ast :sql_obj)))]
                                              (assoc ast :sql_obj new-sql-obj))
                                          ast)
                                      (loop [[f & r] (keys ast) rs ast]

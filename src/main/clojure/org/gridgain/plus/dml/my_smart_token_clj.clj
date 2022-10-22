@@ -9,7 +9,7 @@
              (com.google.common.base Strings)
              (cn.plus.model MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
-             (org.gridgain.myservice MyLoadSmartSqlService)
+             (org.gridgain.myservice MyLoadSmartSqlService MySmartFuncInit)
              (cn.plus.model.db MyCallScenesPk MyCallScenes MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
@@ -138,6 +138,15 @@
           true
           ))
 
+(defn add_user_group [ignite group_id ^String group_name ^String user_token ^String group_type ^String data_set_name]
+    (.addUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id group_name user_token group_type data_set_name))
+
+(defn update_user_group [ignite group_id ^String group_name ^String group_type]
+    (.updateUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id group_name group_type))
+
+(defn delete_user_group [ignite group_id ^String group_name]
+    (.deleteUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id group_name))
+
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
@@ -211,6 +220,13 @@
                                                                   (format "(my-smart-scenes/my-invoke-scenes-no-ps ignite group_id \"%s\")" func-name))
 
                   (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
+
+                  (my-lexical/is-eq? func-name "has_user_token_type") (.hasUserTokenType (.getSmartFuncInit (MySmartFuncInit/getInstance)) (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "get_user_group") (.getUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "get_user_token") (.getUserToken (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "add_user_group") (apply add_user_group (concat [ignite group_id] (eval (read-string (format "[%s]" (get-lst-ps-vs ignite group_id lst_ps my-context))))))
+                  (my-lexical/is-eq? func-name "update_user_group") (apply update_user_group (concat [ignite group_id] (eval (read-string (format "[%s]" (get-lst-ps-vs ignite group_id lst_ps my-context))))))
+                  (my-lexical/is-eq? func-name "delete_user_group") (delete_user_group ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
                   :else
                   (throw (Exception. (format "%s 不存在，或没有权限！" func-name)))
                   ))
