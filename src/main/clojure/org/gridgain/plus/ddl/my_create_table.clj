@@ -153,7 +153,7 @@
                                                  {:lst_table_item pk_set :code_sb (format "%s PRIMARY KEY (%s)" (.toString code_sb) (pk_line pk_sets))}
                                                  (throw (Exception. "主键设置错误！")))
                        :else
-                       (throw (Exception. "主键设置错误！"))
+                       (throw (Exception. "主键不存在或设置错误！"))
                        )
                  (throw (Exception. "创建表的语句错误！"))))
     ([[f & r] ^ArrayList lst ^StringBuilder sb pk_sets]

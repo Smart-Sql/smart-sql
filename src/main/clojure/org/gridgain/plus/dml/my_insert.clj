@@ -134,39 +134,44 @@
 (defn get_pk_data [^Ignite ignite ^String schema_name ^String table_name]
     (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name)))
 
+(defn schema-name [group_id schema_name]
+    (if (my-lexical/is-str-not-empty? schema_name)
+        schema_name
+        (second group_id)))
+
 (defn my_insert_obj [^Ignite ignite group_id [f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
-        (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
-            (let [{pk :pk} (get_pk_data ignite schema_name table_name)]
-                (cond (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-str-empty? schema_name)) (= (first group_id) 0)) (if (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name))
-                                                                                                                                             (throw (Exception. (format "%s 没有插入数据的权限！" table_name)))
-                                                                                                                                             {:schema_name "MY_META" :table_name table_name :values (get-insert-items vs-line)})
-                      (= (first group_id) 0) (if (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-str-empty? schema_name)) (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name)))
-                                                 (throw (Exception. (format "%s 没有插入数据的权限！" table_name)))
-                                                 (if (my-lexical/is-str-not-empty? schema_name)
-                                                     {:schema_name schema_name :table_name table_name :values (get-insert-items vs-line)}
-                                                     {:schema_name (second group_id) :table_name table_name :values (get-insert-items vs-line)}))
-                      (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！添加数据！"))
-                      (and (my-lexical/is-str-empty? schema_name) (my-lexical/is-str-not-empty? (second group_id))) (if-let [items (get-insert-items vs-line)]
-                                                                                                                        (if-let [{v-items :v-items} (my-authority ignite group_id (second group_id) table_name)]
-                                                                                                                            (if (nil? (has-my-authority pk items v-items))
+        (let [{schema_name_0 :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
+            (let [schema_name (schema-name group_id schema_name_0)]
+                (let [{pk :pk} (get_pk_data ignite schema_name table_name)]
+                    (cond (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-str-empty? schema_name)) (= (first group_id) 0)) (if (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name))
+                                                                                                                                                 (throw (Exception. (format "%s 没有插入数据的权限！" table_name)))
+                                                                                                                                                 {:schema_name "MY_META" :table_name table_name :values (get-insert-items vs-line)})
+                          (= (first group_id) 0) (if (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-str-empty? schema_name)) (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name)))
+                                                     (throw (Exception. (format "%s 没有插入数据的权限！" table_name)))
+                                                     (if (my-lexical/is-str-not-empty? schema_name)
+                                                         {:schema_name schema_name :table_name table_name :values (get-insert-items vs-line)}
+                                                         {:schema_name (second group_id) :table_name table_name :values (get-insert-items vs-line)}))
+                          (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！添加数据！"))
+                          (and (my-lexical/is-str-empty? schema_name) (my-lexical/is-str-not-empty? (second group_id))) (if-let [items (get-insert-items vs-line)]
+                                                                                                                            (if-let [{v-items :v-items} (my-authority ignite group_id (second group_id) table_name)]
+                                                                                                                                (if (nil? (has-my-authority pk items v-items))
+                                                                                                                                    {:schema_name (second group_id) :table_name table_name :values items})
                                                                                                                                 {:schema_name (second group_id) :table_name table_name :values items})
-                                                                                                                            {:schema_name (second group_id) :table_name table_name :values items})
-                                                                                                                        (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))
-                      (and (my-lexical/is-eq? schema_name (second group_id)) (my-lexical/is-str-not-empty? (second group_id))) (if-let [items (get-insert-items vs-line)]
-                                                                                                                                   (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
-                                                                                                                                       (if (nil? (has-my-authority pk items v-items))
+                                                                                                                            (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))
+                          (and (my-lexical/is-eq? schema_name (second group_id)) (my-lexical/is-str-not-empty? (second group_id))) (if-let [items (get-insert-items vs-line)]
+                                                                                                                                       (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
+                                                                                                                                           (if (nil? (has-my-authority pk items v-items))
+                                                                                                                                               {:schema_name schema_name :table_name table_name :values items})
                                                                                                                                            {:schema_name schema_name :table_name table_name :values items})
-                                                                                                                                       {:schema_name schema_name :table_name table_name :values items})
-                                                                                                                                   (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))
-                      (and (not (my-lexical/is-eq? schema_name (second group_id))) (my-lexical/is-str-not-empty? schema_name) (my-lexical/is-str-not-empty? (second group_id))) (if-let [items (get-insert-items vs-line)]
-                                                                                                                                                                                    (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
-                                                                                                                                                                                        (if (nil? (has-my-authority pk items v-items))
-                                                                                                                                                                                            {:schema_name schema_name :table_name table_name :values items})
-                                                                                                                                                                                        (throw (Exception. "用户不存在或者没有权限！添加数据！")))
-                                                                                                                                                                                    (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))
-                      ))
-            )
+                                                                                                                                       (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))
+                          (and (not (my-lexical/is-eq? schema_name (second group_id))) (my-lexical/is-str-not-empty? schema_name) (my-lexical/is-str-not-empty? (second group_id))) (if-let [items (get-insert-items vs-line)]
+                                                                                                                                                                                        (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
+                                                                                                                                                                                            (if (nil? (has-my-authority pk items v-items))
+                                                                                                                                                                                                {:schema_name schema_name :table_name table_name :values items})
+                                                                                                                                                                                            (throw (Exception. "用户不存在或者没有权限！添加数据！")))
+                                                                                                                                                                                        (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))
+                          ))))
         ))
 
 (defn my_insert_obj-no-authority [^Ignite ignite group_id [f & r]]

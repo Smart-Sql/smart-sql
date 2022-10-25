@@ -29,5 +29,18 @@
   :java-source-paths ["src/main/java"]
   :test-paths ["test/main/clojure" "test/main/java"]
   :resource-paths ["resources"]
+  ;:mirrors {#"clojars" {:name "Clojar Mirror" :url "https://mirrors.tuna.tsinghua.edu.cn/clojars" :repo-manager true}}
+  ;:mirrors {"clojars" {:name "ustc"
+  ;                     :url "https://mirrors.ustc.edu.cn/clojars/"}}
+
+  :repositories [["central" {:url "https://maven.aliyun.com/repository/public/" :snapshots false}]
+                 ["clojars" {:url "https://mirrors.ustc.edu.cn/clojars/" :snapshots false}]]
+  :mirrors {"central" {:name "central"
+                       :url "https://maven.aliyun.com/repository/public/"}
+            #"clojars" {:name "ustc"
+                        :url "https://mirrors.ustc.edu.cn/clojars/"
+                        :repo-manager true}}
+
   :aot :all
   :repl-options {:init-ns core})
+
