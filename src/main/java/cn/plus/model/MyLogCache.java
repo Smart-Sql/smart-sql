@@ -30,6 +30,14 @@ public class MyLogCache implements Serializable {
         this.sqlType = sqlType;
     }
 
+    public MyLogCache(final String cache_name, final Object key, final Object value, final SqlType sqlType)
+    {
+        this.cache_name = cache_name;
+        this.key = key;
+        this.value = value;
+        this.sqlType = sqlType;
+    }
+
     public MyLogCache()
     {}
 

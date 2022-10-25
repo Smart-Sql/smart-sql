@@ -163,34 +163,37 @@
 (defn my-authority [^Ignite ignite group_id lst-sql args-dic]
     (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (let [[where-lst args] (my-where-line where_line args-dic)]
-            (cond (and (my-lexical/is-eq? schema_name "my_meta") (= (first group_id) 0)) {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+            (cond (and (my-lexical/is-eq? schema_name "my_meta") (= (first group_id) 0)) (if (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name))
+                                                                                             (throw (Exception. (format "%s 没有修改数据的权限！" table_name)))
+                                                                                             {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
                   (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！修改数据！"))
-                  (= (first group_id) 0) (if (my-lexical/is-str-not-empty? schema_name)
-                                             {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
-                                             {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :args args}
-                                             )
+                  (= (first group_id) 0) (if (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-str-empty? schema_name)) (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name)))
+                                             (throw (Exception. (format "%s 没有修改数据的权限！" table_name)))
+                                             (if (my-lexical/is-str-not-empty? schema_name)
+                                                 {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+                                                 {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :args args}))
                   (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！添加数据！"))
                   (and (my-lexical/is-str-empty? schema_name) (my-lexical/is-str-not-empty? (second group_id))) (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id (second group_id) table_name)]
-                                                                                                            (if (nil? (my-has-authority-item items v_items))
-                                                                                                                (let [where-lst (merge_where where-lst v_where_line)]
-                                                                                                                    {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
-                                                                                                                {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
-                                                                                                            {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args}
-                                                                                                            )
+                                                                                                                    (if (nil? (my-has-authority-item items v_items))
+                                                                                                                        (let [where-lst (merge_where where-lst v_where_line)]
+                                                                                                                            {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
+                                                                                                                        {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
+                                                                                                                    {:schema_name (second group_id) :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args}
+                                                                                                                    )
                   (and (my-lexical/is-eq? schema_name (second group_id)) (my-lexical/is-str-not-empty? (second group_id))) (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
-                                                                                                                           (if (nil? (my-has-authority-item items v_items))
-                                                                                                                               (let [where-lst (merge_where where-lst v_where_line)]
+                                                                                                                               (if (nil? (my-has-authority-item items v_items))
+                                                                                                                                   (let [where-lst (merge_where where-lst v_where_line)]
+                                                                                                                                       {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
                                                                                                                                    {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
-                                                                                                                               {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
-                                                                                                                           {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args}
-                                                                                                                           )
+                                                                                                                               {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args}
+                                                                                                                               )
                   (and (not (my-lexical/is-eq? schema_name (second group_id))) (my-lexical/is-str-not-empty? schema_name) (my-lexical/is-str-not-empty? (second group_id))) (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
-                                                                                                                                                                        (if (nil? (my-has-authority-item items v_items))
-                                                                                                                                                                            (let [where-lst (merge_where where-lst v_where_line)]
-                                                                                                                                                                                {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
-                                                                                                                                                                            {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
-                                                                                                                                                                        (throw (Exception. "用户不存在或者没有权限！修改数据！"))
-                                                                                                                                                                        )
+                                                                                                                                                                                (if (nil? (my-has-authority-item items v_items))
+                                                                                                                                                                                    (let [where-lst (merge_where where-lst v_where_line)]
+                                                                                                                                                                                        {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
+                                                                                                                                                                                    {:schema_name schema_name :table_name table_name :items items :where_line where-lst :where-objs (my-select/sql-to-ast where-lst) :args args})
+                                                                                                                                                                                (throw (Exception. "用户不存在或者没有权限！修改数据！"))
+                                                                                                                                                                                )
                   ))
         ))
 

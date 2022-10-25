@@ -21,8 +21,8 @@ public class MyDeleteViews implements Serializable {
     public MyDeleteViews(final Long group_id, final String table_name, final String dataset_name, final String code)
     {
         this.group_id = group_id;
-        this.table_name = table_name;
-        this.dataset_name = dataset_name;
+        this.table_name = table_name != null? table_name.toLowerCase(): table_name;
+        this.dataset_name = dataset_name != null? dataset_name.toLowerCase(): dataset_name;
         this.code = code;
     }
 

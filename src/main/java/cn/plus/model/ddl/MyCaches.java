@@ -13,10 +13,10 @@ public class MyCaches implements Serializable {
 
     public MyCaches(final String dataset_name, final String table_name, final Boolean is_cache, final String mode, final Integer maxSize)
     {
-        this.dataset_name = dataset_name;
-        this.table_name = table_name;
+        this.dataset_name = dataset_name != null? dataset_name.toLowerCase(): dataset_name;
+        this.table_name = table_name != null? table_name.toLowerCase(): table_name;
         this.is_cache = is_cache;
-        this.mode = mode;
+        this.mode = mode != null? mode.toLowerCase(): mode;
         this.maxSize = maxSize;
     }
 

@@ -8,7 +8,7 @@ public interface ISmartFuncInit {
 
     public Boolean hasUserTokenType(String user_token_type);
 
-    public Object getUserToken(Ignite ignite, Object group_id, String group_name);
+    public Object getUserToken(Ignite ignite, String group_name);
 
     public Object addUserGroup(Ignite ignite, Object group_id, String group_name, String user_token, String group_type, String data_set_name);
 

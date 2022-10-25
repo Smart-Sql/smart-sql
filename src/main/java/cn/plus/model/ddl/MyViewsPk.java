@@ -1,5 +1,7 @@
 package cn.plus.model.ddl;
 
+import com.google.common.base.Strings;
+
 import java.io.Serializable;
 
 public class MyViewsPk implements Serializable {
@@ -14,8 +16,13 @@ public class MyViewsPk implements Serializable {
     public MyViewsPk(final Long group_id, final String table_name, final String dataset_name)
     {
         this.group_id = group_id;
-        this.table_name = table_name;
-        this.dataset_name = dataset_name;
+        if (!Strings.isNullOrEmpty(table_name)) {
+            this.table_name = table_name.toLowerCase();
+        }
+
+        if (!Strings.isNullOrEmpty(dataset_name)) {
+            this.dataset_name = dataset_name.toLowerCase();
+        }
     }
 
     public MyViewsPk()
