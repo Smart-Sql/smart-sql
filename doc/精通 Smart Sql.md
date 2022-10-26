@@ -818,6 +818,7 @@ my_view('wudafu_group', "SELECT convert_to(CategoryName, f(CategoryName)), Descr
 ```
 
 #### 1.4、为用户组添加访问数据集和表的权限。(需要 root 权限)
+
 ```sql
 -- 删除用户组 wudafu_group 对表 public.Categories 插入的权限
 rm_view('wudafu_group', 'public.Categories', 'insert');

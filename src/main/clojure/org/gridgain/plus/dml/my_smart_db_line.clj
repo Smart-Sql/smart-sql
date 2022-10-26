@@ -47,7 +47,7 @@
         (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
             (let [my_pk_rs (my-smart-db/re-pk_rs ignite pk_rs (-> insert_obj :schema_name) (-> insert_obj :table_name))]
                 (if (or (nil? my_pk_rs) (empty? my_pk_rs))
-                    (throw (Exception. "插入数据主键不能为空！"))
+                    (throw (Exception. "插入数据的表不存在，或者主键为空！"))
                     (let [my-key (my-smart-db/get-insert-pk ignite group_id my_pk_rs {:dic {}, :keys []}) my-value (my-smart-db/get-insert-data ignite group_id data_rs {:dic {}, :keys []})]
                         (cond (and (my-lexical/is-seq? my-key) (empty? my-key)) (throw (Exception. "插入数据主键不能为空！"))
                               (nil? my-key) (throw (Exception. "插入数据主键不能为空！"))
@@ -148,13 +148,17 @@
                                                            "select show_msg('true') as tip;"
                                                            "select show_msg('false') as tip;"))
           (my-lexical/is-eq? "update" (first lst)) (let [logCache (update-to-cache ignite group_id lst)]
-                                                       (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                           "select show_msg('true') as tip;"
-                                                           "select show_msg('false') as tip;"))
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "select show_msg('true') as tip;"
+                                                               "select show_msg('false') as tip;")
+                                                           (throw (Exception. "要更新的数据为空！或者没有权限！"))))
           (my-lexical/is-eq? "delete" (first lst)) (let [logCache (delete-to-cache ignite group_id lst)]
-                                                       (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                           "select show_msg('true') as tip;"
-                                                           "select show_msg('false') as tip;")
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "select show_msg('true') as tip;"
+                                                               "select show_msg('false') as tip;")
+                                                           (throw (Exception. "要删除的数据为空！或者没有权限！")))
                                                        )
           :else
           (throw (Exception. "query_sql 只能执行 DML 语句！"))
@@ -168,14 +172,18 @@
                                                            "select show_msg('true') as tip;"
                                                            "select show_msg('false') as tip;"))
           (my-lexical/is-eq? "update" (first lst)) (let [logCache (update-to-cache-no-authority ignite group_id lst)]
-                                                       (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                           "select show_msg('true') as tip;"
-                                                           "select show_msg('false') as tip;")
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "select show_msg('true') as tip;"
+                                                               "select show_msg('false') as tip;")
+                                                           (throw (Exception. "要更新的数据为空！或者没有权限！")))
                                                        )
           (my-lexical/is-eq? "delete" (first lst)) (let [logCache (delete-to-cache-no-authority ignite group_id lst)]
-                                                       (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
-                                                           "select show_msg('true') as tip;"
-                                                           "select show_msg('false') as tip;"))
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "select show_msg('true') as tip;"
+                                                               "select show_msg('false') as tip;")
+                                                           (throw (Exception. "要删除的数据为空！或者没有权限！"))))
           :else
           (throw (Exception. "query_sql 只能执行 DML 语句！"))
           ))

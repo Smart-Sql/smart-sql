@@ -202,7 +202,7 @@
                       (and (false? is_drop) (true? is_add)) {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :pk-data (repace-ast-add ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))}
                       :else
                       (throw (Exception. "修改表的语句有错误！")))
-                (throw (Exception. "MY_META 数据集中的表不能被修改！"))))
+                (throw (Exception. "MY_META 数据集中的原始表不能被修改！"))))
         ))
 
 (defn alter_table [^Ignite ignite group_id ^String sql_line]
