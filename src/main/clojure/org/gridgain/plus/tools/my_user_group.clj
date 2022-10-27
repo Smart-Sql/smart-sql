@@ -36,19 +36,52 @@
 
 
 ; 通过 user_token 获取 user-group 的列表对象
+;(defn get_user_group [ignite user_token]
+;    (if (my-lexical/is-eq? user_token (.getRoot_token (.configuration ignite)))
+;        [0 "MY_META" "all"]
+;        (let [group_id [0 "MY_META" "all"]]
+;            (let [vs (my-lexical/no-sql-get-vs ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)))]
+;                (cond (my-lexical/not-empty? vs) vs
+;                      :else (let [rs (my-smart-db/query_sql ignite group_id "select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [user_token])])]
+;                                (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
+;                                    (if (.hasNext M-F-v156-I-Q157-c-Y)
+;                                        (let [r (.next M-F-v156-I-Q157-c-Y)]
+;                                            (my-lexical/no-sql-insert ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)(.put "value" r)))
+;                                            r
+;                                            (recur M-F-v156-I-Q157-c-Y))))))))))
+
 (defn get_user_group [ignite user_token]
     (if (my-lexical/is-eq? user_token (.getRoot_token (.configuration ignite)))
         [0 "MY_META" "all"]
         (let [group_id [0 "MY_META" "all"]]
-            (let [vs (my-lexical/no-sql-get-vs ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)))]
-                (cond (my-lexical/not-empty? vs) vs
-                      :else (let [rs (my-smart-db/query_sql ignite group_id "select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [user_token])])]
-                                (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
-                                    (if (.hasNext M-F-v156-I-Q157-c-Y)
-                                        (let [r (.next M-F-v156-I-Q157-c-Y)]
-                                            (my-lexical/no-sql-insert ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)(.put "value" r)))
-                                            r
-                                            (recur M-F-v156-I-Q157-c-Y))))))))))
+            (let [vs (MyVar. (my-lexical/no-sql-get-vs ignite group_id (doto (Hashtable.)
+                                                                           (.put "table_name" "user_group_cache")
+                                                                           (.put "key" (my-lexical/get-value user_token)))))]
+                (cond (my-lexical/not-empty? (my-lexical/get-value vs)) (my-lexical/get-value vs)
+                      :else (let [rs (MyVar. (my-smart-db/query_sql ignite group_id "select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [(my-lexical/get-value user_token)])])) result (MyVar. )]
+                                (do
+                                    (cond (my-lexical/my-is-iter? rs) (try
+                                                                          (loop [M-F-v1625-I-Q1626-c-Y (my-lexical/get-my-iter rs)]
+                                                                              (if (.hasNext M-F-v1625-I-Q1626-c-Y)
+                                                                                  (let [r (.next M-F-v1625-I-Q1626-c-Y)]
+                                                                                      (my-lexical/no-sql-insert ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache") (.put "key" (my-lexical/get-value user_token)) (.put "value" r)))
+                                                                                      (.setVar result r)
+                                                                                      (recur M-F-v1625-I-Q1626-c-Y))))
+                                                                          (catch Exception e
+                                                                              (if-not (= (.getMessage e) "my-break")
+                                                                                  (throw e))))
+                                          (my-lexical/my-is-seq? rs) (try
+                                                                         (doseq [r (my-lexical/get-my-seq rs)]
+                                                                             (my-lexical/no-sql-insert ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" (my-lexical/get-value user_token))(.put "value" r)))
+                                                                             (.setVar result r)
+                                                                             )
+                                                                         (catch Exception e
+                                                                             (if-not (= (.getMessage e) "my-break")
+                                                                                 (throw e))))
+                                          :else
+                                          (throw (Exception. "for 循环只能处理列表或者是执行数据库的结果"))
+                                          )
+                                    (my-lexical/get-value result))))))))
 
 ; 通过 group-id 获取 user-group 的列表对象
 (defn get-user-group-by-id [ignite user-group-id]
