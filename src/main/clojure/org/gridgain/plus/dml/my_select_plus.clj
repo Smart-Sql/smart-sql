@@ -760,11 +760,15 @@
             (get-limit [lst]
                 (let [m (my-comma-fn lst)]
                     (if (= (count m) 3) (map get-token m))))
+            ;(my-get-limit [lst]
+            ;    (if (my-lexical/is-eq? (first lst) "limit")
+            ;        (if-let [m (get-items (rest lst))]
+            ;            (if (= (count m) 2)
+            ;                [(get-token (first m)) {:comma_symbol ","} (get-token (last m))]))))
             (my-get-limit [lst]
-                (if (my-lexical/is-eq? (first lst) "limit")
-                    (if-let [m (get-items (rest lst))]
-                        (if (= (count m) 2)
-                            [(get-token (first m)) {:comma_symbol ","} (get-token (last m))]))))
+                (if-let [m (get-items lst)]
+                    (if (= (count m) 2)
+                        [(get-token (first m)) {:comma_symbol ","} (get-token (last m))])))
             ; query items 处理
             (get-query-items [lst]
                 (when-let [[f & rs] (pre-query-lst lst)]

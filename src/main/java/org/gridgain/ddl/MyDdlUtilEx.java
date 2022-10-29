@@ -117,7 +117,7 @@ public class MyDdlUtilEx {
                 myLog.createSession(transSession);
 
                 ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-                ignite.cache("index_ast").put(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()), index_data.get(Keyword.intern("index_ast")));
+                ignite.cache("index_ast").put(new MyIndexAstPk(index_data.get(Keyword.intern("schema_index")).toString(), index_data.get(Keyword.intern("index_name")).toString()), index_data.get(Keyword.intern("index_ast")));
 
                 MySmartDll mySmartDll = new MySmartDll(sql);
                 myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
@@ -131,7 +131,7 @@ public class MyDdlUtilEx {
         else
         {
             ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-            ignite.cache("index_ast").put(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()), index_data.get(Keyword.intern("index_ast")));
+            ignite.cache("index_ast").put(new MyIndexAstPk(index_data.get(Keyword.intern("schema_index")).toString(), index_data.get(Keyword.intern("index_name")).toString()), index_data.get(Keyword.intern("index_ast")));
         }
     }
 
@@ -174,7 +174,7 @@ public class MyDdlUtilEx {
                 myLog.createSession(transSession);
 
                 ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-                ignite.cache("index_ast").remove(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()));
+                ignite.cache("index_ast").remove(new MyIndexAstPk(index_data.get(Keyword.intern("schema_index")).toString(), index_data.get(Keyword.intern("index_name")).toString()));
 
                 MySmartDll mySmartDll = new MySmartDll(sql);
                 myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartDll));
@@ -188,7 +188,7 @@ public class MyDdlUtilEx {
         else
         {
             ignite.cache("public_meta").query(new SqlFieldsQuery(sql)).getAll();
-            ignite.cache("index_ast").remove(new MyIndexAstPk(index_data.get(Keyword.intern("index_name")).toString()));
+            ignite.cache("index_ast").remove(new MyIndexAstPk(index_data.get(Keyword.intern("schema_index")).toString(), index_data.get(Keyword.intern("index_name")).toString()));
         }
     }
 }

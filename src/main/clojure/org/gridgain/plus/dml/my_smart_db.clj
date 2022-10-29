@@ -220,7 +220,7 @@
     (if (some? args)
         (let [args-dic (args-to-dic args)]
             (if-let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic))]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                       (.setArgs (to-array select-args))
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
@@ -229,7 +229,7 @@
                             )
                         lst-rs))))
         (if-let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) []) {})]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
@@ -242,7 +242,7 @@
     (if (some? args)
         (let [args-dic (args-to-dic args)]
             (if-let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj-authority ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic))]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                       (.setArgs (to-array select-args))
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
@@ -250,7 +250,7 @@
                             (recur it (conj lst-rs (MyLogCache. (my-lexical/my-cache-name schema_name table_name) schema_name table_name (get-update-key row (filter #(-> % :is-pk) query-lst)) (get-update-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE)))))
                         lst-rs))))
         (if-let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj-authority ignite group_id (get-args-to-lst (my-lexical/to-back sql) []) {})]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
@@ -263,7 +263,7 @@
     (if (some? args)
         (let [args-dic (args-to-dic args)]
             (if-let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} (my-delete/my_delete_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic))]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                       (.setArgs (to-array select-args))
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
@@ -271,7 +271,7 @@
                             (recur it (conj lst-rs (MyLogCache. (my-lexical/my-cache-name schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE)))))
                         lst-rs))))
         (if-let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} (my-delete/my_delete_obj ignite group_id (my-lexical/to-back sql) {})]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)
@@ -283,7 +283,7 @@
     (if (some? args)
         (let [args-dic (args-to-dic args)]
             (if-let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} (my-delete/my_delete_obj-no-authority ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic))]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                       (.setArgs (to-array select-args))
                                                                                                                       (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
@@ -291,7 +291,7 @@
                             (recur it (conj lst-rs (MyLogCache. (my-lexical/my-cache-name schema_name table_name) schema_name table_name (get-delete-key row pk_lst) nil (SqlType/DELETE)))))
                         lst-rs))))
         (if-let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} (my-delete/my_delete_obj-no-authority ignite group_id (my-lexical/to-back sql) {})]
-            (loop [it (.iterator (.query (.getOrCreateCache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+            (loop [it (.iterator (.query (.cache ignite (my-lexical/my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                   (.setArgs (to-array select-args))
                                                                                                                   (.setLazy true)))) lst-rs []]
                 (if (.hasNext it)

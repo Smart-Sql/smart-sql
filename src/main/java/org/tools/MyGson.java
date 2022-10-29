@@ -22,6 +22,16 @@ public class MyGson {
         return gson.toJson(vs);
     }
 
+    public static String groupObjToLine(final ArrayList vs)
+    {
+        return gson.toJson(vs);
+    }
+
+    public static String groupObjToLine(final Object vs)
+    {
+        return gson.toJson(vs);
+    }
+
     public static List<Object> lineToObj(final String line)
     {
         return gson.fromJson(line, new TypeToken<List<Object>>(){}.getType());

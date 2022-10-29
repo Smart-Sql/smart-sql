@@ -146,7 +146,7 @@
             (let [schema_name (str/lower-case schema_name_v) table_name (str/lower-case table_name_v)]
                 (let [delete-view (MyNoSqlCache. "my_delete_views" schema_name table_name (MyViewsPk. user_group_id table_name schema_name) (MyDeleteViews. user_group_id table_name schema_name code) (SqlType/INSERT)) delete-view-ast (MyNoSqlCache. "my_delete_view_ast" schema_name table_name (MyViewAstPK. schema_name table_name user_group_id) (my-lexical/to-back code) (SqlType/INSERT))]
                     (MyCacheExUtil/transLogCache ignite [delete-view delete-view-ast])))
-            (throw (Exception. "在设置权限视图中，必须有数据集的名字！必须是：数据集.表名")))
+            (throw (Exception. "在设置权限视图中，delete 语言有误！")))
         ))
 
 (defn smart-view-delete-tran [^Ignite ignite ^String group_name user_group_id lst code]

@@ -966,19 +966,20 @@ CREATE TABLE IF NOT EXISTS Person (
 DROP TABLE IF EXISTS Person;
 ```
 ##### 创建索引
+
 ```sql
 -- 在 persons 表的 firstName 字段加索引，指定降序排序
-CREATE INDEX name_idx ON persons (firstName DESC);
+CREATE INDEX name_idx ON myy.persons (firstName DESC);
 
 -- 添加组合索引
-CREATE INDEX city_idx ON sales (country, city);
+CREATE INDEX city_idx ON myy.sales (country, city);
 
 -- 添加空间索引
-CREATE SPATIAL INDEX idx_person_address ON Person (address);
+CREATE SPATIAL INDEX idx_person_address ON myy.Person (address);
 ```
 ##### 删除索引
 ```sql
-DROP INDEX idx_person_name;
+DROP INDEX myy.idx_person_name;
 ```
 #### 4.2、对 DML 的支持
 Smart Sql 完全支持标准 SQL。同时它还支持对 函数的联级调用。

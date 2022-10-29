@@ -78,7 +78,7 @@
             (let [{schema_name :schema_name table_name :table_name k-v :k-v items :items select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) (my-smart-db/get-update-k-v-value ignite group_id select-args items) (SqlType/UPDATE))])
             (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} m-obj]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                    (.setArgs (to-array select-args))
                                                                                                                    (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
@@ -93,7 +93,7 @@
             (let [{schema_name :schema_name table_name :table_name k-v :k-v items :items select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) (my-smart-db/get-update-k-v-value ignite group_id select-args items) (SqlType/UPDATE))])
             (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} m-obj]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                    (.setArgs (to-array select-args))
                                                                                                                    (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
@@ -108,7 +108,7 @@
             (let [{schema_name :schema_name table_name :table_name k-v :k-v select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) nil (SqlType/DELETE))])
             (let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} m-obj]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                    (.setArgs (to-array select-args))
                                                                                                                    (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)
@@ -131,7 +131,7 @@
             (let [{schema_name :schema_name table_name :table_name k-v :k-v select-args :args} m-obj]
                 [(MyLogCache. (my-cache-name schema_name table_name) schema_name table_name (my-smart-db/get-update-k-v-key ignite group_id k-v select-args) nil (SqlType/DELETE))])
             (let [{schema_name :schema_name table_name :table_name sql :sql select-args :args pk_lst :pk_lst} m-obj]
-                (loop [it (.iterator (.query (.getOrCreateCache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                (loop [it (.iterator (.query (.cache ignite (my-cache-name schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                                                    (.setArgs (to-array select-args))
                                                                                                                    (.setLazy true)))) lst-rs []]
                     (if (.hasNext it)

@@ -103,7 +103,7 @@ public class MyNoSqlUtil {
         return cfg;
     }
 
-    public static void createCache(final Ignite ignite, final String cacheName, final Boolean is_cache, final String mode, final int maxSize)
+    public static void createCache(final Ignite ignite, final String ds_name, final String cacheName, final Boolean is_cache, final String mode, final int maxSize)
     {
         CacheConfiguration configuration;
         if (is_cache == true)
@@ -117,6 +117,7 @@ public class MyNoSqlUtil {
 
         if (myLog != null)
         {
+            configuration.setSqlSchema(ds_name);
             ignite.getOrCreateCache(configuration);
 
             IgniteTransactions transactions = ignite.transactions();
@@ -170,6 +171,7 @@ public class MyNoSqlUtil {
 
         if (myLog != null)
         {
+            configuration.setSqlSchema(data_set_name);
             ignite.getOrCreateCache(configuration);
 
             IgniteTransactions transactions = ignite.transactions();
@@ -291,7 +293,7 @@ public class MyNoSqlUtil {
         {
             List<?> row = iterator.next();
             String cache_name = "c_" + row.get(0).toString() + "_" + row.get(1).toString();
-            MyNoSqlUtil.createCache(ignite, cache_name, MyConvertUtil.ConvertToBoolean(row.get(2)), row.get(3).toString(), MyConvertUtil.ConvertToInt(row.get(4)));
+            MyNoSqlUtil.createCache(ignite, row.get(0).toString(), cache_name, MyConvertUtil.ConvertToBoolean(row.get(2)), row.get(3).toString(), MyConvertUtil.ConvertToInt(row.get(4)));
             System.out.println(cache_name + " 初始化成功！");
         }
     }

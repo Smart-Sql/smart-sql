@@ -36,10 +36,19 @@
         true
         false))
 
+(defn index-schema-name [line]
+    (if-let [lst (str/split line #"\s+.\s+")]
+        (cond (= (count lst) 1) {:schema-index nil :index-name (first lst)}
+              (= (count lst) 2) {:schema-index (first lst) :index-name (last lst)}
+              :else
+              (throw (Exception. "索引名字格式错误！"))
+              )))
+
 (defn get_drop_index_obj [^String sql]
     (let [drop_index (re-find #"^(?i)DROP\s+INDEX\s+IF\s+EXISTS\s+|^(?i)DROP\s+INDEX\s+" sql) index_name (str/replace sql #"^(?i)DROP\s+INDEX\s+IF\s+EXISTS\s+|^(?i)DROP\s+INDEX\s+" "")]
         (if (some? drop_index)
-            {:drop_line (str/trim drop_index) :is_exists (index_exists (str/trim drop_index)) :index_name (str/trim index_name)}
+            (let [{schema-index :schema-index index-name :index-name} (index-schema-name (str/trim index_name))]
+                {:drop_line (str/trim drop_index) :is_exists (index_exists (str/trim drop_index)) :schema-index schema-index :index_name index-name})
             (throw (Exception. "删除索引语句错误！")))))
 
 (defn drop-index-obj [^Ignite ignite ^String data_set_name ^String sql_line]
@@ -105,13 +114,13 @@
 ;                (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 (defn drop_index [^Ignite ignite group_id ^String sql_line]
-    (if-let [{index_name :index_name} (get_drop_index_obj sql_line)]
-        (if-let [{schema_name :schema_name} (.get (.cache ignite "index_ast") (MyIndexAstPk. index_name))]
+    (if-let [{schema-index :schema-index index_name :index_name} (get_drop_index_obj sql_line)]
+        (if-let [{schema_name :schema_name} (.get (.cache ignite "index_ast") (MyIndexAstPk. schema-index index_name))]
             (if (= (first group_id) 0)
-                (MyDdlUtilEx/deleteIndexCache ignite {:sql sql_line :index {:index_name index_name}})
+                (MyDdlUtilEx/deleteIndexCache ignite {:sql sql_line :index {:schema_index schema-index :index_name index_name}})
                 (if (contains? #{"ALL" "DDL"} (str/upper-case (nth group_id 2)))
                     (if (my-lexical/is-eq? schema_name (second group_id))
-                        (MyDdlUtilEx/deleteIndexCache ignite {:sql sql_line :index {:index_name index_name}}))
+                        (MyDdlUtilEx/deleteIndexCache ignite {:sql sql_line :index {:schema-index schema-index :index_name index_name}}))
                     (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))))))
 
 
