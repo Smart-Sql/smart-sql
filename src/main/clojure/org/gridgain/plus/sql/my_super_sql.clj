@@ -233,14 +233,15 @@
 
 (defn super-sql [^Ignite ignite ^String userToken ^List lst]
     (let [[group_id schema_name group_type] (my-user-group/get_user_group ignite userToken)]
-        ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
-        ;(println lst)
-        (super-sql-lst ignite group_id userToken schema_name group_type lst)))
+        (if-not (nil? group_id)
+            (super-sql-lst ignite group_id userToken schema_name group_type lst)
+            (throw (Exception. (format "userToken: %s 不存在！" userToken))))))
 
 (defn super-sql-line [^Ignite ignite ^String userToken ^String line]
     (let [[group_id schema_name group_type] (my-user-group/get_user_group ignite userToken)]
-        ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
-        (super-sql-lst ignite group_id userToken schema_name group_type (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
+        (if-not (nil? group_id)
+            (super-sql-lst ignite group_id userToken schema_name group_type (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))
+            (throw (Exception. (format "userToken: %s 不存在！" userToken))))))
 
 (defn -recovery_ddl [this ^Ignite ignite ^String line]
     (let [userToken (.getRoot_token (.configuration ignite))]

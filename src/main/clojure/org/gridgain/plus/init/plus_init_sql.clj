@@ -43,7 +43,7 @@
                          -- 用户组名称
                          group_name VARCHAR(40),
                          -- 数据集
-                         data_set_name VARCHAR(40),
+                         schema_name VARCHAR(40),
                          -- userToken
                          user_token VARCHAR,
                          -- 用户组类型

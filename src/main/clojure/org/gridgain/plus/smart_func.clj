@@ -251,7 +251,7 @@
     (if (= group_id 0)
         [0 "MY_META" "ALL"]
         (if-let [m (.get (.cache ignite "my_users_group") group_id)]
-            [group_id (.getData_set_name m) (.getGroup_type m)]))
+            [group_id (.getSchema_name m) (.getGroup_type m)]))
     )
 
 ; 添加场景到用户组

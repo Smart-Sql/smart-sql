@@ -29,14 +29,14 @@
 ; CREATE DATASET CRM_DATA_SET
 (defn create_data_set [^Ignite ignite group_id ^String sql]
     (if (= (first group_id) 0)
-        (if-let [data_set_name (get-dataset-name sql)]
-            (if-not (my-lexical/is-eq? data_set_name "my_meta")
+        (if-let [schema_name (get-dataset-name sql)]
+            (if-not (my-lexical/is-eq? schema_name "my_meta")
                 (let [ds-cache (.cache ignite "my_meta_table")]
-                    (let [data_set_name_u (str/upper-case data_set_name)]
-                        (if (empty? (.getAll (.query ds-cache (.setArgs (SqlFieldsQuery. "SELECT m.SCHEMA_NAME FROM sys.SCHEMAS AS m WHERE m.SCHEMA_NAME = ?") (to-array [data_set_name_u])))))
-                            (if (some? (.getOrCreateCache ignite (doto (CacheConfiguration. (str (str/lower-case data_set_name) "_meta"))
-                                                                     (.setSqlSchema data_set_name_u))))
-                                (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite data_set_name_u))
+                    (let [schema_name_u (str/upper-case schema_name)]
+                        (if (empty? (.getAll (.query ds-cache (.setArgs (SqlFieldsQuery. "SELECT m.SCHEMA_NAME FROM sys.SCHEMAS AS m WHERE m.SCHEMA_NAME = ?") (to-array [schema_name_u])))))
+                            (if (some? (.getOrCreateCache ignite (doto (CacheConfiguration. (str (str/lower-case schema_name) "_meta"))
+                                                                     (.setSqlSchema schema_name_u))))
+                                (.initSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite schema_name_u))
                             (throw (Exception. "该数据集已经存在了！"))))
                     )
                 (throw (Exception. "该数据集已经存在了！")))

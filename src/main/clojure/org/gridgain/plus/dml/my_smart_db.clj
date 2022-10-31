@@ -316,7 +316,7 @@
 
 ; no sql
 (defn get-cache [ignite schema_name table_name]
-    (if-let [m (.cache ignite (format "c_%s_%s" schema_name table_name))]
+    (if-let [m (.cache ignite (format "c_%s_%s" (str/lower-case schema_name) (str/lower-case table_name)))]
         m))
 
 (defn my-create-cache [ignite group_id schema_name table_name is_cache mode maxSize]
@@ -351,77 +351,84 @@
               (throw (Exception. "No Sql 插入格式错误！")))))
 
 (defn my-insert [ignite group_id my-obj]
-    (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
-        (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
-                                           (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
-                                               (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT)))
-                                               ;(.put (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
-                                               ))
-              (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
-                                               ;(.put (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
-                                               (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT)))
-                                               )
-              :else
-              (throw (Exception. "No Sql 插入格式错误！")))))
+    (let [{schema_name_0 :schema_name table_name_0 :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
+        (let [schema_name (str/lower-case schema_name_0) table_name (str/lower-case table_name_0)]
+            (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
+                                               (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
+                                                   (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT)))
+                                                   ;(.put (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
+                                                   ))
+                  (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
+                                                   ;(.put (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
+                                                   (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT)))
+                                                   )
+                  :else
+                  (throw (Exception. "No Sql 插入格式错误！"))))))
 
 (defn my-insert-tran [ignite group_id my-obj]
-    (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
-        (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
-                                           (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
-                                               (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT))
-                                               ))
-              (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
-                                               (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT)))
-              :else
-              (throw (Exception. "No Sql 插入格式错误！")))))
+    (let [{schema_name_0 :schema_name table_name_0 :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
+        (let [schema_name (str/lower-case schema_name_0) table_name (str/lower-case table_name_0)]
+            (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
+                                               (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
+                                                   (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT))
+                                                   ))
+                  (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
+                                                   (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/INSERT)))
+                  :else
+                  (throw (Exception. "No Sql 插入格式错误！"))))))
 
 (defn my-update [ignite group_id my-obj]
-    (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
-        (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
-                                           (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
-                                               ;(.replace (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
-                                               (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE)))
-                                               ))
-              (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
-                                               ;(.replace (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
-                                               (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE)))
-                                               )
-              :else
-              (throw (Exception. "No Sql 修改格式错误！")))))
+    (let [{schema_name_0 :schema_name table_name_0 :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
+        (let [schema_name (str/lower-case schema_name_0) table_name (str/lower-case table_name_0)]
+            (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
+                                               (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
+                                                   ;(.replace (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
+                                                   (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE)))
+                                                   ))
+                  (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
+                                                   ;(.replace (.cache ignite (format "c_%s_%s" schema_name table_name)) key value)
+                                                   (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE)))
+                                                   )
+                  :else
+                  (throw (Exception. "No Sql 修改格式错误！"))))))
 
 (defn my-update-tran [ignite group_id my-obj]
-    (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
-        (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
-                                           (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
-                                               (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE))))
-              (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
-                                               (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE)))
-              :else
-              (throw (Exception. "No Sql 修改格式错误！")))))
+    (let [{schema_name_0 :schema_name table_name_0 :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
+        (let [schema_name (str/lower-case schema_name_0) table_name (str/lower-case table_name_0)]
+            (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
+                                               (let [{key "key" value "value"} (my-lexical/get-value my-obj)]
+                                                   (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE))))
+                  (instance? Hashtable my-obj) (let [{key "key" value "value"} my-obj]
+                                                   (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key value (SqlType/UPDATE)))
+                  :else
+                  (throw (Exception. "No Sql 修改格式错误！"))))))
 
 (defn my-delete [ignite group_id my-obj]
-    (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
-        (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
-                                           (let [{key "key"} (my-lexical/get-value my-obj)]
-                                               ;(.remove (.cache ignite (format "c_%s_%s" schema_name table_name)) key)
-                                               (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE)))
-                                               ))
-              (instance? Hashtable my-obj) (let [{key "key"} my-obj]
-                                               ;(.remove (.cache ignite (format "c_%s_%s" schema_name table_name)) key)
-                                               (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE))))
-              :else
-              (throw (Exception. "No Sql 删除格式错误！")))))
+    (let [{schema_name_0 :schema_name table_name_0 :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
+        (let [schema_name (str/lower-case schema_name_0) table_name (str/lower-case table_name_0)]
+            (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
+                                               (let [{key "key"} (my-lexical/get-value my-obj)]
+                                                   ;(.remove (.cache ignite (format "c_%s_%s" schema_name table_name)) key)
+                                                   (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE)))
+                                                   ))
+                  (instance? Hashtable my-obj) (let [{key "key"} my-obj]
+                                                   ;(.remove (.cache ignite (format "c_%s_%s" schema_name table_name)) key)
+                                                   (MyNoSqlUtil/runCache ignite (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE))))
+                  :else
+                  (throw (Exception. "No Sql 删除格式错误！"))))))
 
 (defn my-delete-tran [ignite group_id my-obj]
-    (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
-        (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
-                                           (let [{key "key"} (my-lexical/get-value my-obj)]
-                                               (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE))
-                                               ))
-              (instance? Hashtable my-obj) (let [{key "key"} my-obj]
-                                               (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE)))
-              :else
-              (throw (Exception. "No Sql 删除格式错误！")))))
+    (let [{schema_name_0 :schema_name table_name_0 :table_name} (my-lexical/get_obj_schema_name ignite group_id my-obj)]
+        (let [schema_name (str/lower-case schema_name_0) table_name (str/lower-case table_name_0)]
+            (cond (instance? MyVar my-obj) (if (instance? Hashtable (my-lexical/get-value my-obj))
+                                               (let [{key "key"} (my-lexical/get-value my-obj)]
+                                                   (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE))
+                                                   ))
+                  (instance? Hashtable my-obj) (let [{key "key"} my-obj]
+                                                   (MyNoSqlCache. (format "c_%s_%s" schema_name table_name) schema_name table_name key nil (SqlType/DELETE)))
+                  :else
+                  (throw (Exception. "No Sql 删除格式错误！"))))
+        ))
 
 (defn my-drop [ignite group_id my-obj]
     (let [{schema_name :schema_name table_name :table_name} (my-lexical/get_obj_schema_name ignite group_id (my-lexical/get-value my-obj))]

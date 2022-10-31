@@ -36,22 +36,22 @@
 ; 删除 dataset
 (defn drop-data-set [^Ignite ignite group_id ^String sql]
     (if (= (first group_id) 0)
-        (if-let [data_set_name (get-dataset-name sql)]
-            (if-let [ds-cache (.cache ignite (str (str/lower-case data_set_name) "_meta"))]
-                (if (empty? (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. "SELECT m.CACHE_ID FROM sys.TABLES AS m WHERE m.SCHEMA_NAME = ? limit 0, 1") (to-array [(str/upper-case data_set_name)])))))
+        (if-let [schema_name (get-dataset-name sql)]
+            (if-let [ds-cache (.cache ignite (str (str/lower-case schema_name) "_meta"))]
+                (if (empty? (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. "SELECT m.CACHE_ID FROM sys.TABLES AS m WHERE m.SCHEMA_NAME = ? limit 0, 1") (to-array [(str/upper-case schema_name)])))))
                     (do
-                        (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case data_set_name))
+                        (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case schema_name))
                         (.destroy ds-cache))
                     (throw (Exception. "数据集中还存在表！不能删除！")))))
         (throw (Exception. "没有执行语句的权限！"))))
 
 (defn drop-data-set-lst [^Ignite ignite group_id lst]
     (if (= (first group_id) 0)
-        (if-let [data_set_name (get-dataset-name-lst lst)]
-            (if-let [ds-cache (.cache ignite (str (str/lower-case data_set_name) "_meta"))]
-                (if (empty? (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. "SELECT m.CACHE_ID FROM sys.TABLES AS m WHERE m.SCHEMA_NAME = ? limit 0, 1") (to-array [(str/upper-case data_set_name)])))))
+        (if-let [schema_name (get-dataset-name-lst lst)]
+            (if-let [ds-cache (.cache ignite (str (str/lower-case schema_name) "_meta"))]
+                (if (empty? (.getAll (.query (.cache ignite "my_meta_table") (.setArgs (SqlFieldsQuery. "SELECT m.CACHE_ID FROM sys.TABLES AS m WHERE m.SCHEMA_NAME = ? limit 0, 1") (to-array [(str/upper-case schema_name)])))))
                     (do
-                        (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case data_set_name))
+                        (.dropSchemaFunc (.getInitFunc (MyInitFuncService/getInstance)) ignite (str/lower-case schema_name))
                         (.destroy ds-cache))
                     (throw (Exception. "数据集中还存在表！不能删除！")))))
         (throw (Exception. "没有执行语句的权限！"))))

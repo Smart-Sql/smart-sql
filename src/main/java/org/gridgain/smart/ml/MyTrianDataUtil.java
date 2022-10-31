@@ -67,9 +67,9 @@ public class MyTrianDataUtil implements Serializable {
         }
     }
 
-    public static void loadTrainMatrix(final Ignite ignite, final String data_set_name, final String table_name, final PersistentVector vs)
+    public static void loadTrainMatrix(final Ignite ignite, final String schema_name, final String table_name, final PersistentVector vs)
     {
-        String cacheName = "sm_ml_" + data_set_name + "_" + table_name;
+        String cacheName = "sm_ml_" + schema_name + "_" + table_name;
         Long key = Ignition.ignite().atomicSequence(cacheName, 0, true).incrementAndGet();
         Vector vts = VectorUtils.of(vsToDouble(vs));
         ignite.cache(cacheName).put(key, vts);

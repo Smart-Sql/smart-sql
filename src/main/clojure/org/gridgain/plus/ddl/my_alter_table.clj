@@ -78,10 +78,10 @@
 
 (declare get-table-id get-add-table-item get-drop-table-item re-obj)
 
-(defn get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
-              (if (my-lexical/is-eq? "public" data_set_name)
+(defn get-table-id [^Ignite ignite ^String schema_name ^String table_name]
+              (if (my-lexical/is-eq? "public" schema_name)
                   (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
-                  (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
+                  (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case schema_name) (str/lower-case table_name)])))))))
               )
 (defn get-add-table-item [^Ignite ignite ^Long table_id lst_table_item]
                     (loop [[f & r] lst_table_item lst-rs (ArrayList.)]
@@ -108,10 +108,10 @@
                                      )
                                  (throw (Exception. (format "要删除的列 %s 不存在！" (.getColumn_name f)))))
                              lst-rs)))
-(defn re-obj [^String data_set_name ^String sql_line]
+(defn re-obj [^String schema_name ^String sql_line]
         (if-let [m (get_table_alter_obj sql_line)]
-            (cond (and (= (-> m :schema_name) "") (not (= data_set_name ""))) (assoc m :schema_name data_set_name)
-                  (or (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? (-> m :schema_name) data_set_name))) m
+            (cond (and (= (-> m :schema_name) "") (not (= schema_name ""))) (assoc m :schema_name schema_name)
+                  (or (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? schema_name "MY_META")) (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? (-> m :schema_name) schema_name))) m
                   :else
                   (throw (Exception. "没有修改表的权限！"))
                   )))
@@ -137,8 +137,8 @@
                 ))
         ))
 
-(defn alter-table-obj [^Ignite ignite ^String data_set_name ^String sql_line]
-    (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj data_set_name sql_line)]
+(defn alter-table-obj [^Ignite ignite ^String schema_name ^String sql_line]
+    (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj schema_name sql_line)]
         (let [table_name (str/lower-case my-table_name)]
             (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
                 (if-let [table_id (get-table-id ignite schema_name table_name)]
@@ -194,8 +194,8 @@
                     (recur r (conj my-data f)))
                 (assoc ast :data my-data)))))
 
-(defn alter-table-obj [^Ignite ignite ^String data_set_name ^String sql_line]
-    (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj data_set_name sql_line)]
+(defn alter-table-obj [^Ignite ignite ^String schema_name ^String sql_line]
+    (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj schema_name sql_line)]
         (let [table_name (str/lower-case my-table_name)]
             (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
                 (cond (and (true? is_drop) (false? is_add)) {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :pk-data (repace-ast-del ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))}

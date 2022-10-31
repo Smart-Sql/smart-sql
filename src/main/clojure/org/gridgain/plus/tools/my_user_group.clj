@@ -42,7 +42,7 @@
 ;        (let [group_id [0 "MY_META" "all"]]
 ;            (let [vs (my-lexical/no-sql-get-vs ignite group_id (doto (Hashtable.) (.put "table_name" "user_group_cache")(.put "key" user_token)))]
 ;                (cond (my-lexical/not-empty? vs) vs
-;                      :else (let [rs (my-smart-db/query_sql ignite group_id "select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [user_token])])]
+;                      :else (let [rs (my-smart-db/query_sql ignite group_id "select g.id, g.schema_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [user_token])])]
 ;                                (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
 ;                                    (if (.hasNext M-F-v156-I-Q157-c-Y)
 ;                                        (let [r (.next M-F-v156-I-Q157-c-Y)]
@@ -58,7 +58,7 @@
                                                                            (.put "table_name" "user_group_cache")
                                                                            (.put "key" (my-lexical/get-value user_token)))))]
                 (cond (my-lexical/not-empty? (my-lexical/get-value vs)) (my-lexical/get-value vs)
-                      :else (let [rs (MyVar. (my-smart-db/query_sql ignite group_id "select g.id, g.data_set_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [(my-lexical/get-value user_token)])])) result (MyVar. )]
+                      :else (let [rs (MyVar. (my-smart-db/query_sql ignite group_id "select g.id, g.schema_name, g.group_type from my_users_group as g where g.user_token = ?" [(my-lexical/to_arryList [(my-lexical/get-value user_token)])])) result (MyVar. )]
                                 (do
                                     (cond (my-lexical/my-is-iter? rs) (try
                                                                           (loop [M-F-v1625-I-Q1626-c-Y (my-lexical/get-my-iter rs)]
@@ -88,7 +88,7 @@
     (if (= user-group-id 0)
         [0 "MY_META" "all"]
         (if-let [m (.get (.cache ignite "my_users_group") user-group-id)]
-            [(.getId m) (.getData_set_name m) (.getGroup_type m)])
+            [(.getId m) (.getSchema_name m) (.getGroup_type m)])
         ;(if-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.schema_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [user-group-id])))))]
         ;    (cons user-group-id m))
         ))

@@ -103,11 +103,11 @@
                     (throw (Exception. "创建索引语句错误！"))))
             (throw (Exception. "创建索引语句错误！")))))
 
-(defn create-index-obj [^Ignite ignite ^String data_set_name ^String sql_line]
-    (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
-                (if (my-lexical/is-eq? "public" data_set_name)
+(defn create-index-obj [^Ignite ignite ^String schema_name ^String sql_line]
+    (letfn [(get-table-id [^Ignite ignite ^String schema_name ^String table_name]
+                (if (my-lexical/is-eq? "public" schema_name)
                     (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case schema_name) (str/lower-case table_name)])))))))
                 )
             (get-cachex [^Ignite ignite ^clojure.lang.PersistentArrayMap m ^ArrayList lst]
                 (let [{index_name :index_name schema_name :schema_name table_name :table_name index_items_obj :index_items_obj {spatial :spatial} :create_index} m]
@@ -129,10 +129,10 @@
                                     (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) (MyLogCache. "table_index" "MY_META" "table_index" my-key my-value (SqlType/INSERT)))))
                                     (doto lst (.add (MyCacheEx. (.cache ignite "table_index") my-key my-value (SqlType/INSERT) nil)))))
                         ))))
-            (get-index-obj [^String data_set_name ^String sql_line]
+            (get-index-obj [^String schema_name ^String sql_line]
                 (let [m (get_create_index_obj sql_line)]
-                    (cond (and (= (-> m :schema_name) "") (not (= data_set_name ""))) (assoc m :schema_name data_set_name)
-                          (or (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? (-> m :schema_name) data_set_name))) m
+                    (cond (and (= (-> m :schema_name) "") (not (= schema_name ""))) (assoc m :schema_name schema_name)
+                          (or (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? schema_name "MY_META")) (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? (-> m :schema_name) schema_name))) m
                           :else
                           (throw (Exception. "没有创建索引的权限！"))
                           )))
@@ -150,7 +150,7 @@
                              )
                          (.toString sb)))))
             ]
-        (let [m (get-index-obj data_set_name sql_line)]
+        (let [m (get-index-obj schema_name sql_line)]
             (if-not (and (my-lexical/is-eq? (-> m :schema_name) "my_meta") (contains? plus-init-sql/my-grid-tables-set (-> m :table_name)))
                 {:sql (format "%s %s_%s ON %s.%s (%s)" (-> m :create_index :create_index_line) (-> m :schema_name) (-> m :index_name) (-> m :schema_name) (-> m :table_name) (get-index-items-line (-> m :index_items_obj)))
                  :un_sql (format  "DROP INDEX IF EXISTS %s_%s" (-> m :schema_name) (-> m :index_name))

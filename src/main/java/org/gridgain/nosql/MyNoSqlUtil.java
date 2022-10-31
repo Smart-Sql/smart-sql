@@ -156,9 +156,9 @@ public class MyNoSqlUtil {
         }
     }
 
-    public static void createCacheSave(final Ignite ignite, final String data_set_name, final String table_name, final Boolean is_cache, final String mode, final int maxSize)
+    public static void createCacheSave(final Ignite ignite, final String schema_name, final String table_name, final Boolean is_cache, final String mode, final int maxSize)
     {
-        String cacheName = "c_" + data_set_name + "_" + table_name;
+        String cacheName = "c_" + schema_name.toLowerCase() + "_" + table_name.toLowerCase();
         CacheConfiguration configuration;
         if (is_cache == true)
         {
@@ -171,7 +171,7 @@ public class MyNoSqlUtil {
 
         if (myLog != null)
         {
-            configuration.setSqlSchema(data_set_name);
+            configuration.setSqlSchema(schema_name);
             ignite.getOrCreateCache(configuration);
 
             IgniteTransactions transactions = ignite.transactions();
@@ -191,7 +191,7 @@ public class MyNoSqlUtil {
                 myLog.saveTo(transSession, MyCacheExUtil.objToBytes(mySmartCache));
 
                 IgniteCache<MyCachePK, MyCaches> my_caches = ignite.cache("my_caches");
-                my_caches.put(new MyCachePK(data_set_name, table_name), new MyCaches(data_set_name, table_name, is_cache, mode, maxSize));
+                my_caches.put(new MyCachePK(schema_name, table_name), new MyCaches(schema_name, table_name, is_cache, mode, maxSize));
 
                 myLog.commit(transSession);
                 tx.commit();
@@ -212,7 +212,7 @@ public class MyNoSqlUtil {
             ignite.getOrCreateCache(configuration);
 
             IgniteCache<MyCachePK, MyCaches> my_caches = ignite.cache("my_caches");
-            my_caches.put(new MyCachePK(data_set_name, table_name), new MyCaches(data_set_name, table_name, is_cache, mode, maxSize));
+            my_caches.put(new MyCachePK(schema_name, table_name), new MyCaches(schema_name, table_name, is_cache, mode, maxSize));
         }
     }
 
@@ -243,8 +243,8 @@ public class MyNoSqlUtil {
         }
     }
 
-    public static void dropCacheSave(final Ignite ignite, final String data_set_name, final String table_name) throws Exception {
-        String cacheName = "c_" + data_set_name + "_" + table_name;
+    public static void dropCacheSave(final Ignite ignite, final String schema_name, final String table_name) throws Exception {
+        String cacheName = "c_" + schema_name.toLowerCase() + "_" + table_name.toLowerCase();
         if (myLog != null)
         {
             MySmartCache mySmartCache = new MySmartCache();
@@ -292,7 +292,7 @@ public class MyNoSqlUtil {
         while (iterator.hasNext())
         {
             List<?> row = iterator.next();
-            String cache_name = "c_" + row.get(0).toString() + "_" + row.get(1).toString();
+            String cache_name = "c_" + row.get(0).toString().toLowerCase() + "_" + row.get(1).toString().toLowerCase();
             MyNoSqlUtil.createCache(ignite, row.get(0).toString(), cache_name, MyConvertUtil.ConvertToBoolean(row.get(2)), row.get(3).toString(), MyConvertUtil.ConvertToInt(row.get(4)));
             System.out.println(cache_name + " 初始化成功！");
         }

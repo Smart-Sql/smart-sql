@@ -41,7 +41,7 @@
                             (cond (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-str-empty? schema_name)) (not (my-lexical/is-eq? schema_name "sys")) (= (first group_id) 0)) nil
                                   (and (= (first group_id) 0) (not (my-lexical/is-eq? schema_name "sys"))) nil
                                   (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0) (not (contains? plus-init-sql/my-grid-tables-set (str/lower-case talbe_name)))) (throw (Exception. "用户不存在或者没有权限！查询数据！"))
-                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0) (contains? plus-init-sql/my-grid-tables-set (str/lower-case talbe_name))) (if-let [sql_objs (my-lexical/get-select-code ignite (second group_id) talbe_name group_id)]
+                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0) (contains? plus-init-sql/my-grid-tables-set (str/lower-case talbe_name))) (if-let [sql_objs (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
                                                                                                                                                                      (if (= (count sql_objs) 1)
                                                                                                                                                                          (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
                                                                                                                                                                              (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
@@ -406,7 +406,7 @@
                                     (if (Strings/isNullOrEmpty hints)
                                         {:sql (str/join [(format "MY_META.%s" table_name) " " table_alias]) :args nil}
                                         {:sql (str/join [(format "MY_META.%s %s" table_name hints) " " table_alias]) :args nil}))
-                                (let [schema_name (get_data_set_name ignite group_id)]
+                                (let [schema_name (get_schema_name ignite group_id)]
                                     (if (Strings/isNullOrEmpty table_alias)
                                         (if (Strings/isNullOrEmpty hints)
                                             {:sql (format "%s.%s" schema_name table_name) :args nil}
@@ -416,7 +416,7 @@
                                             {:sql (str/join [(format "%s.%s %s" schema_name table_name hints) " " table_alias]) :args nil})))))
                         )))
             ; 获取 data_set 的名字和对应的表
-            (get_data_set_name [^Ignite ignite ^Long group_id]
+            (get_schema_name [^Ignite ignite ^Long group_id]
                 (second group_id))
             (select-to-sql
                 ([ignite group_id dic-args ast]

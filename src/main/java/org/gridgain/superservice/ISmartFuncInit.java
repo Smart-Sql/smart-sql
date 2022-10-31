@@ -10,7 +10,7 @@ public interface ISmartFuncInit {
 
     public Object getUserToken(Ignite ignite, String group_name);
 
-    public Object addUserGroup(Ignite ignite, Object group_id, String group_name, String user_token, String group_type, String data_set_name);
+    public Object addUserGroup(Ignite ignite, Object group_id, String group_name, String user_token, String group_type, String schema_name);
 
     public Object updateUserGroup(Ignite ignite, Object group_id, String group_name, String group_type);
 

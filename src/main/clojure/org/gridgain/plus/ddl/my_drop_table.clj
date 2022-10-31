@@ -42,11 +42,11 @@
             (assoc (my-lexical/get-schema (str/trim table_name)) :drop_line (str/trim drop_index) :is_exists (table_exists (str/trim drop_index)))
             (throw (Exception. "删除表语句错误！")))))
 
-(defn drop-table-obj [^Ignite ignite ^String data_set_name ^String sql_line]
-    (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
-                (if (my-lexical/is-eq? "public" data_set_name)
+(defn drop-table-obj [^Ignite ignite ^String schema_name ^String sql_line]
+    (letfn [(get-table-id [^Ignite ignite ^String schema_name ^String table_name]
+                (if (my-lexical/is-eq? "public" schema_name)
                     (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case schema_name) (str/lower-case table_name)])))))))
                 )
             (get-table-items-id [^Ignite ignite ^Long table_id]
                 (loop [[f & r] (.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. "select m.id from table_item as m where m.table_id = ?") (to-array [table_id])))) lst-rs []]
@@ -63,8 +63,8 @@
                     (if (some? f)
                         (recur r (conj lst-rs {:index_id index_id :index_item_id (first f)}))
                         lst-rs)))
-            (get-cachex [^Ignite ignite ^String data_set_name ^String table_name ^ArrayList lst]
-                (if-let [table_id (get-table-id ignite data_set_name table_name)]
+            (get-cachex [^Ignite ignite ^String schema_name ^String table_name ^ArrayList lst]
+                (if-let [table_id (get-table-id ignite schema_name table_name)]
                     (let [item-pk (get-table-items-id ignite table_id) index-pk (get-table-indexs-id ignite table_id)]
                         (loop [[f & r] item-pk]
                             (if (some? f)
@@ -95,8 +95,8 @@
                             (doto lst (.add (MyCacheEx. (.cache ignite "my_meta_tables") table_id nil (SqlType/DELETE) nil))))
                         )))]
         (let [{schema_name :schema_name table_name :table_name drop_line :drop_line {create_index_line :create_index_line exists :exists} :is_exists} (get_drop_table_obj sql_line)]
-            (cond (and (= schema_name "") (not (= data_set_name ""))) {:sql (format "%s %s.%s" create_index_line data_set_name table_name) :lst_cachex (get-cachex ignite data_set_name table_name (ArrayList.)) :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))}
-                  (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:sql (format "%s %s.%s" create_index_line schema_name table_name) :lst_cachex (get-cachex ignite schema_name (str/lower-case table_name) (ArrayList.)) :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))}
+            (cond (and (= schema_name "") (not (= schema_name ""))) {:sql (format "%s %s.%s" create_index_line schema_name table_name) :lst_cachex (get-cachex ignite schema_name table_name (ArrayList.)) :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))}
+                  (or (and (not (= schema_name "")) (my-lexical/is-eq? schema_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name schema_name))) {:sql (format "%s %s.%s" create_index_line schema_name table_name) :lst_cachex (get-cachex ignite schema_name (str/lower-case table_name) (ArrayList.)) :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))}
                   :else
                   (throw (Exception. "没有删除表语句的权限！"))
                   )))

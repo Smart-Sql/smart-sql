@@ -36,7 +36,7 @@
         (if (some? update_dataset)
             (if-let [items (str/split last_line #"\s+where\s+")]
                 (if (= (count items) 2)
-                    {:update_dataset update_dataset :data_set_name (nth items 0) :time (nth items 1)}
+                    {:update_dataset update_dataset :schema_name (nth items 0) :time (nth items 1)}
                     (throw (Exception. "删除数据集语句错误！")))
                 (throw (Exception. "删除数据集语句错误！")))
             (throw (Exception. "删除数据集语句错误！")))

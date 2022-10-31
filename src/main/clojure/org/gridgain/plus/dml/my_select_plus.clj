@@ -1074,14 +1074,14 @@
             ;    (if (some? m)
             ;        (if-let [{table_name :table_name table_alias :table_alias} m]
             ;            (if (Strings/isNullOrEmpty table_alias)
-            ;                (let [data_set_name (get_data_set_name ignite group_id)]
-            ;                    (if (Strings/isNullOrEmpty data_set_name)
+            ;                (let [schema_name (get_schema_name ignite group_id)]
+            ;                    (if (Strings/isNullOrEmpty schema_name)
             ;                        table_name
-            ;                        (str/join [data_set_name "." table_name])))
-            ;                (let [data_set_name (get_data_set_name ignite group_id)]
-            ;                    (if (Strings/isNullOrEmpty data_set_name)
+            ;                        (str/join [schema_name "." table_name])))
+            ;                (let [schema_name (get_schema_name ignite group_id)]
+            ;                    (if (Strings/isNullOrEmpty schema_name)
             ;                        (str/join [table_name " " table_alias])
-            ;                        (str/join [(str/join [data_set_name "." table_name]) " " table_alias])))
+            ;                        (str/join [(str/join [schema_name "." table_name]) " " table_alias])))
             ;                ))))
             (table-to-line [ignite group_id m]
                 (if (some? m)
@@ -1102,7 +1102,7 @@
                                     (if (Strings/isNullOrEmpty hints)
                                         (str/join [(format "MY_META.%s" table_name) " " table_alias])
                                         (str/join [(format "MY_META.%s %s" table_name hints) " " table_alias])))
-                                (let [schema_name (get_data_set_name ignite group_id)]
+                                (let [schema_name (get_schema_name ignite group_id)]
                                     (if (Strings/isNullOrEmpty table_alias)
                                         (if (Strings/isNullOrEmpty hints)
                                             (format "%s.%s" schema_name table_name)
@@ -1113,7 +1113,7 @@
                                         ))))
                         )))
             ; 获取 data_set 的名字和对应的表
-            (get_data_set_name [^Ignite ignite group_id]
+            (get_schema_name [^Ignite ignite group_id]
                 (second group_id))
             (select-to-sql
                 ([ignite group_id ast] (cond (and (some? ast) (instance? clojure.lang.LazySeq ast)) (.toString (ar-to-sql (select-to-sql ignite group_id ast []) (StringBuilder.)))

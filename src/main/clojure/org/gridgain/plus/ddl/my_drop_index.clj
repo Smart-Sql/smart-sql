@@ -51,7 +51,7 @@
                 {:drop_line (str/trim drop_index) :is_exists (index_exists (str/trim drop_index)) :schema-index schema-index :index_name index-name})
             (throw (Exception. "删除索引语句错误！")))))
 
-(defn drop-index-obj [^Ignite ignite ^String data_set_name ^String sql_line]
+(defn drop-index-obj [^Ignite ignite ^String schema_name ^String sql_line]
     (letfn [(get-index-id [^Ignite ignite ^String index_name]
                 (loop [[f & r] (.getAll (.query (.cache ignite "table_index") (.setArgs (SqlFieldsQuery. "select m.id, m.table_id from table_index as m where m.index_name = ?") (to-array [index_name])))) lst-rs []]
                     (if (some? f)
@@ -87,11 +87,11 @@
         (let [{index_name :index_name} (get_drop_index_obj sql_line)]
             (if-let [{schema_name :schema_name lst_cachex :lst_cachex} (get-cachex ignite index_name (ArrayList.))]
                 (if-not (nil? lst_cachex)
-                    (cond (and (= schema_name "") (not (= data_set_name "")) (not (my-lexical/is-eq? data_set_name "MY_META"))) {:sql sql_line :lst_cachex lst_cachex}
-                          (and (= schema_name "") (my-lexical/is-eq? data_set_name "MY_META")) (throw (Exception. "没有删除索引的权限！"))
-                          (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name) (not (my-lexical/is-eq? data_set_name "MY_META"))) {:sql sql_line :lst_cachex lst_cachex}
-                          (and (not (= schema_name "")) (not (my-lexical/is-eq? schema_name "MY_META")) (my-lexical/is-eq? data_set_name "MY_META")) {:sql sql_line :lst_cachex lst_cachex}
-                          ;(or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:sql sql_line :lst_cachex lst_cachex}
+                    (cond (and (= schema_name "") (not (= schema_name "")) (not (my-lexical/is-eq? schema_name "MY_META"))) {:sql sql_line :lst_cachex lst_cachex}
+                          (and (= schema_name "") (my-lexical/is-eq? schema_name "MY_META")) (throw (Exception. "没有删除索引的权限！"))
+                          (and (not (= schema_name "")) (my-lexical/is-eq? schema_name schema_name) (not (my-lexical/is-eq? schema_name "MY_META"))) {:sql sql_line :lst_cachex lst_cachex}
+                          (and (not (= schema_name "")) (not (my-lexical/is-eq? schema_name "MY_META")) (my-lexical/is-eq? schema_name "MY_META")) {:sql sql_line :lst_cachex lst_cachex}
+                          ;(or (and (not (= schema_name "")) (my-lexical/is-eq? schema_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name schema_name))) {:sql sql_line :lst_cachex lst_cachex}
                           :else
                           (throw (Exception. "没有删除索引的权限！"))
                           )
@@ -99,8 +99,8 @@
                 ))))
 
 ; 实时数据集
-(defn run_ddl_real_time [^Ignite ignite ^String data_set_name ^String sql_line]
-    (let [{sql :sql lst_cachex :lst_cachex} (drop-index-obj ignite data_set_name sql_line)]
+(defn run_ddl_real_time [^Ignite ignite ^String schema_name ^String sql_line]
+    (let [{sql :sql lst_cachex :lst_cachex} (drop-index-obj ignite schema_name sql_line)]
         (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex} sql_line)))
 
 ; 删除表索引

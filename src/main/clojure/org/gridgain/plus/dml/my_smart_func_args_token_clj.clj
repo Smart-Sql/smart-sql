@@ -141,8 +141,8 @@
           true
           ))
 
-;(defn add_user_group [ignite group_id ^String group_name ^String user_token ^String group_type ^String data_set_name]
-;    (.addUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id group_name user_token group_type data_set_name))
+;(defn add_user_group [ignite group_id ^String group_name ^String user_token ^String group_type ^String schema_name]
+;    (.addUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id group_name user_token group_type schema_name))
 ;
 ;(defn update_user_group [ignite group_id ^String group_name ^String group_type]
 ;    (.updateUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id group_name group_type))
