@@ -7,7 +7,7 @@
     1、用户自定义的 cache
     */
     CREATE TABLE IF NOT EXISTS my_meta.my_caches (
-                    dataset_name VARCHAR,
+                    schema_name VARCHAR,
                     -- cache 表名
                     table_name VARCHAR(40),
                     -- 是否是纯的 cache
@@ -16,21 +16,21 @@
                     mode VARCHAR,
                     -- 最大的量
                     maxSize int,
-                    PRIMARY KEY (dataset_name, table_name)
+                    PRIMARY KEY (schema_name, table_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_caches,KEY_TYPE=cn.plus.model.ddl.MyCachePK,VALUE_TYPE=cn.plus.model.ddl.MyCaches,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
         记录机器学习的训练数据集的名字
     */
         CREATE TABLE IF NOT EXISTS my_meta.ml_train_data (
-                            dataset_name VARCHAR,
+                            schema_name VARCHAR,
                             -- cache 表名
                             table_name VARCHAR(40),
                             -- 是否是聚类
                             is_clustering BOOLEAN DEFAULT false,
                             -- 描述
                             describe VARCHAR,
-                            PRIMARY KEY (dataset_name, table_name)
+                            PRIMARY KEY (schema_name, table_name)
                             ) WITH \"template=MyMeta_template,cache_name=ml_train_data,KEY_TYPE=cn.plus.model.ddl.MyCachePK,VALUE_TYPE=cn.plus.model.ddl.MyMlCaches,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
         /**
@@ -59,10 +59,10 @@
     DROP TABLE IF EXISTS my_dataset;
     CREATE TABLE IF NOT EXISTS my_dataset (
                     id BIGINT,
-                    dataset_name VARCHAR,
+                    schema_name VARCHAR,
                     PRIMARY KEY (id)
                     ) WITH \"template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
-    CREATE INDEX IF NOT EXISTS my_dataset_idx ON my_dataset (dataset_name);
+    CREATE INDEX IF NOT EXISTS my_dataset_idx ON my_dataset (schema_name);
     */
 
     /**
@@ -193,9 +193,9 @@
     CREATE TABLE IF NOT EXISTS my_meta.my_select_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    dataset_name VARCHAR,
+                    schema_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, dataset_name)
+                    PRIMARY KEY (group_id, table_name, schema_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_select_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MySelectViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
@@ -205,9 +205,9 @@
     CREATE TABLE IF NOT EXISTS my_meta.my_update_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    dataset_name VARCHAR,
+                    schema_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, dataset_name)
+                    PRIMARY KEY (group_id, table_name, schema_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_update_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyUpdateViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
@@ -217,9 +217,9 @@
     CREATE TABLE IF NOT EXISTS my_meta.my_insert_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    dataset_name VARCHAR,
+                    schema_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, dataset_name)
+                    PRIMARY KEY (group_id, table_name, schema_name)
                     ) WITH \"template=MyMeta_template,cache_name=my_insert_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyInsertViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**
@@ -229,9 +229,9 @@
     CREATE TABLE IF NOT EXISTS my_meta.my_delete_views (
                     group_id BIGINT,
                     table_name VARCHAR(40),
-                    dataset_name VARCHAR,
+                    schema_name VARCHAR,
                     code VARCHAR,
-                    PRIMARY KEY (group_id, table_name, dataset_name)
+                    PRIMARY KEY (group_id, table_name, schema_name)
                 ) WITH \"template=MyMeta_template,cache_name=my_delete_views,KEY_TYPE=cn.plus.model.ddl.MyViewsPk,VALUE_TYPE=cn.plus.model.ddl.MyDeleteViews,ATOMICITY=TRANSACTIONAL,cache_group=my_meta\";
 
     /**

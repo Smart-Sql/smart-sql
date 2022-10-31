@@ -4,6 +4,7 @@
         [org.gridgain.plus.init.smart-func-init :as smart-func-init]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
+        [org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
         [org.gridgain.plus.tools.my-cache :as my-cache]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
@@ -39,7 +40,14 @@
                         (get_select_view [ignite group_id schema_name talbe_name]
                             (cond (and (or (my-lexical/is-eq? schema_name "my_meta") (my-lexical/is-str-empty? schema_name)) (not (my-lexical/is-eq? schema_name "sys")) (= (first group_id) 0)) nil
                                   (and (= (first group_id) 0) (not (my-lexical/is-eq? schema_name "sys"))) nil
-                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "用户不存在或者没有权限！查询数据！"))
+                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0) (not (contains? plus-init-sql/my-grid-tables-set (str/lower-case talbe_name)))) (throw (Exception. "用户不存在或者没有权限！查询数据！"))
+                                  (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0) (contains? plus-init-sql/my-grid-tables-set (str/lower-case talbe_name))) (if-let [sql_objs (my-lexical/get-select-code ignite (second group_id) talbe_name group_id)]
+                                                                                                                                                                     (if (= (count sql_objs) 1)
+                                                                                                                                                                         (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                                                                                                                                                             (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                                                                                                                                                                 {:query-items nil :where-items where-items}
+                                                                                                                                                                                 {:query-items (get_query_view query-items) :where-items where-items})
+                                                                                                                                                                             )))
                                   (my-lexical/is-eq? schema_name "sys") (if-let [sql_objs (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
                                                                             (if (= (count sql_objs) 1)
                                                                                 (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]

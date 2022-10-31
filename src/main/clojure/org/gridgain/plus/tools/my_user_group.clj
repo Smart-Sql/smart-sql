@@ -89,7 +89,7 @@
         [0 "MY_META" "all"]
         (if-let [m (.get (.cache ignite "my_users_group") user-group-id)]
             [(.getId m) (.getData_set_name m) (.getGroup_type m)])
-        ;(if-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [user-group-id])))))]
+        ;(if-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.schema_name, g.group_type, m.id from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [user-group-id])))))]
         ;    (cons user-group-id m))
         ))
 

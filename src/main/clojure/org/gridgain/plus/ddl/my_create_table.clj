@@ -237,7 +237,7 @@
         "PUBLIC"
         schema_name))
 
-; group_id序列： group_id dataset_name group_type dataset_id
+; group_id序列： group_id schema_name group_type dataset_id
 ;(defn my_create_table_lst [^Ignite ignite group_id lst]
 ;    (if (my-lexical/is-eq? (nth lst (- (count lst) 2)) "WITH")
 ;        (if (= (first group_id) 0)
@@ -293,7 +293,7 @@
                   ))
         (throw (Exception. "创建表的语句错误！"))))
 
-; group_id序列： group_id dataset_name group_type dataset_id
+; group_id序列： group_id schema_name group_type dataset_id
 (defn my_create_table_lst [^Ignite ignite group_id lst]
     (if (= (first group_id) 0)
         (MyDdlUtilEx/saveCache ignite (to_ddl_obj ignite lst (second group_id)))

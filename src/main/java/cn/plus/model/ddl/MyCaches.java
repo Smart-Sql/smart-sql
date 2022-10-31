@@ -5,15 +5,15 @@ import java.io.Serializable;
 public class MyCaches implements Serializable {
 
     private static final long serialVersionUID = -3653981400905906802L;
-    private String dataset_name;
+    private String schema_name;
     private String table_name;
     private Boolean is_cache;
     private String mode;
     private Integer maxSize;
 
-    public MyCaches(final String dataset_name, final String table_name, final Boolean is_cache, final String mode, final Integer maxSize)
+    public MyCaches(final String schema_name, final String table_name, final Boolean is_cache, final String mode, final Integer maxSize)
     {
-        this.dataset_name = dataset_name != null? dataset_name.toLowerCase(): dataset_name;
+        this.schema_name = schema_name != null? schema_name.toLowerCase(): schema_name;
         this.table_name = table_name != null? table_name.toLowerCase(): table_name;
         this.is_cache = is_cache;
         this.mode = mode != null? mode.toLowerCase(): mode;
@@ -23,12 +23,12 @@ public class MyCaches implements Serializable {
     public MyCaches()
     {}
 
-    public String getDataset_name() {
-        return dataset_name;
+    public String getSchema_name() {
+        return schema_name;
     }
 
-    public void setDataset_name(String dataset_name) {
-        this.dataset_name = dataset_name;
+    public void setSchema_name(String schema_name) {
+        this.schema_name = schema_name;
     }
 
     public String getTable_name() {
@@ -66,7 +66,7 @@ public class MyCaches implements Serializable {
     @Override
     public String toString() {
         return "MyCaches{" +
-                "dataset_name='" + dataset_name + '\'' +
+                "schema_name='" + schema_name + '\'' +
                 ", table_name='" + table_name + '\'' +
                 ", is_cache=" + is_cache +
                 ", mode='" + mode + '\'' +

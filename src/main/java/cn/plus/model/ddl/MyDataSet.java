@@ -6,15 +6,15 @@ public class MyDataSet implements Serializable {
     private static final long serialVersionUID = 7116154131226236070L;
 
     private Long id;
-    private String dataset_name;
+    private String schema_name;
 
     public MyDataSet()
     {}
 
-    public MyDataSet(final Long id, final String dataset_name)
+    public MyDataSet(final Long id, final String schema_name)
     {
         this.id = id;
-        this.dataset_name = dataset_name;
+        this.schema_name = schema_name;
     }
 
     public Long getId() {
@@ -25,19 +25,19 @@ public class MyDataSet implements Serializable {
         this.id = id;
     }
 
-    public String getDataset_name() {
-        return dataset_name;
+    public String getSchema_name() {
+        return schema_name;
     }
 
-    public void setDataset_name(String dataset_name) {
-        this.dataset_name = dataset_name;
+    public void setSchema_name(String schema_name) {
+        this.schema_name = schema_name;
     }
 
     @Override
     public String toString() {
         return "MyDataSet{" +
                 "id=" + id +
-                ", dataset_name='" + dataset_name + '\'' +
+                ", schema_name='" + schema_name + '\'' +
                 '}';
     }
 }

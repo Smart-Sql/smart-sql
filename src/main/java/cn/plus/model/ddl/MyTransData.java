@@ -10,15 +10,15 @@ import java.io.Serializable;
 public class MyTransData implements Serializable {
     private static final long serialVersionUID = 3269229930391174057L;
 
-    private String dataset_name;
+    private String schema_name;
     private String table_name;
     private Object value;
     private Double label;
     private Boolean is_clustering;
 
-    public MyTransData(String dataset_name, String table_name, Object value, Double label, Boolean is_clustering)
+    public MyTransData(String schema_name, String table_name, Object value, Double label, Boolean is_clustering)
     {
-        this.dataset_name = dataset_name;
+        this.schema_name = schema_name;
         this.table_name = table_name;
         this.value = value;
         this.label = label;
@@ -36,13 +36,13 @@ public class MyTransData implements Serializable {
         this.is_clustering = is_clustering;
     }
 
-    public String getDataset_name() {
-        return dataset_name;
+    public String getSchema_name() {
+        return schema_name;
     }
 
-    public void setDataset_name(String dataset_name) {
-        if (!Strings.isNullOrEmpty(dataset_name)) {
-            this.dataset_name = dataset_name.toLowerCase();
+    public void setSchema_name(String schema_name) {
+        if (!Strings.isNullOrEmpty(schema_name)) {
+            this.schema_name = schema_name.toLowerCase();
         }
     }
 
@@ -75,7 +75,7 @@ public class MyTransData implements Serializable {
     @Override
     public String toString() {
         return "MyTransData{" +
-                "dataset_name='" + dataset_name + '\'' +
+                "schema_name='" + schema_name + '\'' +
                 ", table_name='" + table_name + '\'' +
                 ", value=" + value +
                 ", label=" + label +

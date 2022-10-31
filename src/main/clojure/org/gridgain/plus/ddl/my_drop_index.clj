@@ -61,7 +61,7 @@
                 (let [data_set_id (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.data_set_id from my_meta_tables as m where m.id = ?") (to-array [table_id]))))))]
                     (if (= data_set_id 0)
                         "PUBLIC"
-                        (first (first (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.dataset_name from my_dataset as m where m.id = ?") (to-array [data_set_id])))))))))
+                        (first (first (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.schema_name from my_dataset as m where m.id = ?") (to-array [data_set_id])))))))))
             (get-table-indexs-item-id [^Ignite ignite ^Long index_id]
                 (loop [[f & r] (.getAll (.query (.cache ignite "table_index_item") (.setArgs (SqlFieldsQuery. "select m.id from table_index_item as m where m.index_no = ?") (to-array [index_id])))) lst-rs []]
                     (if (some? f)
@@ -104,7 +104,7 @@
         (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex} sql_line)))
 
 ; 删除表索引
-; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+; group_id : ^Long group_id ^String schema_name ^String group_type ^Long dataset_id
 ;(defn drop_index [^Ignite ignite group_id ^String sql_line]
 ;    (let [sql_code (str/lower-case sql_line)]
 ;        (if (= (first group_id) 0)

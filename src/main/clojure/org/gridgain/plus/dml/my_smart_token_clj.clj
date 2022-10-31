@@ -147,6 +147,15 @@
 (defn delete_user_group [ignite group_id ^String group_name]
     (.deleteUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id group_name))
 
+(defn has_user_token_type [^String user_token_type]
+    (.hasUserTokenType (.getSmartFuncInit (MySmartFuncInit/getInstance)) user_token_type))
+
+(defn get_user_group [ignite group_id user_token]
+    (.getUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id user_token))
+
+(defn get_user_token [ignite group_name]
+    (.getUserToken (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_name))
+
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
@@ -221,12 +230,12 @@
 
                   (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (-> (first lst_ps) :item_name))
 
-                  (my-lexical/is-eq? func-name "has_user_token_type") (.hasUserTokenType (.getSmartFuncInit (MySmartFuncInit/getInstance)) (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  (my-lexical/is-eq? func-name "get_user_group") (.getUserGroup (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  (my-lexical/is-eq? func-name "get_user_token") (.getUserToken (.getSmartFuncInit (MySmartFuncInit/getInstance)) ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
-                  (my-lexical/is-eq? func-name "add_user_group") (apply add_user_group (concat [ignite group_id] (eval (read-string (format "[%s]" (get-lst-ps-vs ignite group_id lst_ps my-context))))))
-                  (my-lexical/is-eq? func-name "update_user_group") (apply update_user_group (concat [ignite group_id] (eval (read-string (format "[%s]" (get-lst-ps-vs ignite group_id lst_ps my-context))))))
-                  (my-lexical/is-eq? func-name "delete_user_group") (delete_user_group ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "has_user_token_type") (format "(my-smart-token-clj/has_user_token_type %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "get_user_group") (format "(my-smart-token-clj/get_user_group ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "get_user_token") (format "(my-smart-token-clj/get_user_token ignite %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+                  (my-lexical/is-eq? func-name "add_user_group") (format "(my-smart-token-clj/add_user_group ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context));(apply add_user_group (concat [ignite group_id] (eval (read-string (format "[%s]" (get-lst-ps-vs ignite group_id lst_ps my-context))))))
+                  (my-lexical/is-eq? func-name "update_user_group") (format "(my-smart-token-clj/update_user_group ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context));(apply update_user_group (concat [ignite group_id] (eval (read-string (format "[%s]" (get-lst-ps-vs ignite group_id lst_ps my-context))))))
+                  (my-lexical/is-eq? func-name "delete_user_group") (format "(my-smart-token-clj/delete_user_group ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context));(delete_user_group ignite group_id (get-lst-ps-vs ignite group_id lst_ps my-context))
                   :else
                   (throw (Exception. (format "%s 不存在，或没有权限！" func-name)))
                   ))

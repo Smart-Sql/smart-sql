@@ -200,7 +200,7 @@
 ;                                    ))
 ;                            {:pk lst_pk :data lst_data}))]
 ;                (get_pk_data_it it [] [])))
-;        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id join my_dataset as ds on ds.id = t.data_set_id where t.table_name = ? and ds.dataset_name = ?")
+;        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id join my_dataset as ds on ds.id = t.data_set_id where t.table_name = ? and ds.schema_name = ?")
 ;                                                                                        (.setLazy true)) (to-array [(str/lower-case table_name) (str/lower-case schema_name)]))))]
 ;            (letfn [
 ;                    ; 从 iterator 中获取 pk列和数据列

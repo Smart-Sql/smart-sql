@@ -821,6 +821,10 @@
           (my-lexical/is-seq? ast) (my-lexical/to_arryList (map to-lst ast))
           ))
 
+(defn my-sql-to-ast [^java.util.List lst]
+    (let [ast (sql-to-ast lst)]
+        (to-lst ast)))
+
 (defn -sqlToAst [this ^java.util.List lst]
     (let [ast (sql-to-ast lst)]
         (to-lst ast)))

@@ -186,26 +186,26 @@
                       )
                 (recur r)))))
 
-(defn csv-update-to-db [^Ignite ignite group_id dataset_name table_name vs]
-    (if (or (nil? dataset_name) (Strings/isNullOrEmpty dataset_name))
+(defn csv-update-to-db [^Ignite ignite group_id schema_name table_name vs]
+    (if (or (nil? schema_name) (Strings/isNullOrEmpty schema_name))
         (if (my-lexical/is-eq? (second group_id) "my_meta")
             (throw (Exception. "MY_META 下面不能存在机器学习的训练数据！"))
             (MyTrianDataUtil/loadTrainMatrix ignite (second group_id) table_name vs))
-        (cond (and (my-lexical/is-eq? (second group_id) dataset_name) (my-lexical/is-eq? (second group_id) "my_meta")) (throw (Exception. "MY_META 下面不能存在机器学习的训练数据！"))
-              (and (not (my-lexical/is-eq? (second group_id) dataset_name)) (my-lexical/is-eq? dataset_name "public")) (MyTrianDataUtil/loadTrainMatrix ignite "public" table_name vs)
-              (and (my-lexical/is-eq? (second group_id) dataset_name) (not (my-lexical/is-eq? (second group_id) "my_meta"))) (MyTrianDataUtil/loadTrainMatrix ignite dataset_name table_name vs)
+        (cond (and (my-lexical/is-eq? (second group_id) schema_name) (my-lexical/is-eq? (second group_id) "my_meta")) (throw (Exception. "MY_META 下面不能存在机器学习的训练数据！"))
+              (and (not (my-lexical/is-eq? (second group_id) schema_name)) (my-lexical/is-eq? schema_name "public")) (MyTrianDataUtil/loadTrainMatrix ignite "public" table_name vs)
+              (and (my-lexical/is-eq? (second group_id) schema_name) (not (my-lexical/is-eq? (second group_id) "my_meta"))) (MyTrianDataUtil/loadTrainMatrix ignite schema_name table_name vs)
               ))
     )
 
 (defn load-csv [^Ignite ignite group_id ^Hashtable ht]
     (if (some? ht)
-        (let [table_name (get ht "table_name") dataset_name (get ht "dataset_name") code (get ht "csv_code")]
+        (let [table_name (get ht "table_name") schema_name (get ht "schema_name") code (get ht "csv_code")]
             (if-not (Strings/isNullOrEmpty code)
                 (let [lst (str/split code #"\s*\n\s*")]
                     (loop [[f & r] lst]
                         (if (some? f)
                             (let [vs (str/split f #"\s*,\s*")]
-                                (csv-update-to-db ignite group_id dataset_name table_name vs)
+                                (csv-update-to-db ignite group_id schema_name table_name vs)
                                 (recur r)))))))))
 
 (defn -loadSmartSql [this ^Ignite ignite ^Object group_id ^String code]

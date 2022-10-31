@@ -41,11 +41,11 @@
                   ^:static [myPredict [org.apache.ignite.Ignite Object java.util.Hashtable] Object]]
         ))
 
-(defn get-cache-name [dataset_name table_name]
-    (format "sm_ml_%s_%s" (str/lower-case dataset_name) (str/lower-case table_name)))
+(defn get-cache-name [schema_name table_name]
+    (format "sm_ml_%s_%s" (str/lower-case schema_name) (str/lower-case table_name)))
 
-(defn -myGetCacheName [^String dataset_name ^String table_name]
-    (get-cache-name dataset_name table_name))
+(defn -myGetCacheName [^String schema_name ^String table_name]
+    (get-cache-name schema_name table_name))
 
 (defn fit-model [^Ignite ignite ^String cache-name ^String func-name ^String preprocessor ^Hashtable func-ps]
     (cond (or (my-lexical/is-eq? func-name "LinearRegression") (my-lexical/is-eq? func-name "LinearRegressionLSQR") (my-lexical/is-eq? func-name "LinearRegressionLSQR")) (MyLinearRegressionUtil/getMdl ignite cache-name func-name preprocessor func-ps)
@@ -64,10 +64,10 @@
 
 ; 训练模型
 (defn ml-fit [^Ignite ignite group_id ^Hashtable ht]
-    (let [{table_name "table_name" dataset_name "dataset_name" ml_func_name "ml_func_name" preprocessor "preprocessor" ml_func_params "ml_func_params"} ht]
-        (cond (my-lexical/is-eq? dataset_name "public") (fit-model ignite (get-cache-name dataset_name table_name) ml_func_name preprocessor ml_func_params)
-              (my-lexical/is-str-not-empty? dataset_name) (fit-model ignite (get-cache-name dataset_name table_name) ml_func_name preprocessor ml_func_params)
-              (my-lexical/is-eq? dataset_name (second group_id)) (throw (Exception. "没有权限训练 %s 中的数据！" dataset_name))
+    (let [{table_name "table_name" schema_name "schema_name" ml_func_name "ml_func_name" preprocessor "preprocessor" ml_func_params "ml_func_params"} ht]
+        (cond (my-lexical/is-eq? schema_name "public") (fit-model ignite (get-cache-name schema_name table_name) ml_func_name preprocessor ml_func_params)
+              (my-lexical/is-str-not-empty? schema_name) (fit-model ignite (get-cache-name schema_name table_name) ml_func_name preprocessor ml_func_params)
+              (my-lexical/is-eq? schema_name (second group_id)) (throw (Exception. "没有权限训练 %s 中的数据！" schema_name))
               )))
 
 (defn to-ml-double [params]
@@ -98,10 +98,10 @@
 
 ; 预测数据
 (defn ml-predict [^Ignite ignite group_id ^Hashtable ht]
-    (let [{table_name "table_name" dataset_name "dataset_name" ml_func_name "ml_func_name" params "params"} ht]
-        (cond (my-lexical/is-eq? dataset_name "public") (predict-model ignite (get-cache-name dataset_name table_name) ml_func_name params)
-              (my-lexical/is-str-not-empty? dataset_name) (predict-model ignite (get-cache-name dataset_name table_name) ml_func_name params)
-              (my-lexical/is-eq? dataset_name (second group_id)) (throw (Exception. "没有权限调用 %s 训练的结果！" dataset_name))
+    (let [{table_name "table_name" schema_name "schema_name" ml_func_name "ml_func_name" params "params"} ht]
+        (cond (my-lexical/is-eq? schema_name "public") (predict-model ignite (get-cache-name schema_name table_name) ml_func_name params)
+              (my-lexical/is-str-not-empty? schema_name) (predict-model ignite (get-cache-name schema_name table_name) ml_func_name params)
+              (my-lexical/is-eq? schema_name (second group_id)) (throw (Exception. "没有权限调用 %s 训练的结果！" schema_name))
               )))
 
 (defn -myFit [^Ignite ignite group_id ^Hashtable ht]

@@ -173,7 +173,7 @@
     */
     CREATE TABLE IF NOT EXISTS my_dataset (
                     id BIGINT,
-                    dataset_name VARCHAR,
+                    schema_name VARCHAR,
                     PRIMARY KEY (id)
                     ) WITH \"template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 

@@ -122,16 +122,16 @@
 
 
 (defn ht-to-line [^Hashtable ht]
-    (format "'%s', %s" (str/join ["sm_ml_" (get ht "dataset_name") "_" (get ht "table_name")]) (get ht "item_size")))
+    (format "'%s', %s" (str/join ["sm_ml_" (get ht "schema_name") "_" (get ht "table_name")]) (get ht "item_size")))
 
 (defn ht-to-ps [ignite group_id ^Hashtable ht]
     (let [ds-name (second group_id)]
-        (cond (and (my-lexical/is-eq? ds-name "MY_META") (not (contains? ht "dataset_name"))) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
-              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (my-lexical/is-eq? (get ht "dataset_name") "MY_META")) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
-              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "dataset_name") (not (my-lexical/is-eq? (get ht "dataset_name") "MY_META"))) (ht-to-line ht)
-              (not (contains? ht "dataset_name")) (ht-to-line (doto ht (.put "dataset_name" (str/lower-case ds-name))))
-              (and (contains? ht "dataset_name") (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name))) (ht-to-line ht)
-              (and (contains? ht "dataset_name") (not (contains? #{(str/lower-case (get ht "dataset_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！"))
+        (cond (and (my-lexical/is-eq? ds-name "MY_META") (not (contains? ht "schema_name"))) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
+              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (my-lexical/is-eq? (get ht "schema_name") "MY_META")) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
+              (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (not (my-lexical/is-eq? (get ht "schema_name") "MY_META"))) (ht-to-line ht)
+              (not (contains? ht "schema_name")) (ht-to-line (doto ht (.put "schema_name" (str/lower-case ds-name))))
+              (and (contains? ht "schema_name") (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name))) (ht-to-line ht)
+              (and (contains? ht "schema_name") (not (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！"))
               :else
               (throw (Exception. "不能创建机器学习的训练数据！"))
               )
@@ -159,7 +159,7 @@
         (my-smart-clj/smart-lst-to-clj ignite group_id smart-code-lst)))
 
 (defn super-sql-lst
-    ([^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type lst] (super-sql-lst ignite [group_id dataset_name group_type] lst []))
+    ([^Ignite ignite ^Long group_id ^String userToken ^String schema_name ^String group_type lst] (super-sql-lst ignite [group_id schema_name group_type] lst []))
     ([^Ignite ignite group_id [lst & r] lst-rs]
      (if (some? lst)
          (if-not (nil? (first lst))
@@ -168,13 +168,13 @@
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "delete")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "select")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (cull-semicolon lst))))
                    ; create dataset
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-create-dataset/create_data_set ignite group_id (str/join " " (cull-semicolon lst)))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "schema")) (let [rs (my-create-dataset/create_data_set ignite group_id (str/join " " (cull-semicolon lst)))]
                                                                                                                                        (if (nil? rs)
                                                                                                                                            (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
                                                                                                                                            (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))
                                                                                                                                            ))
                    ; drop dataset
-                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (cull-semicolon lst))]
+                   (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "schema")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (cull-semicolon lst))]
                                                                                                                                      (if-not (nil? rs)
                                                                                                                                          "select show_msg('true') as tip"
                                                                                                                                          "select show_msg('false') as tip"))
@@ -232,15 +232,15 @@
              (last lst-rs)))))
 
 (defn super-sql [^Ignite ignite ^String userToken ^List lst]
-    (let [[group_id dataset_name group_type] (my-user-group/get_user_group ignite userToken)]
+    (let [[group_id schema_name group_type] (my-user-group/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         ;(println lst)
-        (super-sql-lst ignite group_id userToken dataset_name group_type lst)))
+        (super-sql-lst ignite group_id userToken schema_name group_type lst)))
 
 (defn super-sql-line [^Ignite ignite ^String userToken ^String line]
-    (let [[group_id dataset_name group_type] (my-user-group/get_user_group ignite userToken)]
+    (let [[group_id schema_name group_type] (my-user-group/get_user_group ignite userToken)]
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
-        (super-sql-lst ignite group_id userToken dataset_name group_type (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
+        (super-sql-lst ignite group_id userToken schema_name group_type (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment line)))))
 
 (defn -recovery_ddl [this ^Ignite ignite ^String line]
     (let [userToken (.getRoot_token (.configuration ignite))]

@@ -7,14 +7,14 @@ import java.io.Serializable;
 public class MyMlCaches implements Serializable {
     private static final long serialVersionUID = 670783655671444992L;
 
-    private String dataset_name;
+    private String schema_name;
     private String table_name;
     private String describe;
     private Boolean is_clustering;
 
-    public MyMlCaches(final String dataset_name, final String table_name, final String describe, final Boolean is_clustering)
+    public MyMlCaches(final String schema_name, final String table_name, final String describe, final Boolean is_clustering)
     {
-        this.dataset_name = dataset_name.toLowerCase();
+        this.schema_name = schema_name.toLowerCase();
         this.table_name = table_name.toLowerCase();
         this.describe = describe;
         this.is_clustering = is_clustering;
@@ -31,14 +31,14 @@ public class MyMlCaches implements Serializable {
         this.is_clustering = is_clustering;
     }
 
-    public String getDataset_name() {
-        return dataset_name;
+    public String getSchema_name() {
+        return schema_name;
     }
 
-    public void setDataset_name(String dataset_name) {
-        if (!Strings.isNullOrEmpty(dataset_name))
+    public void setSchema_name(String schema_name) {
+        if (!Strings.isNullOrEmpty(schema_name))
         {
-            this.dataset_name = dataset_name.toLowerCase();
+            this.schema_name = schema_name.toLowerCase();
         }
     }
 
@@ -64,7 +64,7 @@ public class MyMlCaches implements Serializable {
     @Override
     public String toString() {
         return "MyMlCaches{" +
-                "dataset_name='" + dataset_name + '\'' +
+                "schema_name='" + schema_name + '\'' +
                 ", table_name='" + table_name + '\'' +
                 ", describe='" + describe + '\'' +
                 ", is_clustering=" + is_clustering +

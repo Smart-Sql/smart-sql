@@ -46,7 +46,7 @@
     (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
                 (if (my-lexical/is-eq? "public" data_set_name)
                     (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
                 )
             (get-table-items-id [^Ignite ignite ^Long table_id]
                 (loop [[f & r] (.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. "select m.id from table_item as m where m.table_id = ?") (to-array [table_id])))) lst-rs []]
@@ -103,33 +103,33 @@
     )
 
 ; 实时数据集
-(defn run_ddl_real_time [^Ignite ignite group_id ^String sql_line ^String dataset_name]
+(defn run_ddl_real_time [^Ignite ignite group_id ^String sql_line ^String schema_name]
     (if-let [m (get_drop_table_obj sql_line)]
         (cond (= (first group_id) 0) (let [schema_name (str/lower-case (-> m :schema_name)) table_name (str/lower-case (-> m :table_name))]
                                          (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
                                              (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql_line)) :lst_cachex nil :nosql (MyNoSqlCache. "table_ast" schema_name table_name (MySchemaTable. schema_name table_name) nil (SqlType/DELETE))} sql_line)
                                              (throw (Exception. "不能删除 MY_META 中的表语句的权限！"))))
-              (not (my-lexical/is-eq? (-> m :schema_name) "my_meta")) (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (drop-table-obj ignite dataset_name sql_line)]
+              (not (my-lexical/is-eq? (-> m :schema_name) "my_meta")) (let [{sql :sql lst_cachex :lst_cachex nosql :nosql} (drop-table-obj ignite schema_name sql_line)]
                                                                           (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :lst_cachex lst_cachex :nosql nosql} sql_line))
               :else
               (throw (Exception. "没有执行语句的权限！"))
               )
         ))
 
-(defn my-drop-table-obj [group_id ^String sql_line ^String dataset_name]
+(defn my-drop-table-obj [group_id ^String sql_line ^String schema_name]
     (if-let [m (get_drop_table_obj sql_line)]
         (cond (= (first group_id) 0) (let [schema_name (str/lower-case (-> m :schema_name)) table_name (str/lower-case (-> m :table_name))]
                                          (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
                                              {:schema_name schema_name :table_name table_name :sql sql_line :pk-data nil}
                                              (throw (Exception. "不能删除 MY_META 中的表语句的权限！"))))
-              (and (not (my-lexical/is-eq? (-> m :schema_name) "my_meta")) (my-lexical/is-eq? (-> m :schema_name) dataset_name)) {:schema_name (-> m :schema_name) :table_name (-> m :table_name) :sql sql_line :pk-data nil}
+              (and (not (my-lexical/is-eq? (-> m :schema_name) "my_meta")) (my-lexical/is-eq? (-> m :schema_name) schema_name)) {:schema_name (-> m :schema_name) :table_name (-> m :table_name) :sql sql_line :pk-data nil}
               :else
               (throw (Exception. "没有执行语句的权限！"))
               )
         ))
 
 ; 删除表
-; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+; group_id : ^Long group_id ^String schema_name ^String group_type ^Long dataset_id
 (defn drop_table [^Ignite ignite group_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= (first group_id) 0)

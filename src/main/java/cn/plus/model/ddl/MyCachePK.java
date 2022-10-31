@@ -7,12 +7,12 @@ import java.io.Serializable;
 public class MyCachePK implements Serializable {
     private static final long serialVersionUID = -1677705010422916099L;
 
-    private String dataset_name;
+    private String schema_name;
     private String table_name;
 
-    public MyCachePK(final String dataset_name, final String table_name) {
-        if (!Strings.isNullOrEmpty(dataset_name)) {
-            this.dataset_name = dataset_name.toLowerCase();
+    public MyCachePK(final String schema_name, final String table_name) {
+        if (!Strings.isNullOrEmpty(schema_name)) {
+            this.schema_name = schema_name.toLowerCase();
         }
 
         this.table_name = table_name != null? table_name.toLowerCase(): table_name;
@@ -21,12 +21,12 @@ public class MyCachePK implements Serializable {
     public MyCachePK()
     {}
 
-    public String getDataset_name() {
-        return dataset_name;
+    public String getSchema_name() {
+        return schema_name;
     }
 
-    public void setDataset_name(String dataset_name) {
-        this.dataset_name = dataset_name;
+    public void setSchema_name(String schema_name) {
+        this.schema_name = schema_name;
     }
 
     public String getTable_name() {
@@ -40,7 +40,7 @@ public class MyCachePK implements Serializable {
     @Override
     public String toString() {
         return "MyCachePK{" +
-                "dataset_name='" + dataset_name + '\'' +
+                "schema_name='" + schema_name + '\'' +
                 ", table_name='" + table_name + '\'' +
                 '}';
     }

@@ -52,7 +52,7 @@
 ;(defn get-data-set-id-by-ds-name [^Ignite ignite ^String schema_name]
 ;    (cond (my-lexical/is-eq? schema_name "public") 0
 ;          (my-lexical/is-eq? schema_name "my_meta") -1
-;          :else (let [rs (first (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_dataset as m where m.dataset_name = ?") (to-array [schema_name])))))]
+;          :else (let [rs (first (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_dataset as m where m.schema_name = ?") (to-array [schema_name])))))]
 ;                    (first rs)))
 ;    )
 

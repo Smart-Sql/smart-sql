@@ -81,7 +81,7 @@
                           (let [my-call-scenes-pk (doto (MyCallScenesPk. user_group_id "get_user_group")) my-call-scenes (doto (MyCallScenes. 0 user_group_id "get_user_group")) my-users-group (doto (MyUsersGroup.) (.setId user_group_id) (.setGroup_name group_name) (.setData_set_name data_set_name) (.setUser_token user_token) (.setGroup_type group_type))]
                               (let [lst (doto (ArrayList.) (.add (MyLogCache. "my_users_group" user_group_id my-users-group (SqlType/INSERT))) (.add (MyLogCache. "call_scenes" my-call-scenes-pk my-call-scenes (SqlType/INSERT))))]
                                   ;(MyCacheExUtil/transLogCache ignite lst)
-                                  (doto lst (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id (format "select * from my_meta.my_caches where dataset_name = '%s'" (my-lexical/get-value data_set_name)))))
+                                  (doto lst (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id (format "select * from my_meta.my_caches where schema_name = '%s'" (my-lexical/get-value data_set_name)))))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id (format "select * from my_meta.call_scenes where to_group_id = %s" (my-lexical/get-value user_group_id)))))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id (format "select * from my_meta.my_cron where group_id = '%s'" (my-lexical/get-value user_group_id)))))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id (format "select * from my_meta.my_delete_views where group_id = %s" (my-lexical/get-value user_group_id)))))
@@ -107,7 +107,7 @@
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id "SELECT * FROM sys.DS_REENTRANTLOCKS WHERE FALSE")))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id "SELECT * FROM sys.DS_SEMAPHORES WHERE FALSE")))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id "SELECT * FROM sys.DS_SETS WHERE FALSE")))
-                                            (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id "SELECT * FROM sys.INDEXES WHERE SCHEMA_NAME in ('MYY', 'PUBLIC')")))
+                                            (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id (format "SELECT * FROM sys.INDEXES WHERE SCHEMA_NAME in ('%s', 'PUBLIC')" (str/upper-case data_set_name)))))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id "SELECT * FROM sys.JOBS WHERE FALSE")))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id "SELECT * FROM sys.LOCAL_CACHE_GROUPS_IO WHERE FALSE")))
                                             (.addAll (to-lst (smart-func/smart-view-tran ignite group_id group_name user_group_id "SELECT * FROM sys.METRICS WHERE FALSE")))

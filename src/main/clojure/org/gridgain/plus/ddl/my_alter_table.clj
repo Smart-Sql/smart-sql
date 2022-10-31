@@ -81,7 +81,7 @@
 (defn get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
               (if (my-lexical/is-eq? "public" data_set_name)
                   (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
-                  (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
+                  (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
               )
 (defn get-add-table-item [^Ignite ignite ^Long table_id lst_table_item]
                     (loop [[f & r] lst_table_item lst-rs (ArrayList.)]
@@ -162,7 +162,7 @@
 ; 1、如果要修改的是实时数据集，则修改实时数据集的时候要同步修改在其它数据集中的表
 ; 2、判断要修改的表是否是实时数据集映射到，批处理数据集中的，如果是就不能修改，如果不是就可以修改
 ; 执行 alter table
-; group_id: ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+; group_id: ^Long group_id ^String schema_name ^String group_type ^Long dataset_id
 ;(defn alter_table [^Ignite ignite group_id ^String sql_line]
 ;    (let [sql_code (str/lower-case sql_line)]
 ;        (if (= (first group_id) 0)

@@ -107,7 +107,7 @@
     (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
                 (if (my-lexical/is-eq? "public" data_set_name)
                     (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.schema_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
                 )
             (get-cachex [^Ignite ignite ^clojure.lang.PersistentArrayMap m ^ArrayList lst]
                 (let [{index_name :index_name schema_name :schema_name table_name :table_name index_items_obj :index_items_obj {spatial :spatial} :create_index} m]
@@ -170,15 +170,15 @@
 ;            (throw (Exception. "没有执行语句的权限！")))
 ;        (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
-(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^String dataset_name]
-    (let [{sql :sql un_sql :un_sql lst_cachex :lst_cachex} (create-index-obj ignite dataset_name sql_line)]
+(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^String schema_name]
+    (let [{sql :sql un_sql :un_sql lst_cachex :lst_cachex} (create-index-obj ignite schema_name sql_line)]
         (if-not (nil? lst_cachex)
             (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql (doto (ArrayList.) (.add un_sql)) :lst_cachex lst_cachex} sql_line)
             (throw (Exception. "没有执行语句的权限！")))
         ))
 
 ; 新增 index
-; group_id : ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id
+; group_id : ^Long group_id ^String schema_name ^String group_type ^Long dataset_id
 ;(defn create_index [^Ignite ignite group_id ^String sql_line]
 ;    (let [sql_code (str/lower-case sql_line)]
 ;        (if (= (first group_id) 0)

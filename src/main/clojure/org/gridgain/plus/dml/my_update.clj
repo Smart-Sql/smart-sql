@@ -220,7 +220,7 @@
                                                                                                          (.setArgs (to-array [table_name])))))
           (and (my-lexical/is-eq? schema_name "my_meta") (> (first group_id) 0)) (throw (Exception. "没有修改权限！"))
           :else
-          (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m, my_meta_tables AS o, my_dataset as ds WHERE m.table_id = o.id and ds.id = o.data_set_id and o.table_name = ? and ds.dataset_name = ?")
+          (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m, my_meta_tables AS o, my_dataset as ds WHERE m.table_id = o.id and ds.id = o.data_set_id and o.table_name = ? and ds.schema_name = ?")
                                                                 (.setArgs (to-array [table_name schema_name])))))
           ))
 

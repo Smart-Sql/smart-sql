@@ -7,17 +7,17 @@ import java.io.Serializable;
 public class MyMlShowData implements Serializable {
     private static final long serialVersionUID = 8327167221293861418L;
 
-    private String dataset_name;
+    private String schema_name;
     private String table_name;
     private Integer item_size;
 
-    public String getDataset_name() {
-        return dataset_name;
+    public String getSchema_name() {
+        return schema_name;
     }
 
-    public void setDataset_name(String dataset_name) {
-        if (!Strings.isNullOrEmpty(dataset_name)) {
-            this.dataset_name = dataset_name.toLowerCase();
+    public void setSchema_name(String schema_name) {
+        if (!Strings.isNullOrEmpty(schema_name)) {
+            this.schema_name = schema_name.toLowerCase();
         }
     }
 
@@ -42,7 +42,7 @@ public class MyMlShowData implements Serializable {
     @Override
     public String toString() {
         return "MyMlShowData{" +
-                "dataset_name='" + dataset_name + '\'' +
+                "schema_name='" + schema_name + '\'' +
                 ", table_name='" + table_name + '\'' +
                 ", item_size=" + item_size +
                 '}';

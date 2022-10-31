@@ -14,17 +14,17 @@ public class MyInsertViews implements Serializable {
      * */
     private Long group_id;
     private String table_name;
-    private String dataset_name;
+    private String schema_name;
     /**
      * 限定代码
      * */
     private String code;
 
-    public MyInsertViews(final Long group_id, final String table_name, final String dataset_name, final String code)
+    public MyInsertViews(final Long group_id, final String table_name, final String schema_name, final String code)
     {
         this.group_id = group_id;
         this.table_name = table_name;
-        this.dataset_name = dataset_name;
+        this.schema_name = schema_name;
         this.code = code;
     }
 
@@ -47,12 +47,12 @@ public class MyInsertViews implements Serializable {
         this.table_name = table_name;
     }
 
-    public String getDataset_name() {
-        return dataset_name;
+    public String getSchema_name() {
+        return schema_name;
     }
 
-    public void setDataset_name(String dataset_name) {
-        this.dataset_name = dataset_name;
+    public void setSchema_name(String schema_name) {
+        this.schema_name = schema_name;
     }
 
     public String getCode() {
@@ -68,7 +68,7 @@ public class MyInsertViews implements Serializable {
         return "MyInsertViews{" +
                 "group_id=" + group_id +
                 ", table_name='" + table_name + '\'' +
-                ", dataset_name=" + dataset_name +
+                ", schema_name=" + schema_name +
                 ", code='" + code + '\'' +
                 '}';
     }

@@ -206,7 +206,7 @@
 ; 通过表名获取数据集的名称，返回 List
 ;(defn get_all_ds [^Ignite ignite ^String table_name]
 ;    (if (true? (.isMyLogEnabled (.configuration ignite)))
-;        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "SELECT DISTINCT m.dataset_name FROM my_dataset AS m INNER JOIN my_dataset_table AS mt ON m.id = mt.dataset_id WHERE m.is_real = ? and mt.table_name = ?") (to-array [false table_name]))))))
+;        (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "SELECT DISTINCT m.schema_name FROM my_dataset AS m INNER JOIN my_dataset_table AS mt ON m.id = mt.dataset_id WHERE m.is_real = ? and mt.table_name = ?") (to-array [false table_name]))))))
 
 ; 输入列表将列表中的元素，双引号换成单引号
 (defn double-to-signal

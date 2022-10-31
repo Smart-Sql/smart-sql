@@ -286,7 +286,7 @@ public class MyNoSqlUtil {
 
         ignite.getOrCreateCache(cfg);
 
-        SqlFieldsQuery sqlFieldsQuery = new SqlFieldsQuery("select m.dataset_name, m.table_name, m.is_cache, m.mode, m.maxSize from MY_META.my_caches m");
+        SqlFieldsQuery sqlFieldsQuery = new SqlFieldsQuery("select m.schema_name, m.table_name, m.is_cache, m.mode, m.maxSize from MY_META.my_caches m");
         sqlFieldsQuery.setLazy(true);
         Iterator<List<?>> iterator = ignite.cache("my_caches").query(sqlFieldsQuery).iterator();
         while (iterator.hasNext())

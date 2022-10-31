@@ -62,7 +62,7 @@ public class MyTrianDataUtil implements Serializable {
         String cacheName = getCacheName(mlCaches);
         if (hasTrainMatrix(ignite, mlCaches))
         {
-            ignite.cache("ml_train_data").remove(new MyCachePK(mlCaches.getDataset_name(), mlCaches.getTable_name()));
+            ignite.cache("ml_train_data").remove(new MyCachePK(mlCaches.getSchema_name(), mlCaches.getTable_name()));
             ignite.destroyCache(cacheName);
         }
     }
@@ -77,12 +77,12 @@ public class MyTrianDataUtil implements Serializable {
 
     public static String getCacheName(final MyMlCaches mlCaches)
     {
-        return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
+        return "sm_ml_" + mlCaches.getSchema_name() + "_" + mlCaches.getTable_name();
     }
 
     public static String getCacheName(final MyTransData mlCaches)
     {
-        return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
+        return "sm_ml_" + mlCaches.getSchema_name() + "_" + mlCaches.getTable_name();
     }
 
     public static String getCacheName(final Object o)
@@ -90,28 +90,28 @@ public class MyTrianDataUtil implements Serializable {
         if (o instanceof MyMlCaches)
         {
             MyMlCaches mlCaches = (MyMlCaches) o;
-            return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
+            return "sm_ml_" + mlCaches.getSchema_name() + "_" + mlCaches.getTable_name();
         }
         else if (o instanceof MyMlShowData)
         {
             MyMlShowData mlCaches = (MyMlShowData) o;
-            return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
+            return "sm_ml_" + mlCaches.getSchema_name() + "_" + mlCaches.getTable_name();
         }
         else if (o instanceof MyTransDataLoad)
         {
             MyTransDataLoad mlCaches = (MyTransDataLoad) o;
-            return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
+            return "sm_ml_" + mlCaches.getSchema_name() + "_" + mlCaches.getTable_name();
         }
         else
         {
             MyTransData mlCaches = (MyTransData) o;
-            return "sm_ml_" + mlCaches.getDataset_name() + "_" + mlCaches.getTable_name();
+            return "sm_ml_" + mlCaches.getSchema_name() + "_" + mlCaches.getTable_name();
         }
     }
 
-    public static void train_matrix_single(final Ignite ignite, String dataset_name, String table_name, String value)
+    public static void train_matrix_single(final Ignite ignite, String schema_name, String table_name, String value)
     {
-        String cacheName = "sm_ml_" + dataset_name + "_" + table_name;
+        String cacheName = "sm_ml_" + schema_name + "_" + table_name;
         String[] lst = value.split(",");
         Double[] rs = new Double[lst.length];
         for (int i = 0; i < lst.length; i++)
