@@ -165,10 +165,27 @@
                     [(str/join [my-notes (subs code (+ start 1) end) func-code]) my-descript])
                 ))))
 
-(defn save-to-cache [^Ignite ignite group_id ^String func-name ^String sql_code ^String smart_code ^String descrip]
+; 添加 scenes
+(defn save-scenes-to-cache [^Ignite ignite group_id ^String func-name ^String sql_code ^String smart_code ^String descrip]
     (let [pk (MyScenesCachePk. (first group_id) func-name) cache (.cache ignite "my_scenes")]
         (if-not (.containsKey cache pk)
-            (.put cache pk (MyScenesCache. (first group_id) func-name sql_code smart_code descrip)))))
+            (.put cache pk (MyScenesCache. (first group_id) func-name sql_code smart_code descrip))
+            (.replace cache pk (MyScenesCache. (first group_id) func-name sql_code smart_code descrip)))))
+
+; 删除 scenes
+(defn delete-scenes-to-cache [^Ignite ignite group_id ^String func-name-0]
+    (if (= (first group_id) 0)
+        (let [func-name (str/lower-case func-name-0)]
+            (let [pk (MyScenesCachePk. (first group_id) (str/lower-case func-name)) cache (.cache ignite "my_scenes")]
+                (if-not (.containsKey cache pk)
+                    (do
+                        (try
+                            (eval (read-string func-name))
+                            (eval (read-string (format "(def %s nil)" func-name)))
+                            (catch Exception e
+                                ))
+                        (.remove cache pk)))))
+        (throw (Exception. "只有 root 用户才有权限删除！"))))
 
 (defn load-smart-sql [^Ignite ignite group_id ^String code]
     (loop [[f & r] (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment (my-lexical/to-back code)))]
@@ -177,7 +194,7 @@
                 (cond (and (string? (first f)) (my-lexical/is-eq? (first f) "function")) (let [[sql func-name] (my-smart-clj/my-smart-to-clj-lower ignite group_id f)]
                                                                                              (eval (read-string sql))
                                                                                              (let [[func-code my-descript] (get-smart-func-code func-name code)]
-                                                                                                 (save-to-cache ignite group_id func-name sql func-code my-descript)))
+                                                                                                 (save-scenes-to-cache ignite group_id func-name sql func-code my-descript)))
                       (and (string? (first f)) (contains? #{"insert" "update" "delete" "select"} (str/lower-case (first f)))) (my-smart-db-line/query_sql ignite group_id f)
                       :else
                       (if (string? (first f))
