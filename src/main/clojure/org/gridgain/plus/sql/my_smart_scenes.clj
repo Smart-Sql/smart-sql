@@ -39,10 +39,10 @@
 
 ; 调用 func
 (defn my-invoke-func [^Ignite ignite ^String method-name ps]
-    (MyPlusUtil/invokeFuncObj ignite method-name (to-array ps)))
+    (MyPlusUtil/invokeFuncObj ignite (str/lower-case method-name) (to-array ps)))
 
 (defn my-invoke-func-no-ps [^Ignite ignite ^String method-name]
-    (MyPlusUtil/invokeFuncNoPs ignite method-name))
+    (MyPlusUtil/invokeFuncNoPs ignite (str/lower-case method-name)))
 
 ; 获取输入参数和处理后的参数
 (defn get-params [params]

@@ -407,9 +407,9 @@
         (throw (Exception. "只有 root 用户才能添加扩展方法！"))))
 
 ; add_func: 添加扩展方法
-(defn remove_func [^Ignite ignite group_id func-name]
+(defn remove_func [^Ignite ignite group_id func-name-0]
     (if (= (first group_id) 0)
-        (let [cache (.cache ignite "my_func")]
+        (let [cache (.cache ignite "my_func") func-name (str/lower-case func-name-0)]
             (if (.containsKey cache func-name)
                 (.remove cache func-name)
                 (throw (Exception. "扩展方法不存在，所以不能删除！"))))

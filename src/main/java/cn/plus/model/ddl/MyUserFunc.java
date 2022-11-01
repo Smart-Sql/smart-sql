@@ -16,7 +16,7 @@ public class MyUserFunc implements Serializable {
 
     public MyUserFunc(final String method_name, final String java_method_name, final String cls_name, final String return_type, List<MyFuncPs> lst, final String descrip)
     {
-        this.method_name = method_name;
+        this.method_name = method_name != null? method_name.toLowerCase(): "";
         this.java_method_name = java_method_name;
         this.cls_name = cls_name;
         this.return_type = return_type;
@@ -35,7 +35,7 @@ public class MyUserFunc implements Serializable {
     }
 
     public void setMethod_name(String method_name) {
-        this.method_name = method_name;
+        this.method_name = method_name != null? method_name.toLowerCase(): "";
     }
 
     public String getJava_method_name() {
