@@ -130,8 +130,9 @@
               (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (my-lexical/is-eq? (get ht "schema_name") "MY_META")) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
               (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (not (my-lexical/is-eq? (get ht "schema_name") "MY_META"))) (ht-to-line ht)
               (not (contains? ht "schema_name")) (ht-to-line (doto ht (.put "schema_name" (str/lower-case ds-name))))
-              (and (contains? ht "schema_name") (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name))) (ht-to-line ht)
-              (and (contains? ht "schema_name") (not (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！"))
+              (contains? ht "schema_name") (cond (my-lexical/is-eq? (get ht "schema_name") "public") (ht-to-line ht)
+                                                 (my-lexical/is-eq? (get ht "schema_name") ds-name) (ht-to-line ht)
+                                                 :else (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！")))
               :else
               (throw (Exception. "不能创建机器学习的训练数据！"))
               )

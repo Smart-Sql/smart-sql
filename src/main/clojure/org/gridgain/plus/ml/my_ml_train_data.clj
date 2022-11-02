@@ -140,8 +140,9 @@
               (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (my-lexical/is-eq? (get ht "schema_name") "MY_META")) (throw (Exception. "MY_META 下面不能创建机器学习的训练数据！"))
               (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (not (my-lexical/is-eq? (get ht "schema_name") "MY_META"))) (ml-create-train-matrix ignite (hastable-to-cache ht))
               (not (contains? ht "schema_name")) (ml-create-train-matrix ignite (hastable-to-cache (doto ht (.put "schema_name" (str/lower-case ds-name)))))
-              (and (contains? ht "schema_name") (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name))) (ml-create-train-matrix ignite (hastable-to-cache ht))
-              (and (contains? ht "schema_name") (not (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！"))
+              (contains? ht "schema_name") (cond (my-lexical/is-eq? (get ht "schema_name") "public") (ml-create-train-matrix ignite (hastable-to-cache ht))
+                                                 (my-lexical/is-eq? (get ht "schema_name") ds-name) (ml-create-train-matrix ignite (hastable-to-cache ht))
+                                                 :else (throw (Exception. "不能在其它非公共数据集下面不能创建机器学习的训练数据！")))
               :else
               (throw (Exception. "不能创建机器学习的训练数据！"))
             )
@@ -153,8 +154,9 @@
         (cond
               (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (not (my-lexical/is-eq? (get ht "schema_name") "MY_META"))) (MyTrianDataUtil/hasTrainMatrix ignite (hastable-to-cache ht))
               (not (contains? ht "schema_name")) (MyTrianDataUtil/hasTrainMatrix ignite (hastable-to-cache (doto ht (.put "schema_name" (str/lower-case ds-name)))))
-              (and (contains? ht "schema_name") (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name))) (MyTrianDataUtil/hasTrainMatrix ignite (hastable-to-cache ht))
-              (and (contains? ht "schema_name") (not (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面查询机器学习的训练数据！"))
+              (contains? ht "schema_name") (cond (my-lexical/is-eq? (get ht "schema_name") "public") (MyTrianDataUtil/hasTrainMatrix ignite (hastable-to-cache ht))
+                                                 (my-lexical/is-eq? (get ht "schema_name") ds-name) (MyTrianDataUtil/hasTrainMatrix ignite (hastable-to-cache ht))
+                                                 :else (throw (Exception. "不能在其它非公共数据集下面查询机器学习的训练数据！")))
               :else
               (throw (Exception. "不存在机器学习的训练数据！"))
               )
@@ -166,8 +168,9 @@
         (cond
             (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (not (my-lexical/is-eq? (get ht "schema_name") "MY_META"))) (MyTrianDataUtil/dropTrainMatrix ignite (hastable-to-cache ht))
             (not (contains? ht "schema_name")) (MyTrianDataUtil/dropTrainMatrix ignite (hastable-to-cache (doto ht (.put "schema_name" (str/lower-case ds-name)))))
-            (and (contains? ht "schema_name") (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name))) (MyTrianDataUtil/dropTrainMatrix ignite (hastable-to-cache ht))
-            (and (contains? ht "schema_name") (not (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面删除机器学习的训练数据！"))
+            (contains? ht "schema_name") (cond (my-lexical/is-eq? (get ht "schema_name") "public") (MyTrianDataUtil/dropTrainMatrix ignite (hastable-to-cache ht))
+                                               (my-lexical/is-eq? (get ht "schema_name") ds-name) (MyTrianDataUtil/dropTrainMatrix ignite (hastable-to-cache ht))
+                                               :else (throw (Exception. "不能在其它非公共数据集下面删除机器学习的训练数据！")))
             :else
             (throw (Exception. "不存在机器学习的训练数据！"))
             )
@@ -179,8 +182,9 @@
         (cond
             (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (not (my-lexical/is-eq? (get ht "schema_name") "MY_META"))) (ml-train-matrix ignite ht)
             (not (contains? ht "schema_name")) (ml-train-matrix ignite (hastable-to-cache (doto ht (.put "schema_name" (str/lower-case ds-name)))))
-            (and (contains? ht "schema_name") (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name))) (ml-train-matrix ignite ht)
-            (and (contains? ht "schema_name") (not (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面添加机器学习的训练数据！"))
+            (contains? ht "schema_name") (cond (my-lexical/is-eq? (get ht "schema_name") "public") (ml-train-matrix ignite ht)
+                                               (my-lexical/is-eq? (get ht "schema_name") ds-name) (ml-train-matrix ignite ht)
+                                               :else (throw (Exception. "不能在其它非公共数据集下面添加机器学习的训练数据！")))
             :else
             (throw (Exception. "不存在机器学习的训练数据！"))
             )
@@ -192,8 +196,9 @@
         (cond
             (and (my-lexical/is-eq? ds-name "MY_META") (contains? ht "schema_name") (not (my-lexical/is-eq? (get ht "schema_name") "MY_META"))) (ml-train-matrix-single ignite ht)
             (not (contains? ht "schema_name")) (ml-train-matrix-single ignite (hastable-to-cache (doto ht (.put "schema_name" (str/lower-case ds-name)))))
-            (and (contains? ht "schema_name") (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name))) (ml-train-matrix-single ignite ht)
-            (and (contains? ht "schema_name") (not (contains? #{(str/lower-case (get ht "schema_name")) "public"} (str/lower-case ds-name)))) (throw (Exception. "不能在其它非公共数据集下面添加机器学习的训练数据！"))
+            (contains? ht "schema_name") (cond (my-lexical/is-eq? (get ht "schema_name") "public") (ml-train-matrix-single ignite ht)
+                                               (my-lexical/is-eq? (get ht "schema_name") ds-name) (ml-train-matrix-single ignite ht)
+                                               :else (throw (Exception. "不能在其它非公共数据集下面添加机器学习的训练数据！")))
             :else
             (throw (Exception. "不存在机器学习的训练数据！"))
             )
