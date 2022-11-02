@@ -105,7 +105,8 @@
                   (and (not (my-lexical/is-eq? schema_name (second group_id))) (my-lexical/is-str-not-empty? schema_name) (my-lexical/is-str-not-empty? (second group_id))) (if-let [{v_table_name :table_name v_where_lst :where_lst} (my_view_db ignite group_id schema_name table_name)]
                                                                                                                                                                                 (if (my-lexical/is-eq? table_name v_table_name)
                                                                                                                                                                                     {:schema_name schema_name :table_name table_name :args args :where_lst (my-update/merge_where where-lst v_where_lst)})
-                                                                                                                                                                                (throw (Exception. "用户不存在或者没有权限！删除数据！"))
+                                                                                                                                                                                (if (not (my-lexical/is-eq? schema_name "public"))
+                                                                                                                                                                                    (throw (Exception. "用户不存在或者没有权限！删除数据！")))
                                                                                                                                                                                 )
                   ))))
 

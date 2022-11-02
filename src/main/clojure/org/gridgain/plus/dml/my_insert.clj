@@ -169,7 +169,8 @@
                                                                                                                                                                                         (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
                                                                                                                                                                                             (if (nil? (has-my-authority pk items v-items))
                                                                                                                                                                                                 {:schema_name schema_name :table_name table_name :values items})
-                                                                                                                                                                                            (throw (Exception. "用户不存在或者没有权限！添加数据！")))
+                                                                                                                                                                                            (if (not (my-lexical/is-eq? schema_name "public"))
+                                                                                                                                                                                                (throw (Exception. "用户不存在或者没有权限！添加数据！"))))
                                                                                                                                                                                         (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！")))
                           ))))
         ))

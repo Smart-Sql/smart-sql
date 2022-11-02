@@ -76,7 +76,8 @@
                                                                                                                                                                                                             {:query-items nil :where-items where-items}
                                                                                                                                                                                                             {:query-items (get_query_view query-items) :where-items where-items})
                                                                                                                                                                                                         ))
-                                                                                                                                                                                                (throw (Exception. "用户不存在或者没有权限！查询数据！")))
+                                                                                                                                                                                                (if (not (my-lexical/is-eq? schema_name "public"))
+                                                                                                                                                                                                    (throw (Exception. "用户不存在或者没有权限！查询数据！"))))
                                   ))
                         (get_query_view
                             ([query-items] (get_query_view query-items {}))
