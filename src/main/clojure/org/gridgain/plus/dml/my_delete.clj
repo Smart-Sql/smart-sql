@@ -106,7 +106,8 @@
                                                                                                                                                                                 (if (my-lexical/is-eq? table_name v_table_name)
                                                                                                                                                                                     {:schema_name schema_name :table_name table_name :args args :where_lst (my-update/merge_where where-lst v_where_lst)})
                                                                                                                                                                                 (if (not (my-lexical/is-eq? schema_name "public"))
-                                                                                                                                                                                    (throw (Exception. "用户不存在或者没有权限！删除数据！")))
+                                                                                                                                                                                    (throw (Exception. "用户不存在或者没有权限！删除数据！"))
+                                                                                                                                                                                    {:schema_name "public" :table_name table_name :args args :where_lst where-lst})
                                                                                                                                                                                 )
                   ))))
 
