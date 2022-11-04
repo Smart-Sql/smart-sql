@@ -56,6 +56,7 @@ Windows 下激活集群：<br/>
 ### 5、开发 SmartSql 代码
 
 #### 5.1、DBeaver 连接分布式数据库
+
 创建新建连接
 
 ![dbeaver_1](https://gitee.com/wltz/smart-sql/raw/master/doc/smart_sql_img/dbeaver_1.jpg)
