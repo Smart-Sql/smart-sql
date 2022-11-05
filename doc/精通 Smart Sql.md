@@ -234,7 +234,9 @@ graph TB;
 ##### 3.2、对相应的业务的代码和相关联的代码，进行复制的能力
 
 ## 4、 Smart Sql 的设计
+
 ##  Smart Sql 的设计
+
 SmartSql 是一个超融合的新的函数式理念，它要实现的功能相当于 分布式(mysql/pg) + 大数据体系 + 分布式缓存 + 应用程序。
 
 ### Smart Sql 的设置
@@ -856,7 +858,9 @@ rm_view('wudafu_group', 'public.Categories', 'select');
 **SmartSql 是分布式数据库，程序可能在每台机器上运行，所以必须在每台机器，SmartSql 安装文件的 cls 文件夹中，放入实现了 IMyLogTransaction 接口的自定义 Log 程序。这个程序的作用是将 insert、update、delete、ddl 的操作数据转换为二进制，根据自定义的程序来保存起来。在 SmartSql 运维中，我们会给出一个例子。**
 
 ### 4、对 sql 的支持
+
 #### 4.1、DLL 的支持
+
 ##### 创建表
 
 ```sql
@@ -983,6 +987,7 @@ CREATE SPATIAL INDEX idx_person_address ON myy.Person (address);
 DROP INDEX myy.idx_person_name;
 ```
 #### 4.2、对 DML 的支持
+
 Smart Sql 完全支持标准 SQL。同时它还支持对 函数的联级调用。
 例如：
 ```sql

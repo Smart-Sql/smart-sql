@@ -1551,6 +1551,9 @@
      (if (some? f)
          (cond (and (is-eq? f "union") (is-eq? (first rs) "all") (= (count stack) 0) (> (count lst) 0)) (concat [lst "union all"] (sql-union (rest rs) [] [] true))
                (and (is-eq? f "union") (not (is-eq? (first rs) "all")) (= (count stack) 0) (> (count lst) 0)) (concat [lst f] (sql-union rs [] [] true))
+               (and (is-eq? f "MINUS") (= (count stack) 0) (> (count lst) 0)) (concat [lst f] (sql-union rs [] [] true))
+               (and (is-eq? f "EXCEPT") (= (count stack) 0) (> (count lst) 0)) (concat [lst f] (sql-union rs [] [] true))
+               (and (is-eq? f "INTERSECT") (= (count stack) 0) (> (count lst) 0)) (concat [lst f] (sql-union rs [] [] true))
                (= f "(") (sql-union rs (conj stack f) (conj lst f) flag)
                (= f ")") (if (> (count stack) 0) (sql-union rs (pop stack) (conj lst f) flag))
                :else
