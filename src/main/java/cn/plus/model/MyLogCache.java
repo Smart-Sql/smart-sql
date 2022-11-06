@@ -93,6 +93,8 @@ public class MyLogCache implements Serializable {
     public String toString() {
         return "MyLogCache{" +
                 "cache_name='" + cache_name + '\'' +
+                ", schema_name='" + schema_name + '\'' +
+                ", table_name='" + table_name + '\'' +
                 ", key=" + key +
                 ", value=" + value +
                 ", sqlType=" + sqlType +

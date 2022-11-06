@@ -261,7 +261,28 @@
                                  (recur r values (concat lst [m]))
                                  (recur r values lst)))
                          lst))
-                    )] {:pk_rs (get_rs (-> pk_data :pk) values) :data_rs (get_rs (-> pk_data :data) values)})
+                    )
+                (get-vs-data [data values]
+                    (loop [[f & r] values my-data data]
+                        (if (some? f)
+                            (let [key (str/lower-case (-> f :item_name))]
+                                (if (contains? data key)
+                                    (let [m (get data key)]
+                                        (recur r (assoc my-data key {:define m :vs (-> f :item_value)})))
+                                    (recur r my-data)))
+                            my-data)))
+                (get-vs-insert-data [vs-data]
+                    (loop [[f & r] (keys vs-data) lst []]
+                        (if (some? f)
+                            (if (map? (get vs-data f))
+                                (recur r (conj lst (get vs-data f)))
+                                (cond (not (nil? (.getDefault_value (get vs-data f)))) (if (string? (.getDefault_value (get vs-data f)))
+                                                                                           (recur r (conj lst {:define (get vs-data f) :vs [(.getDefault_value (get vs-data f))]}))
+                                                                                           (recur r (conj lst {:define (get vs-data f) :vs [(str (.getDefault_value (get vs-data f)))]})))
+                                      :else (recur r lst)
+                                      ))
+                            lst)))]
+            {:pk_rs (get_rs (-> pk_data :pk) values) :data_rs (get-vs-insert-data (get-vs-data (-> pk_data :data) values))})
         ))
 
 

@@ -16,11 +16,11 @@ public class MyTableItem implements Serializable {
     //private Integer comment_len;
     private Boolean auto_increment = false;
     private Long table_id;
-    private String default_value = "";
+    private Object default_value = null;
     //private Long ex_table_id_;
 
     public MyTableItem(final Long id, final Long table_id, final String column_name, final Integer column_len, final Integer scale, final String column_type, final Boolean not_null, final Boolean pkid,
-                       final String comment, /*final Integer comment_len, */final Boolean auto_increment, final String default_value)
+                       final String comment, /*final Integer comment_len, */final Boolean auto_increment, final Object default_value)
     {
         this.id = id;
         this.table_id = table_id;
@@ -40,7 +40,7 @@ public class MyTableItem implements Serializable {
     }
 
     public MyTableItem(final String column_name, final Integer column_len, final Integer scale, final String column_type, final Boolean not_null, final Boolean pkid,
-                       final String comment, /*final Integer comment_len, */final Boolean auto_increment, final String default_value)
+                       final String comment, /*final Integer comment_len, */final Boolean auto_increment, final Object default_value)
     {
         if (column_name != null) {
             this.column_name = column_name.toLowerCase();
@@ -181,11 +181,11 @@ public class MyTableItem implements Serializable {
         this.scale = scale;
     }
 
-    public String getDefault_value() {
+    public Object getDefault_value() {
         return default_value;
     }
 
-    public void setDefault_value(String default_value) {
+    public void setDefault_value(Object default_value) {
         this.default_value = default_value;
     }
 

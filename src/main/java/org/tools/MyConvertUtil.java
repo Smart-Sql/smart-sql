@@ -469,6 +469,31 @@ public class MyConvertUtil {
         return new BigDecimal(t.toString());
     }
 
+    public static BigDecimal ConvertToDecimal(final Integer t, final Integer scale)
+    {
+        return new BigDecimal(t.toString()).setScale(scale, BigDecimal.ROUND_HALF_UP);
+    }
+
+    public static BigDecimal ConvertToDecimal(final String t, final Integer scale)
+    {
+        return new BigDecimal(t).setScale(scale, BigDecimal.ROUND_HALF_UP);
+    }
+
+    public static BigDecimal ConvertToDecimal(final Double t, final Integer scale)
+    {
+        return BigDecimal.valueOf(t).setScale(scale, BigDecimal.ROUND_HALF_UP);
+    }
+
+    public static BigDecimal ConvertToDecimal(final Long t, final Integer scale)
+    {
+        return BigDecimal.valueOf(t).setScale(scale, BigDecimal.ROUND_HALF_UP);
+    }
+
+    public static BigDecimal ConvertToDecimal(final Object t, final Integer scale)
+    {
+        return new BigDecimal(t.toString()).setScale(scale, BigDecimal.ROUND_HALF_UP);
+    }
+
     /**
      * 判断列表是否为空
      * */

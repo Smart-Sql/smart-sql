@@ -113,12 +113,20 @@
                 (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic)))))
                 lst-rs))))
 
+;(defn get-insert-data [ignite group_id data-rs args-dic]
+;    (loop [[f & r] data-rs lst-rs []]
+;        (if (some? f)
+;            (if-let [vs (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic)]
+;                (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-lexical/get_jave_vs (-> f :column_type) vs))))
+;                (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) nil))))
+;            lst-rs)))
+
 (defn get-insert-data [ignite group_id data-rs args-dic]
     (loop [[f & r] data-rs lst-rs []]
         (if (some? f)
-            (if-let [vs (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic)]
-                (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-lexical/get_jave_vs (-> f :column_type) vs))))
-                (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) nil))))
+            (if-let [vs (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :vs)) args-dic)]
+                (recur r (conj lst-rs (MyKeyValue. (.getColumn_name (-> f :define)) (my-lexical/get_jave_vs_ex (.getColumn_type (-> f :define)) vs (.getScale (-> f :define))))))
+                (recur r (conj lst-rs (MyKeyValue. (.getColumn_name (-> f :define)) nil))))
             lst-rs)))
 
 (defn get-update-key [row pk-lst]

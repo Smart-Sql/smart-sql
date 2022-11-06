@@ -1047,9 +1047,9 @@
 (defn to-smart-sql-type [f-type]
     (cond (re-find #"^(?i)FLOAT$" f-type) "double"
           (re-find #"^(?i)DATETIME$" f-type) "TIMESTAMP"
-          (re-find #"^(?i)REAL$" f-type) "TIMESTAMP"
+          (re-find #"^(?i)REAL$" f-type) "double"
           (re-find #"^(?i)VARBINARY$" f-type) "VARBINARY"
-          (re-find #"^(?i)REAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)REAL\(\s*\d+\s*\)$|^(?i)REAL$" f-type) (str/replace f-type #"REAL" "DECIMAL")
+          (re-find #"^(?i)REAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)REAL\(\s*\d+\s*\)$|^(?i)REAL$" f-type) (str/replace f-type #"REAL" "double")
           (re-find #"^(?i)BIT$" f-type) "BOOLEAN"
           :else
           f-type
@@ -1066,6 +1066,20 @@
 (defn to_p_d [column_type]
     (re-seq #"\d+" (re-find #"(?<=^(?i)DECIMAL\()[\s\S]+(?=\))" column_type)))
 
+(defn vs-type [line]
+    (if (some? line)
+        (cond (some? (re-find #"^(?i)\d+$" line)) Integer
+              (some? (re-find #"^(?i)\d+\.\d$" line)) Double
+              ;(some? (re-find #"^(?i)\"\w*\"$|^(?i)'\w*'$|^(?i)\"\W*\"$|^(?i)'\W*'$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type String :const true}
+              (some? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$|^\'\'$|^\"\"$" line)) String
+              (some? (re-find #"^(?i)\d+D$" line)) Double
+              (some? (re-find #"^(?i)\d+L$" line)) Long
+              (some? (re-find #"^(?i)\d+F$" line)) Double
+              (some? (re-find #"^(?i)true$" line)) Boolean
+              (some? (re-find #"^(?i)false$" line)) Boolean
+              :else (throw (Exception. (format "%s 不能确定其数据类型！请仔细检查！" line)))
+              )))
+
 (defn convert_to_java_type [column_type]
     (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) {:java_type Integer}
           (re-find #"^(?i)SMALLINT$|^(?i)SMALLINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)SMALLINT\(\s*\d+\s*\)$" column_type) {:java_type Integer}
@@ -1079,7 +1093,7 @@
           (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) {:java_type Long}
           (re-find #"^(?i)BINARY$" column_type) {:java_type "byte[]"}
           (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) {:java_type Timestamp}
-          (re-find #"^(?i)REAL$" column_type) {:java_type BigDecimal}
+          (re-find #"^(?i)REAL$" column_type) {:java_type Double}
           (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (when-let [m (to_p_d column_type)]
                                                                             (if (= (count m) 2)
                                                                                 {:java_type BigDecimal :p (Integer/parseInt (nth m 0)) :d (Integer/parseInt (nth m 1))}))
@@ -1092,8 +1106,8 @@
           ))
 
 (defn convert_to_type [column_type]
-    (cond (re-find #"^(?i)integer$|^(?i)int$|^(?i)long$|^(?i)double$|^(?i)float$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$|^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$" column_type) column_type
-          (re-find #"^(?i)REAL$" column_type) "DECIMAL"
+    (cond (re-find #"^(?i)integer$|^(?i)int$|^(?i)long$|^(?i)double$|^(?i)float$|^(?i)blob$|^(?i)tinyblob$|^(?i)mediumblob$|^(?i)longblob$|^(?i)text$|^(?i)tinytext$|^(?i)TINYINT$|^(?i)MEDIUMINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)nvarchar$|^(?i)nvarchar\(\d+\)$|^(?i)nchar$|^(?i)nchar\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)VARBINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$|^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$|^(?i)numeric\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)numeric\(\s*\d+\s*\)$|^(?i)numeric$" column_type) column_type
+          (re-find #"^(?i)REAL$" column_type) "double"
           (re-find #"^(?i)VARBINARY$" column_type) "VARBINARY"
           (re-find #"^(?i)SMALLINT$" column_type) "INTEGER"
           (re-find #"^(?i)bit$" column_type) "BOOLEAN"
@@ -1150,6 +1164,15 @@
               :else
               (throw (Exception. (format "数据类型写法有误请确认正确的写法！%s %s" column_type column_value)))
               ))
+    )
+
+(defn get_jave_vs_ex [column_type column_value scale]
+    (if (not (nil? scale))
+        (cond (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_inner_str_value column_value) scale)
+              (re-find #"^(?i)DECIMAL\(\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal (get_inner_str_value column_value) scale)
+              (re-find #"^(?i)DECIMAL$" column_type) (MyConvertUtil/ConvertToDecimal (get_inner_str_value column_value) scale)
+              :else (get_jave_vs column_type column_value))
+        (get_jave_vs column_type column_value))
     )
 
 ; 预处理字符串

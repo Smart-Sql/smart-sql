@@ -296,7 +296,10 @@
 (defn get-column_type [pk data column_name]
     (if-let [ct (get-column pk column_name)]
         ct
-        (get-column data column_name)))
+        (if-let [m (get data (str/lower-case column_name))]
+            (.getColumn_type m))
+        ;(get-column data column_name)
+        ))
 
 (defn merge-pk-where-items [pk data obj args-dic]
     (if-let [lst-items (my-items (-> obj :items))]
@@ -329,10 +332,15 @@
                 (recur nil (-> f :column_type))
                 (recur r column-type))
             column-type)))
+
+(defn get-column-type-ex [item_name data]
+    (if-let [m (get data (str/lower-case item_name))]
+        (.getColumn_type m)))
+
 (defn get_items_type [items data]
     (loop [[f & r] items lst []]
         (if (some? f)
-            (recur r (conj lst (assoc f :type (get-column-type (-> f :item_name) data))))
+            (recur r (conj lst (assoc f :type (get-column-type-ex (-> f :item_name) data))))
             lst)))
 
 (defn my_update_query_sql [^Ignite ignite group_id obj args-dic]

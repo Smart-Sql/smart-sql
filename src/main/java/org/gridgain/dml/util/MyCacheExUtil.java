@@ -143,6 +143,7 @@ public class MyCacheExUtil implements Serializable {
                 if (tx != null) {
                     tx.rollback();
                 }
+                ex.printStackTrace();
             } finally {
                 if (tx != null) {
                     tx.close();

@@ -733,7 +733,11 @@
                             {:order-item item-obj :order (last m)}
                             (throw (Exception. "order by 语法错误！")))
                         (throw (Exception. "order by 语法错误！")))
-                    (throw (Exception. "order by 语法错误！"))))
+                    (if-let [item-obj (get-token m)]
+                        (if (map? item-obj)
+                            {:order-item item-obj :order "asc"}
+                            (throw (Exception. "order by 语法错误！")))
+                        (throw (Exception. "order by 语法错误！")))))
 
             (my-get-order-by [lst]
                 (if-let [m (get-items lst)]

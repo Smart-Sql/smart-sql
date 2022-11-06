@@ -62,10 +62,22 @@
                :else
                (recur r pk_stack type_stack lst_type (conj lst f)))
          lst)))
+
+(defn re-lst-vs [m]
+    (loop [[f & r] m index 0 lst []]
+        (if (some? f)
+            (if (not (= index 1))
+                (recur r (+ index 1) (conj lst f))
+                (recur r (+ index 1) (conj lst (dissoc f :vs))))
+            lst)))
+
 (defn items_obj [my_items]
     (loop [[f & r] my_items lst_items []]
         (if (some? f)
-            (recur r (conj lst_items (get_item_obj f)))
+            (let [m (get_item_obj f)]
+                (if (and (string? (first m)) (map? (second m)) (contains? (second m) :type) (contains? (second m) :vs) (not (my-lexical/is-eq? (-> (second m) :type) "DECIMAL")))
+                    (recur r (conj lst_items (re-lst-vs m)))
+                    (recur r (conj lst_items m))))
             lst_items)))
 (defn get_items_obj_lst [items-lst]
     (when-let [my_items (items_obj (get_items (drop-last 1 (rest items-lst))))]
@@ -127,7 +139,13 @@
                (and (map? f) (contains? f :not_null)) (do (.setNot_null m (-> f :not_null))
                                                           (.append code_line " not null")
                                                           (recur r m code_line pk_set))
-               (and (map? f) (contains? f :default)) (do (.setDefault_value m (-> f :default))
+               (and (map? f) (contains? f :default)) (do (let [vs-type (my-lexical/vs-type (-> f :default))]
+                                                             (cond (= vs-type Integer) (.setDefault_value m (MyConvertUtil/ConvertToInt (-> f :default)))
+                                                                   (= vs-type Double) (.setDefault_value m (MyConvertUtil/ConvertToDouble (-> f :default)))
+                                                                   (= vs-type String) (.setDefault_value m (MyConvertUtil/ConvertToString (-> f :default)))
+                                                                   (= vs-type Long) (.setDefault_value m (MyConvertUtil/ConvertToLong (-> f :default)))
+                                                                   (= vs-type Boolean) (.setDefault_value m (MyConvertUtil/ConvertToBoolean (-> f :default)))
+                                                                   ))
                                                          (.append code_line (.concat " DEFAULT " (-> f :default)))
                                                          (recur r m code_line pk_set))
                (and (map? f) (contains? f :comment)) (do (.setComment m (my-lexical/get_str_value (-> f :comment)))
@@ -275,11 +293,11 @@
         ))
 
 (defn get_pk_data [lst]
-    (loop [[f & r] lst dic-pk [] dic-data []]
+    (loop [[f & r] lst dic-pk [] dic-data {}]
         (if (some? f)
             (cond (true? (.getPkid f)) (recur r (conj dic-pk {:column_name (.getColumn_name f), :column_type (.getColumn_type f), :pkid true, :auto_increment (.getAuto_increment f)}) dic-data)
-                  (false? (.getPkid f)) (recur r dic-pk (conj dic-data {:column_name (.getColumn_name f), :column_type (.getColumn_type f), :pkid false, :auto_increment (.getAuto_increment f)}))
-                  )
+                  ;(false? (.getPkid f)) (recur r dic-pk (conj dic-data {:column_name (.getColumn_name f), :column_type (.getColumn_type f), :default_value (.getDefault_value f), :scale (.getScale f), :pkid false, :auto_increment (.getAuto_increment f)}))
+                  (false? (.getPkid f)) (recur r dic-pk (assoc dic-data (.getColumn_name f) f)))
             {:pk dic-pk :data dic-data})))
 
 (defn to_ddl_obj [^Ignite ignite lst-sql ^String schema_name]

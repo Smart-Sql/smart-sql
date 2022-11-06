@@ -172,9 +172,15 @@
 ;                (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 
+;(defn repace-ast-add [ignite schema_name table_name data]
+;    (if-let [ast (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name))]
+;        (assoc ast :data (concat (-> ast :data) data))
+;        ))
+
 (defn repace-ast-add [ignite schema_name table_name data]
     (if-let [ast (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name))]
-        (assoc ast :data (concat (-> ast :data) data))
+        ;(assoc ast :data (concat (-> ast :data) data))
+        (merge (-> ast :data) data)
         ))
 
 (defn is-contains [item data]
@@ -187,11 +193,11 @@
 
 (defn repace-ast-del [ignite schema_name table_name data]
     (if-let [ast (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name))]
-        (loop [[f & r] (-> ast :data) my-data []]
+        (loop [[f & r] (keys data) my-data (-> ast :data)]
             (if (some? f)
-                (if (true? (is-contains f data))
-                    (recur r my-data)
-                    (recur r (conj my-data f)))
+                (if (contains? my-data f)
+                    (recur r (dissoc my-data f))
+                    (recur r my-data))
                 (assoc ast :data my-data)))))
 
 (defn alter-table-obj [^Ignite ignite ^String schema_name ^String sql_line]
