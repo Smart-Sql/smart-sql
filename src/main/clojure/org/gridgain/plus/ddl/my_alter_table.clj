@@ -180,7 +180,7 @@
 (defn repace-ast-add [ignite schema_name table_name data]
     (if-let [ast (.get (.cache ignite "table_ast") (MySchemaTable. schema_name table_name))]
         ;(assoc ast :data (concat (-> ast :data) data))
-        (merge (-> ast :data) data)
+        (assoc ast :data (merge (-> ast :data) data))
         ))
 
 (defn is-contains [item data]
@@ -201,11 +201,13 @@
                 (assoc ast :data my-data)))))
 
 (defn alter-table-obj [^Ignite ignite ^String schema_name ^String sql_line]
-    (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj schema_name sql_line)]
+    (let [{alter_table :alter_table schema_name :schema_name my-table_name :table_name {line :line is_drop :is_drop is_add :is_add is_exists :is_exists is_no_exists :is_no_exists} :add_or_drop {lst_table_item :lst_table_item code_line :code_line} :colums} (re-obj schema_name sql_line)]
         (let [table_name (str/lower-case my-table_name)]
             (if-not (and (my-lexical/is-eq? schema_name "my_meta") (contains? plus-init-sql/my-grid-tables-set table_name))
                 (cond (and (true? is_drop) (false? is_add)) {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :pk-data (repace-ast-del ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))}
-                      (and (false? is_drop) (true? is_add)) {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :pk-data (repace-ast-add ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))}
+                      (and (false? is_drop) (true? is_add)) (if (true? is_no_exists)
+                                                                {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s %s" alter_table schema_name table_name line code_line) :pk-data (repace-ast-add ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))}
+                                                                {:schema_name schema_name :table_name table_name :sql (format "%s %s.%s %s (%s)" alter_table schema_name table_name line code_line) :pk-data (repace-ast-add ignite schema_name table_name (-> (my-create-table/get_pk_data lst_table_item) :data))})
                       :else
                       (throw (Exception. "修改表的语句有错误！")))
                 (throw (Exception. "MY_META 数据集中的原始表不能被修改！"))))
