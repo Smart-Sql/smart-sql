@@ -110,6 +110,7 @@ public class MyCacheExUtil implements Serializable {
                     myLog.rollback(transSession);
                     tx.rollback();
                 }
+                throw ex;
             } finally {
                 if (tx != null) {
                     tx.close();
@@ -143,7 +144,7 @@ public class MyCacheExUtil implements Serializable {
                 if (tx != null) {
                     tx.rollback();
                 }
-                ex.printStackTrace();
+                throw ex;
             } finally {
                 if (tx != null) {
                     tx.close();

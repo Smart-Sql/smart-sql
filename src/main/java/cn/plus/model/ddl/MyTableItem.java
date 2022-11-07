@@ -10,7 +10,7 @@ public class MyTableItem implements Serializable {
     private Integer column_len;
     private Integer scale;
     private String column_type = "";
-    private Boolean not_null = true;
+    private Boolean not_null = false;
     private Boolean pkid = false;
     private String comment = "";
     //private Integer comment_len;

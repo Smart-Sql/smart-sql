@@ -279,6 +279,7 @@
                                 (cond (not (nil? (.getDefault_value (get vs-data f)))) (if (string? (.getDefault_value (get vs-data f)))
                                                                                            (recur r (conj lst {:define (get vs-data f) :vs [(.getDefault_value (get vs-data f))]}))
                                                                                            (recur r (conj lst {:define (get vs-data f) :vs [(str (.getDefault_value (get vs-data f)))]})))
+                                      (true? (.getNot_null (get vs-data f))) (throw (Exception. (format "字段 %s 不能为空！" (.getColumn_name (get vs-data f)))))
                                       :else (recur r lst)
                                       ))
                             lst)))]
