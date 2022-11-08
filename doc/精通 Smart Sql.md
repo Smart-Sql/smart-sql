@@ -995,6 +995,7 @@ Smart Sql 完全支持标准 SQL。同时它还支持对 函数的联级调用�
 select * from person where id = get_range_id(1, 5).first();
 ```
 ### 5、对 noSql 的支持
+
 noSql 的数据结构为 key-value 形式的 hash map。<br/>
 它分为两种类型：<br/>
 1、纯内存 cahe，它有缓存大小的现在，有缓存退出的策略。默认我们选择 RANDOM_2_LRU 作为退出策略。相应的参数可以在配置文件中配置<br/>
@@ -1134,6 +1135,7 @@ job_snapshot('get_cron_time');
 ```
 
 ### 7、自定义扩展的方法
+
 在使用 Smart Sql 中，用户自己可以扩展 Smart Sql 中的方法。具体做法分两步：
 1. 用户自己把程序打包成 jar 包，放到安装文件夹 lib 目录下面的 cls 文件夹下。
 2. 调用 add_func 将 jar 包中的方法，注册到 Smart Sql。
@@ -1330,8 +1332,10 @@ remove_func(my_println)；
 3. 尽量用函数式架构思想来，设计和实现程序。
 
 ### 9、如何用 jdbc 访问 Smart Sql 数据库
+
 Smart Sql 扩展了 JDBC 的用法。让 jdbc 可以直接调用里面的方法，除此之外，用 JDBC 访问 Smart Sql 和访问其它数据库一样。
 例如：使用 root 用户的 jdbc 链接可以访问 get_user_group 内置方法，输入用户 token 查询结果
+
 ```java
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
         String url = "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=dafu";
@@ -1368,6 +1372,7 @@ Smart Sql 扩展了 JDBC 的用法。让 jdbc 可以直接调用里面的方法�
 ## Smart Sql 的运维
 
 ### Smart Sql 集群异地强一致性实时多活解决方案
+
   在金融行业中，我们要求数据是 100% 一致性，且稳定性要达到 5 个 9 既 99.999%。例如：我们有深圳机房、上海机房、贵州机房。我们要把深圳机房集群中的数据，实时事务性的复制到上海机房和贵州机房的集群。即使是深圳上海受到不可能抗击的毁灭，都不会影响数据的完整性、安全性、可用性！
   要达到这种要求，我们依赖两个机制，一个是集群本身，备份数据机制，既通过设置配置参数，可以达到一个集群中的，部分机器完全坏掉后，集群照样不受影响。二是依赖实时同步的事务机制，既深圳机房中集群的数据，是事务性的复杂到，其它集群。
   集群异地实时事务复制机制的原理：
