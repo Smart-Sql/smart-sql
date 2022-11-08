@@ -332,16 +332,21 @@
         (MyNoSqlUtil/createCacheSave ignite schema_name table_name is_cache mode maxSize)
         (throw (Exception. "该用户组没有添加 cache 的权限！"))))
 
+(defn get-is-cache [is_cache ign_cache]
+    (if (true? ign_cache)
+        is_cache false))
+
 (defn my-create [ignite group_id my-obj]
-    (let [{table_name "table_name" is_cache "is_cache" mode "mode" maxSize "maxSize"} (re-ht (my-lexical/get-value my-obj))]
-        (if-let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema table_name)]
-            (if (= schema_name "")
-                (my-create-cache ignite group_id (nth group_id 1) table_name is_cache mode maxSize)
-                (cond (my-lexical/is-eq? (nth group_id 1) schema_name) (my-create-cache ignite group_id (nth group_id 1) table_name is_cache mode maxSize)
-                      (= (first group_id) 0) (my-create-cache ignite group_id schema_name table_name is_cache mode maxSize)
-                      :else
-                      (throw (Exception. "该用户组不能在其它用户组添加 cache 的！"))
-                      )))
+    (let [{table_name "table_name" is_cache_0 "is_cache" mode "mode" maxSize "maxSize"} (re-ht (my-lexical/get-value my-obj)) ign_cache (.getCache (.configuration ignite))]
+        (let [is_cache (get-is-cache is_cache_0 ign_cache)]
+            (if-let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema table_name)]
+                (if (= schema_name "")
+                    (my-create-cache ignite group_id (nth group_id 1) table_name is_cache mode maxSize)
+                    (cond (my-lexical/is-eq? (nth group_id 1) schema_name) (my-create-cache ignite group_id (nth group_id 1) table_name is_cache mode maxSize)
+                          (= (first group_id) 0) (my-create-cache ignite group_id schema_name table_name is_cache mode maxSize)
+                          :else
+                          (throw (Exception. "该用户组不能在其它用户组添加 cache 的！"))
+                          ))))
         ))
 
 (defn my-get-value [ignite group_id my-obj]
