@@ -414,6 +414,7 @@ rm_view('wudafu_group', 'public.Categories', 'select');
 
 ## Smart Sql
 ### Smart Sql 函数的定义：
+
 用 function 来定义函数
 ```sql
 function 函数名 (参数:参数类型, 参数:参数类型)
@@ -474,10 +475,12 @@ for (参数 in 序列或者Iterator)
 }
 ```
 #### 只有序列和 Iterator(迭代) 的数据类型才能使用 for 循环
+
 **特别注意：对于 C/C++， java 程序员来说，for 循环是可以有数字的，但是 smart sql 中只能是序列或者迭代**
 **如果需要达到向数字一样的结果，smart sql 用 range 函数先生成这个序列，在来循环其中的每一项**
 例如：
 java 程序是这么做
+
 ```java
 // 输入一个数字，做累加
 public int add(int n)

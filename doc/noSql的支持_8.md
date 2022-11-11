@@ -7,7 +7,9 @@ NoSql 的数据结构为 key-value 形式的 hash map。<br/>
 ![cache_lru](/Users/chenfei/Documents/资料/SupperSql/SmartSql/smart_sql_img/cache_lru.jpg)
 
 **注意：纯内存模式，默认是不开启的！开启纯内存模式之前一定要做严格的 POC 来确定项目中要开启纯内存模式所需的内存大小，避免在项目中频繁生成大量的纯内存 cache 使得划定的内存不够用，造成的错误！**
-![cache](/Users/chenfei/Documents/资料/SupperSql/SmartSql/smart_sql_img/cache.jpg)
+
+![cache](/Users/chenfei/Documents/Java/MyGridGain/smart-sql/doc/smart_sql_img/cache.jpg)
+
 
 2、可持久化的 cache。这种 cache 一部分在内存中，全部数据在磁盘上。
 
