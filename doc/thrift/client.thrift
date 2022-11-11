@@ -12,5 +12,5 @@ service MyRpcService
      *  执行 sql
      *  参数 sql 语句
      */
-    string executeSqlQuery(1: string sql)
+    string executeSqlQuery(1: string userToken, 2: string sql, 3: string ps)
 }

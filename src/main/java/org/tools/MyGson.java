@@ -17,6 +17,11 @@ public class MyGson {
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .create();
 
+    public static Hashtable<String, Object> getHashtable(final String line)
+    {
+        return gson.fromJson(line, new TypeToken<Hashtable<String, Object>>(){}.getType());
+    }
+
     public static String groupObjToLine(final PersistentVector vs)
     {
         return gson.toJson(vs);

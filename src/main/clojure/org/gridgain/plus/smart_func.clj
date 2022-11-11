@@ -300,7 +300,7 @@
                 ))))
 
 (defn init-job [^Ignite ignite]
-    (let [group_id [0 "MY_META" "all" -1]]
+    (let [group_id [0 "MY_META" "all"]]
         (let [rs (my-smart-db/query_sql ignite group_id "select m.job_name, m.group_id, m.cron, m.ps from my_cron m" nil)]
             (loop [M-F-v156-I-Q157-c-Y (my-lexical/get-my-iter rs)]
                 (if (.hasNext M-F-v156-I-Q157-c-Y)

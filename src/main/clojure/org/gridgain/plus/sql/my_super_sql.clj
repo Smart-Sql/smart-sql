@@ -177,8 +177,8 @@
                    ; drop dataset
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "schema")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (cull-semicolon lst))]
                                                                                                                                      (if-not (nil? rs)
-                                                                                                                                         "select show_msg('true') as tip"
-                                                                                                                                         "select show_msg('false') as tip"))
+                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('true') as tip;"))
+                                                                                                                                         (recur ignite group_id r (conj lst-rs "select show_msg('false') as tip;"))))
                    ; create table
                    (and (string? (first lst)) (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/my_create_table_lst ignite group_id (cull-semicolon lst))]
                                                                                                                                      (if (nil? rs)

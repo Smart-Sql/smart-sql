@@ -14,7 +14,7 @@
              (org.apache.ignite.internal IgnitionEx)
              (com.google.common.base Strings)
              (org.gridgain.smart MyVar MyLetLayer)
-             (org.tools MyConvertUtil KvSql MyDbUtil MyLineToBinary)
+             (org.tools MyGson MyConvertUtil KvSql MyDbUtil MyLineToBinary)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache MyNoSqlCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk)
@@ -203,6 +203,45 @@
     (if (.isMultiUserGroup (.configuration ignite))
         (my-log-authority ignite group_id lst)
         (my-log-no-authority ignite group_id lst)
+        ))
+
+(defn rpc-limit [start size]
+    [{:table_alias "", :item_name (format "%s" start), :item_type "", :java_item_type java.lang.Integer, :const true}
+     {:comma_symbol ","}
+     {:table_alias "", :item_name (format "%s" size), :item_type "", :java_item_type java.lang.Integer, :const true}])
+
+(defn rpc-ast-limit [ast start size]
+    (loop [[f & r] ast lst []]
+        (if (some? f)
+            (if (contains? f :sql_obj)
+                (if (nil? (-> f :sql_obj :limit))
+                    (recur r (conj lst (assoc (-> f :sql_obj) :limit (rpc-limit start size))))
+                    (recur r (conj lst f)))
+                (recur r (conj lst f))))))
+
+(defn rpc-ast-count [ast]
+    (loop [[f & r] ast lst []]
+        (if (some? f)
+            (if (contains? f :sql_obj)
+                (recur r (conj lst (assoc (-> f :sql_obj) :query-items [{:func-name "count", :lst_ps ({:operation_symbol "*"})}])))
+                (recur r (conj lst f))))))
+
+(defn rpc_select-authority [ignite group_id lst ps]
+    (if-let [ast (my-select-plus/sql-to-ast lst)]
+        (if (nil? ps)
+            (let [{start :start size :size} (MyGson/getHashtable ps)]
+                (let [ast-limit (rpc-ast-limit ast start size) ast-count (rpc-ast-count ast)]
+                    )))
+        (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)))
+
+(defn rpc_select-no-authority [ignite group_id lst ps]
+    (if-let [ast (my-select-plus/sql-to-ast lst)]
+        (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)))
+
+(defn rpc_select_sql [ignite group_id lst ps]
+    (if (.isMultiUserGroup (.configuration ignite))
+        (rpc_select-authority ignite group_id lst ps)
+        (rpc_select-no-authority ignite group_id lst ps)
         ))
 
 (defn -my_query_sql [^Ignite ignite group_id ^List lst]
