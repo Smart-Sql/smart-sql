@@ -232,7 +232,8 @@
             (let [{start :start size :size} (MyGson/getHashtable ps)]
                 (let [ast-limit (rpc-ast-limit ast start size) ast-count (rpc-ast-count ast)]
                     )))
-        (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)))
+        ;(-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
+        ))
 
 (defn rpc_select-no-authority [ignite group_id lst ps]
     (if-let [ast (my-select-plus/sql-to-ast lst)]
