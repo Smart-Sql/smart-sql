@@ -226,18 +226,28 @@
                 (recur r (conj lst (assoc (-> f :sql_obj) :query-items [{:func-name "count", :lst_ps ({:operation_symbol "*"})}])))
                 (recur r (conj lst f))))))
 
+;(defn rpc_select-authority [ignite group_id lst ps]
+;    (if-let [ast (my-select-plus/sql-to-ast lst)]
+;        (if (nil? ps)
+;            (let [{start :start size :size} (MyGson/getHashtable ps)]
+;                (let [ast-limit (rpc-ast-limit ast start size) ast-count (rpc-ast-count ast)]
+;                    )))
+;        ;(-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
+;        ))
+
 (defn rpc_select-authority [ignite group_id lst ps]
     (if-let [ast (my-select-plus/sql-to-ast lst)]
-        (if (nil? ps)
-            (let [{start :start size :size} (MyGson/getHashtable ps)]
-                (let [ast-limit (rpc-ast-limit ast start size) ast-count (rpc-ast-count ast)]
-                    )))
+        (if (my-lexical/null-or-empty? ps)
+            (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
+                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))))
         ;(-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
         ))
 
 (defn rpc_select-no-authority [ignite group_id lst ps]
     (if-let [ast (my-select-plus/sql-to-ast lst)]
-        (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)))
+        (if (my-lexical/null-or-empty? ps)
+            (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
+                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))))))
 
 (defn rpc_select_sql [ignite group_id lst ps]
     (if (.isMultiUserGroup (.configuration ignite))

@@ -25,6 +25,7 @@
     (:import (org.apache.ignite Ignite Ignition IgniteCache)
              (org.apache.ignite.internal IgnitionEx)
              (com.google.common.base Strings)
+             (org.tools MyGson)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk)
@@ -33,6 +34,7 @@
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
              (java.util ArrayList List Hashtable Date Iterator)
+             (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (java.sql Timestamp)
              (java.math BigDecimal)
              )
@@ -111,7 +113,9 @@
                               (recur ignite group_id r (conj lst-rs smart-sql-obj) ps)))
                       )
                   ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
-                  ))))
+                  ))
+        (if-not (empty? lst-rs)
+            (last lst-rs))))
 
 ;(defn execute-sql-query [^String userToken ^String sql ^String ps]
 ;    (if-let [group_id (my-user-group/get_user_group (Ignition/ignite) userToken) lst (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment sql))]
@@ -119,10 +123,15 @@
 
 (defn execute-sql-query [^String userToken ^String sql ^String ps]
     (if-let [lst (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment sql))]
-        (execute-sql-query-lst (Ignition/ignite) nil lst [] ps)))
+        (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) userToken) lst [] ps)))
 
 (defn -executeSqlQuery [this ^String userToken ^String sql ^String ps]
-    (execute-sql-query userToken sql ps))
+    (let [m (execute-sql-query userToken sql ps)]
+        (cond (map? m) (MyGson/groupObjToLine m)
+              (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
+              :else (str m)
+              ))
+    )
 
 
 

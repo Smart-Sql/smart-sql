@@ -387,6 +387,7 @@
                         (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? (-> dic-args :dic) item_name)
                                                                                                     {:sql "?" :args [(first (get (-> dic-args :dic) item_name))]}
                                                                                                     {:sql item_name :args nil})
+                        (and (Strings/isNullOrEmpty table_alias) (not (Strings/isNullOrEmpty alias))) {:sql (str/join [item_name " as " alias]) :args nil}
                         )))
             (table-to-line [ignite group_id dic-args m]
                 (if (some? m)

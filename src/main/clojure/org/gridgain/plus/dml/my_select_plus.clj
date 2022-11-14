@@ -42,7 +42,7 @@
 (defn get-scenes [^Ignite ignite ^String scenes_name]
     (scenesObj. nil nil))
 
-(declare sql-to-ast get-my-sql-to-ast my-get-items my-get-items-as ar-to-sql my-array-to-sql ast_to_sql)
+(declare sql-to-ast get-my-sql-to-ast my-get-items my-get-items-as ar-to-sql my-array-to-sql ast_to_sql query-to-sql)
 
 (defn get-my-sql-to-ast [m]
     (try
@@ -601,7 +601,9 @@
                                 (my-lexical/is-eq? (first rs) "as") {:item-lst (reverse (rest rs)) :alias f}
                                 (and (= (count rs) 1) (= (first rs) (last rs))) {:item-lst (first rs) :alias f}
                                 (and (my-lexical/is-word? f) (= (first rs) ")")) {:item-lst (reverse rs) :alias f}
+                                ;(= (first rs) ")") {:item-lst (reverse rs) :alias f}
                                 (and (my-lexical/is-word? f) (my-lexical/is-word? (first rs)) (not (my-lexical/is-word? (second rs))) (> (count rs) 2)) {:item-lst (reverse rs) :alias f}
+                                ;(and (not (my-lexical/is-word? (second rs))) (> (count rs) 2)) {:item-lst (reverse rs) :alias f}
                                 :else
                                 {:item-lst (reverse (concat [f] rs)) :alias nil}
                                 ))]
@@ -796,19 +798,21 @@
                                                  (cond (contains? f :when) (recur r (conj lst-rs {:when (get-token (rest (-> f :when))) :then (get-token (rest (-> f :then)))}))
                                                        (contains? f :else) (recur r (conj lst-rs {:else (get-token (rest (-> f :else)))}))
                                                        )
-                                                 (concat [(assoc {:case-when lst-rs} :alias alias)] (get-query-items rs))))
+                                                 (if-not (Strings/isNullOrEmpty alias)
+                                                     (concat [(assoc {:case-when lst-rs} :alias alias)] (get-query-items rs))
+                                                     (concat [(assoc {:case-when lst-rs} :alias (format "\"%s\"" (-> (query-to-sql nil {:case-when lst-rs}) :sql)))] (get-query-items rs)))))
                                          (if-let [tk (get-token item-lst)]
-                                             (cond (contains? tk :func-name) (if-not (Strings/isNullOrEmpty alias)
+                                             (cond (contains? tk :item_name) (if-not (Strings/isNullOrEmpty alias)
                                                                                  (concat [(assoc tk :alias alias)] (get-query-items rs))
-                                                                                 ;(concat [(assoc tk :alias (str (gensym (-> tk :func-name))))] (get-query-items rs))
-                                                                                 (concat [(assoc tk :alias nil)] (get-query-items rs)))
-                                                   (contains? tk :func-link) (if-not (Strings/isNullOrEmpty alias)
-                                                                                 (concat [(assoc tk :alias alias)] (get-query-items rs))
-                                                                                 ;(concat [(assoc tk :alias (str (gensym (-> (first (-> tk :func-link)) :func-name))))] (get-query-items rs))
-                                                                                 (concat [(assoc tk :alias nil)] (get-query-items rs)))
-                                                   :else
-                                                   (concat [(assoc tk :alias alias)] (get-query-items rs))
-                                                   )))
+                                                                                 ;(concat [(assoc tk :alias (-> tk :item_name))] (get-query-items rs))
+                                                                                 (concat [tk] (get-query-items rs))
+                                                                                 )
+                                                   (or (contains? tk :comma_symbol) (contains? tk :and_or_symbol) (contains? tk :keyword) (contains? tk :comparison_symbol) (contains? tk :in_symbol) (contains? tk :operation_symbol) (contains? tk :join) (contains? tk :on) (contains? tk :comma_symbol))  (concat [tk] (get-query-items rs))
+                                                   :else (if-not (Strings/isNullOrEmpty alias)
+                                                             (concat [(assoc tk :alias alias)] (get-query-items rs))
+                                                             (concat [(assoc tk :alias (format "\"%s\"" (-> (query-to-sql nil tk) :sql)))] (get-query-items rs)))
+                                                   )
+                                             ))
                                      ))))
             (sql-to-ast-single [sql-lst]
                 (when-let [{query-items :query-items table-items :table-items where-items :where-items group-by :group-by having :having order-by :order-by limit :limit} (my-lexical/get-segments-list sql-lst)]
@@ -1150,174 +1154,156 @@
                          (throw (Exception. "select 语句错误！"))) lst_rs)))]
         (select-to-sql ignite group_id ast)))
 
-;(defn query-to-sql [ignite group_id dic-args ast]
-;    (letfn [(my-select_to_sql_single [ignite group_id dic-args ast]
-;                (loop [[f & r] ast sb (StringBuilder.) args []]
-;                    (if (some? f)
-;                        (cond (= (first f) :query-items) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-;                                                             (recur r (doto sb (.append "select ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-;                              (= (first f) :table-items) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-;                                                             (recur r (doto sb (.append " from ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-;                              (and (= (first f) :where-items) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-;                                                                                                                (recur r (doto sb (.append " where ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-;                              (and (= (first f) :group-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-;                                                                                                             (recur r (doto sb (.append " group by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-;                              (and (= (first f) :having) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-;                                                                                                           (recur r (doto sb (.append " having ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-;                              (and (= (first f) :order-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-;                                                                                                             (recur r (doto sb (.append " order by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-;                              (and (= (first f) :limit) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line ignite group_id dic-args (second f))]
-;                                                                                                          (recur r (doto sb (.append " limit ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
-;                              :else
-;                              (recur r sb args)
-;                              )
-;                        {:sql (.toString sb) :args args})))
-;            (get-map-token-to-sql [m]
-;                (loop [[f & r] m lst-sql [] lst-args []]
-;                    (if (some? f)
-;                        (let [{sql :sql args :args} f]
-;                            (recur r (concat lst-sql [sql]) (concat lst-args args))
-;                            )
-;                        {:sql lst-sql :args lst-args})))
-;            (lst-token-to-line
-;                ([ignite group_id dic-args lst_token] (cond (string? lst_token) lst_token
-;                                                            (map? lst_token) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args lst_token)]
-;                                                                                 {:sql (my-array-to-sql sql) :args args})
-;                                                            :else
-;                                                            (let [{sql :sql args :args} (lst-token-to-line ignite group_id dic-args lst_token [] [])]
-;                                                                {:sql (my-array-to-sql sql) :args args})
-;                                                            ))
-;                ([ignite group_id dic-args [f & rs] lst lst-args]
-;                 (if (some? f)
-;                     (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args f)]
-;                         (recur ignite group_id dic-args rs (conj lst (my-array-to-sql sql)) (concat lst-args args)))
-;                     {:sql lst :args lst-args})))
-;            (token-to-sql [ignite group_id dic-args m]
-;                (if (some? m)
-;                    (cond (my-lexical/is-seq? m) (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) m))
-;                          (map? m) (map-token-to-sql ignite group_id dic-args m))))
-;            (map-token-to-sql
-;                [ignite group_id dic-args m]
-;                (if (some? m)
-;                    (cond
-;                        (contains? m :sql_obj) (select-to-sql ignite group_id dic-args m)
-;                        (and (contains? m :func-name) (contains? m :lst_ps)) (func-to-line ignite group_id dic-args m)
-;                        (contains? m :func-link) (func-link-to-line ignite group_id dic-args m)
-;                        (contains? m :and_or_symbol) {:sql (get m :and_or_symbol) :args nil} ;(get m :and_or_symbol)
-;                        (contains? m :keyword) {:sql (get m :keyword) :args nil} ;(get m :keyword)
-;                        (contains? m :operation) (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (get m :operation)))
-;                        (contains? m :comparison_symbol) {:sql (get m :comparison_symbol) :args nil} ; (get m :comparison_symbol)
-;                        (contains? m :in_symbol) {:sql (get m :in_symbol) :args nil} ; (get m :in_symbol)
-;                        (contains? m :operation_symbol) {:sql (get m :operation_symbol) :args nil} ; (get m :operation_symbol)
-;                        (contains? m :join) {:sql (get m :join) :args nil} ;(get m :join)
-;                        (contains? m :on) (on-to-line ignite group_id dic-args m)
-;                        (contains? m :comma_symbol) {:sql (get m :comma_symbol) :args nil} ;(get m :comma_symbol)
-;                        (contains? m :order-item) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (-> m :order-item))]
-;                                                      (if (string? sql)
-;                                                          {:sql (format "%s %s" sql (-> m :order)) :args args}
-;                                                          {:sql (format "%s %s" (str/join sql) (-> m :order)) :args args}))
-;                        (contains? m :item_name) (item-to-line dic-args m)
-;                        (contains? m :table_name) (table-to-line ignite group_id dic-args m)
-;                        (contains? m :exists) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (get (get m :select_sql) :parenthesis))]
-;                                                  {:sql (concat [(get m :exists) "("] sql [")"]) :args args})
-;                        (contains? m :parenthesis) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (get m :parenthesis))]
-;                                                       (if (contains? m :alias)
-;                                                           {:sql (concat ["("] sql [")" " " (-> m :alias)]) :args args}
-;                                                           {:sql (concat ["("] sql [")"]) :args args}))
-;                        (contains? m :case-when) (case-when-line ignite group_id dic-args m)
-;                        :else
-;                        (throw (Exception. "select 语句错误！请仔细检查！"))
-;                        )))
-;            (case-when-line [ignite group_id dic-args m]
-;                (loop [[f & r] (-> m :case-when) lst-rs ["case"] args []]
-;                    (if (some? f)
-;                        (cond (contains? f :when) (let [{when-sql :sql when-agrs :args} (lst-token-to-line ignite group_id dic-args (-> f :when)) {then-sql :sql then-agrs :args} (lst-token-to-line ignite group_id dic-args (-> f :then))]
-;                                                      (recur r (concat lst-rs ["when" when-sql "then" then-sql]) (concat args when-agrs then-agrs)))
-;                              (contains? f :else) (let [{else-sql :sql else-agrs :args} (lst-token-to-line ignite group_id dic-args (-> f :else))]
-;                                                      (recur r (concat lst-rs ["else" else-sql]) else-agrs))
-;                              )
-;                        {:sql (concat lst-rs ["end"]) :args (filter #(not (nil? %)) args)})))
-;            (on-to-line [ignite group_id dic-args m]
-;                (if (some? m)
-;                    (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (get m :on))]
-;                        {:sql (str/join ["on " (str/join " " sql)]) :args args})
-;                    ))
-;            (func-to-line [ignite group_id dic-args m]
-;                (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
-;                    (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
-;                        (if-not (empty? (-> m :lst_ps))
-;                            {:sql (concat [(format "%s(" (-> m :func-name))] sql [") as " (-> m :alias)]) :args args}
-;                            {:sql (concat [(format "%s(" (-> m :func-name))] [") as " (-> m :alias)]) :args args})
-;                        (if-not (empty? (-> m :lst_ps))
-;                            {:sql (concat [(format "%s(" (-> m :func-name))] sql [")"]) :args args}
-;                            {:sql (concat [(format "%s(" (-> m :func-name))] [")"]) :args args}))))
-;            (func-link-to-line [ignite group_id dic-args m]
-;                (my-lexical/my-func-line-code m)
-;                ;(let [{sql :sql args :args} (my-lexical/my-func-line-code m)]
-;                ;    (loop [[f & r] args lst-ps [(MyGson/groupObjToLine group_id)] lst-args []]
-;                ;        (if (some? f)
-;                ;            (if (contains? (-> dic-args :dic) f)
-;                ;                (recur r (conj lst-ps "?") (conj lst-args (first (get (-> dic-args :dic) f))))
-;                ;                (recur r (conj lst-ps f) lst-args))
-;                ;            {:sql (str/join ["my_invoke_link('" sql "'," (str/join "," lst-ps) ")"]) :args lst-args})))
-;                )
-;            (item-to-line [dic-args m]
-;                (let [{table_alias :table_alias item_name :item_name alias :alias} m]
-;                    (cond
-;                        (and (not (Strings/isNullOrEmpty table_alias)) (not (nil? alias)) (not (Strings/isNullOrEmpty alias))) {:sql (str/join [table_alias "." item_name " as " alias]) :args nil}
-;                        (and (not (Strings/isNullOrEmpty table_alias)) (Strings/isNullOrEmpty alias)) {:sql (str/join [table_alias "." item_name]) :args nil}
-;                        (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? (-> dic-args :dic) item_name)
-;                                                                                                    {:sql "?" :args [(first (get (-> dic-args :dic) item_name))]}
-;                                                                                                    {:sql item_name :args nil})
-;                        )))
-;            (table-to-line [ignite group_id dic-args m]
-;                (if (some? m)
-;                    (if-let [{schema_name :schema_name table_name :table_name table_alias :table_alias hints :hints} m]
-;                        (if-not (Strings/isNullOrEmpty schema_name)
-;                            (if (Strings/isNullOrEmpty table_alias)
-;                                (if (Strings/isNullOrEmpty hints)
-;                                    {:sql (format "%s.%s" schema_name table_name) :args nil}
-;                                    {:sql (format "%s.%s %s" schema_name table_name hints) :args nil})
-;                                (if (Strings/isNullOrEmpty hints)
-;                                    {:sql (str/join [(format "%s.%s" schema_name table_name) " " table_alias]) :args nil}
-;                                    {:sql (str/join [(format "%s.%s %s" schema_name table_name hints) " " table_alias]) :args nil}))
-;                            (if (= (first group_id) 0)
-;                                (if (Strings/isNullOrEmpty table_alias)
-;                                    (if (Strings/isNullOrEmpty hints)
-;                                        {:sql (format "MY_META.%s" table_name) :args nil}
-;                                        {:sql (format "MY_META.%s %s" table_name hints) :args nil})
-;                                    (if (Strings/isNullOrEmpty hints)
-;                                        {:sql (str/join [(format "MY_META.%s" table_name) " " table_alias]) :args nil}
-;                                        {:sql (str/join [(format "MY_META.%s %s" table_name hints) " " table_alias]) :args nil}))
-;                                (let [schema_name (get_schema_name ignite group_id)]
-;                                    (if (Strings/isNullOrEmpty table_alias)
-;                                        (if (Strings/isNullOrEmpty hints)
-;                                            {:sql (format "%s.%s" schema_name table_name) :args nil}
-;                                            {:sql (format "%s.%s %s" schema_name table_name hints) :args nil})
-;                                        (if (Strings/isNullOrEmpty hints)
-;                                            {:sql (str/join [(format "%s.%s" schema_name table_name) " " table_alias]) :args nil}
-;                                            {:sql (str/join [(format "%s.%s %s" schema_name table_name hints) " " table_alias]) :args nil})))))
-;                        )))
-;            ; 获取 data_set 的名字和对应的表
-;            (get_schema_name [^Ignite ignite ^Long group_id]
-;                (second group_id))
-;            (select-to-sql
-;                ([ignite group_id dic-args ast]
-;                 (cond (and (some? ast) (instance? clojure.lang.LazySeq ast)) (let [{sql :sql args :args} (select-to-sql ignite group_id dic-args ast [] [])]
-;                                                                                  {:sql sql :args args})
-;                       (contains? ast :sql_obj) (my-select_to_sql_single ignite group_id dic-args (get ast :sql_obj))
-;                       :else
-;                       (throw (Exception. "select 语句错误！"))))
-;                ([ignite group_id dic-args [f & rs] lst_rs lst-args]
-;                 (if (some? f)
-;                     (if (map? f)
-;                         (cond (contains? f :sql_obj) (let [{sql :sql args :args} (my-select_to_sql_single ignite group_id dic-args (get f :sql_obj))]
-;                                                          (recur ignite group_id dic-args rs (conj lst_rs sql) (filter #(not (nil? %)) (concat lst-args args))))
-;                               (contains? f :keyword) (recur ignite group_id dic-args rs (conj lst_rs (get f :keyword)) lst-args)
-;                               :else
-;                               (throw (Exception. "select 语句错误！"))) (throw (Exception. "select 语句错误！")))
-;                     {:sql (str/join " " lst_rs) :args (filter #(not (nil? %)) lst-args)})))]
-;        (token-to-sql ignite group_id dic-args ast)))
+(defn query-to-sql [dic-args ast]
+    (letfn [(my-select_to_sql_single [dic-args ast]
+                (loop [[f & r] ast sb (StringBuilder.) args []]
+                    (if (some? f)
+                        (cond (= (first f) :query-items) (let [tk (lst-token-to-line dic-args (second f))]
+                                                             (recur r (doto sb (.append "select ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (= (first f) :table-items) (let [tk (lst-token-to-line dic-args (second f))]
+                                                             (recur r (doto sb (.append " from ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :where-items) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line dic-args (second f))]
+                                                                                                                (recur r (doto sb (.append " where ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :group-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line dic-args (second f))]
+                                                                                                             (recur r (doto sb (.append " group by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :having) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line dic-args (second f))]
+                                                                                                           (recur r (doto sb (.append " having ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :order-by) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line dic-args (second f))]
+                                                                                                             (recur r (doto sb (.append " order by ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              (and (= (first f) :limit) (some? (second f)) (not (empty? (second f)))) (let [tk (lst-token-to-line dic-args (second f))]
+                                                                                                          (recur r (doto sb (.append " limit ") (.append (-> tk :sql))) (concat args (filter #(not (nil? %)) (-> tk :args)))))
+                              :else
+                              (recur r sb args)
+                              )
+                        {:sql (.toString sb) :args args})))
+            (get-map-token-to-sql [m]
+                (loop [[f & r] m lst-sql [] lst-args []]
+                    (if (some? f)
+                        (let [{sql :sql args :args} f]
+                            (recur r (concat lst-sql [sql]) (concat lst-args args))
+                            )
+                        {:sql lst-sql :args lst-args})))
+            (lst-token-to-line
+                ([dic-args lst_token] (cond (string? lst_token) lst_token
+                                                            (map? lst_token) (let [{sql :sql args :args} (token-to-sql dic-args lst_token)]
+                                                                                 {:sql (my-array-to-sql sql) :args args})
+                                                            :else
+                                                            (let [{sql :sql args :args} (lst-token-to-line dic-args lst_token [] [])]
+                                                                {:sql (my-array-to-sql sql) :args args})
+                                                            ))
+                ([dic-args [f & rs] lst lst-args]
+                 (if (some? f)
+                     (let [{sql :sql args :args} (token-to-sql dic-args f)]
+                         (recur dic-args rs (conj lst (my-array-to-sql sql)) (concat lst-args args)))
+                     {:sql lst :args lst-args})))
+            (token-to-sql [dic-args m]
+                (if (some? m)
+                    (cond (my-lexical/is-seq? m) (get-map-token-to-sql (map (partial token-to-sql dic-args) m))
+                          (map? m) (map-token-to-sql dic-args m))))
+            (map-token-to-sql
+                [dic-args m]
+                (if (some? m)
+                    (cond
+                        (contains? m :sql_obj) (select-to-sql dic-args m)
+                        (and (contains? m :func-name) (contains? m :lst_ps)) (func-to-line dic-args m)
+                        (contains? m :func-link) (func-link-to-line dic-args m)
+                        (contains? m :and_or_symbol) {:sql (get m :and_or_symbol) :args nil} ;(get m :and_or_symbol)
+                        (contains? m :keyword) {:sql (get m :keyword) :args nil} ;(get m :keyword)
+                        (contains? m :operation) (get-map-token-to-sql (map (partial token-to-sql dic-args) (get m :operation)))
+                        (contains? m :comparison_symbol) {:sql (get m :comparison_symbol) :args nil} ; (get m :comparison_symbol)
+                        (contains? m :in_symbol) {:sql (get m :in_symbol) :args nil} ; (get m :in_symbol)
+                        (contains? m :operation_symbol) {:sql (get m :operation_symbol) :args nil} ; (get m :operation_symbol)
+                        (contains? m :join) {:sql (get m :join) :args nil} ;(get m :join)
+                        (contains? m :on) (on-to-line dic-args m)
+                        (contains? m :comma_symbol) {:sql (get m :comma_symbol) :args nil} ;(get m :comma_symbol)
+                        (contains? m :order-item) (let [{sql :sql args :args} (token-to-sql dic-args (-> m :order-item))]
+                                                      (if (string? sql)
+                                                          {:sql (format "%s %s" sql (-> m :order)) :args args}
+                                                          {:sql (format "%s %s" (str/join sql) (-> m :order)) :args args}))
+                        (contains? m :item_name) (item-to-line dic-args m)
+                        (contains? m :table_name) (table-to-line dic-args m)
+                        (contains? m :exists) (let [{sql :sql args :args} (token-to-sql dic-args (get (get m :select_sql) :parenthesis))]
+                                                  {:sql (concat [(get m :exists) "("] sql [")"]) :args args})
+                        (contains? m :parenthesis) (let [{sql :sql args :args} (token-to-sql dic-args (get m :parenthesis))]
+                                                       (if (contains? m :alias)
+                                                           {:sql (concat ["("] sql [")" " " (-> m :alias)]) :args args}
+                                                           {:sql (concat ["("] sql [")"]) :args args}))
+                        (contains? m :case-when) (case-when-line dic-args m)
+                        :else
+                        (throw (Exception. "select 语句错误！请仔细检查！"))
+                        )))
+            (case-when-line [dic-args m]
+                (loop [[f & r] (-> m :case-when) lst-rs ["case"] args []]
+                    (if (some? f)
+                        (cond (contains? f :when) (let [{when-sql :sql when-agrs :args} (lst-token-to-line dic-args (-> f :when)) {then-sql :sql then-agrs :args} (lst-token-to-line dic-args (-> f :then))]
+                                                      (recur r (concat lst-rs ["when" when-sql "then" then-sql]) (concat args when-agrs then-agrs)))
+                              (contains? f :else) (let [{else-sql :sql else-agrs :args} (lst-token-to-line dic-args (-> f :else))]
+                                                      (recur r (concat lst-rs ["else" else-sql]) else-agrs))
+                              )
+                        {:sql (concat lst-rs ["end"]) :args (filter #(not (nil? %)) args)})))
+            (on-to-line [dic-args m]
+                (if (some? m)
+                    (let [{sql :sql args :args} (token-to-sql dic-args (get m :on))]
+                        {:sql (str/join ["on " (str/join " " sql)]) :args args})
+                    ))
+            (func-to-line [dic-args m]
+                (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql dic-args) (-> m :lst_ps)))]
+                    (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+                        (if-not (empty? (-> m :lst_ps))
+                            {:sql (concat [(format "%s(" (-> m :func-name))] sql [") as " (-> m :alias)]) :args args}
+                            {:sql (concat [(format "%s(" (-> m :func-name))] [") as " (-> m :alias)]) :args args})
+                        (if-not (empty? (-> m :lst_ps))
+                            {:sql (concat [(format "%s(" (-> m :func-name))] sql [")"]) :args args}
+                            {:sql (concat [(format "%s(" (-> m :func-name))] [")"]) :args args}))))
+            (func-link-to-line [dic-args m]
+                (my-lexical/my-func-line-code m)
+                ;(let [{sql :sql args :args} (my-lexical/my-func-line-code m)]
+                ;    (loop [[f & r] args lst-ps [(MyGson/groupObjToLine group_id)] lst-args []]
+                ;        (if (some? f)
+                ;            (if (contains? (-> dic-args :dic) f)
+                ;                (recur r (conj lst-ps "?") (conj lst-args (first (get (-> dic-args :dic) f))))
+                ;                (recur r (conj lst-ps f) lst-args))
+                ;            {:sql (str/join ["my_invoke_link('" sql "'," (str/join "," lst-ps) ")"]) :args lst-args})))
+                )
+            (item-to-line [dic-args m]
+                (let [{table_alias :table_alias item_name :item_name alias :alias} m]
+                    (cond
+                        (and (not (Strings/isNullOrEmpty table_alias)) (not (nil? alias)) (not (Strings/isNullOrEmpty alias))) {:sql (str/join [table_alias "." item_name " as " alias]) :args nil}
+                        (and (not (Strings/isNullOrEmpty table_alias)) (Strings/isNullOrEmpty alias)) {:sql (str/join [table_alias "." item_name]) :args nil}
+                        (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? (-> dic-args :dic) item_name)
+                                                                                                    {:sql "?" :args [(first (get (-> dic-args :dic) item_name))]}
+                                                                                                    {:sql item_name :args nil})
+                        )))
+            (table-to-line [dic-args m]
+                (if (some? m)
+                    (if-let [{schema_name :schema_name table_name :table_name table_alias :table_alias hints :hints} m]
+                        (cond (and (not (Strings/isNullOrEmpty schema_name)) (not (Strings/isNullOrEmpty table_alias))) (if (Strings/isNullOrEmpty hints)
+                                                                                                                            {:sql (str/join [(format "%s.%s" schema_name table_name) " " table_alias]) :args nil}
+                                                                                                                            {:sql (str/join [(format "%s.%s %s" schema_name table_name hints) " " table_alias]) :args nil})
+                              (not (Strings/isNullOrEmpty table_alias)) (if (Strings/isNullOrEmpty hints)
+                                                                            {:sql (str/join [(format "%s" table_name) " " table_alias]) :args nil}
+                                                                            {:sql (str/join [(format "%s %s" table_name hints) " " table_alias]) :args nil}))
+                        )))
+            ; 获取 data_set 的名字和对应的表
+            (get_schema_name [^Long group_id]
+                (second group_id))
+            (select-to-sql
+                ([dic-args ast]
+                 (cond (and (some? ast) (instance? clojure.lang.LazySeq ast)) (let [{sql :sql args :args} (select-to-sql dic-args ast [] [])]
+                                                                                  {:sql sql :args args})
+                       (contains? ast :sql_obj) (my-select_to_sql_single dic-args (get ast :sql_obj))
+                       :else
+                       (throw (Exception. "select 语句错误！"))))
+                ([dic-args [f & rs] lst_rs lst-args]
+                 (if (some? f)
+                     (if (map? f)
+                         (cond (contains? f :sql_obj) (let [{sql :sql args :args} (my-select_to_sql_single dic-args (get f :sql_obj))]
+                                                          (recur dic-args rs (conj lst_rs sql) (filter #(not (nil? %)) (concat lst-args args))))
+                               (contains? f :keyword) (recur dic-args rs (conj lst_rs (get f :keyword)) lst-args)
+                               :else
+                               (throw (Exception. "select 语句错误！"))) (throw (Exception. "select 语句错误！")))
+                     {:sql (str/join " " lst_rs) :args (filter #(not (nil? %)) lst-args)})))]
+        (lst-token-to-line dic-args ast)))
 
 
 

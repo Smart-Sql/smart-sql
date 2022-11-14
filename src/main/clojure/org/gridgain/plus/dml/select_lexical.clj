@@ -273,7 +273,7 @@
             (finally (.close tx)))))
 
 (defn is-word? [line]
-    (if (some? (re-find #"^(?i)\w+" line))
+    (if (some? (re-find #"^(?i)\w+$|^(?i)\"\w+\"$|^(?i)\'\w+\'$" line))
         true))
 
 (defn to-lazy [[f & rs]]

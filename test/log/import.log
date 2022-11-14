@@ -1,5 +1,6 @@
 (require
     '[org.gridgain.plus.ddl.my-create-table :as my-create-table]
+    '[org.gridgain.plus.init.smart-func-init :as smart-func-init]
     '[org.gridgain.plus.ddl.my-alter-table :as my-alter-table]
     '[org.gridgain.plus.ddl.my-create-index :as my-create-index]
     '[org.gridgain.plus.ddl.my-drop-index :as my-drop-index]
