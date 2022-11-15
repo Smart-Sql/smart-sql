@@ -14,7 +14,7 @@
              (org.apache.ignite.internal IgnitionEx)
              (com.google.common.base Strings)
              (org.gridgain.smart MyVar MyLetLayer)
-             (org.tools MyGson MyConvertUtil KvSql MyDbUtil MyLineToBinary)
+             (org.tools MyGson MyColumnMeta MyConvertUtil KvSql MyDbUtil MyLineToBinary)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache MyNoSqlCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk)
@@ -237,17 +237,32 @@
 
 (defn rpc_select-authority [ignite group_id lst ps]
     (if-let [ast (my-select-plus/sql-to-ast lst)]
-        (if (my-lexical/null-or-empty? ps)
-            (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
-                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))))
+        (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
+            (if (my-lexical/null-or-empty? ps)
+                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))
+                (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta sql)
+                      (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite sql)
+                      ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
+                      :else
+                      (let [ht (MyGson/getHashtable ps)]
+                          (cond (.containsKey ht "row") (MyColumnMeta/getColumnRow ignite sql ht)))
+                      )))
         ;(-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
         ))
 
 (defn rpc_select-no-authority [ignite group_id lst ps]
     (if-let [ast (my-select-plus/sql-to-ast lst)]
-        (if (my-lexical/null-or-empty? ps)
-            (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
-                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))))))
+        (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
+            (if (my-lexical/null-or-empty? ps)
+                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))
+                (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta sql)
+                      (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite sql)
+                      ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
+                      :else
+                      (let [ht (MyGson/getHashtable ps)]
+                          (cond (.containsKey ht "row") (MyColumnMeta/getColumnRow ignite sql ht)))
+                      )))
+        ))
 
 (defn rpc_select_sql [ignite group_id lst ps]
     (if (.isMultiUserGroup (.configuration ignite))

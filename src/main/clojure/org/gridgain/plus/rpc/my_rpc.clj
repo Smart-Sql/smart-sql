@@ -127,7 +127,7 @@
 
 (defn -executeSqlQuery [this ^String userToken ^String sql ^String ps]
     (let [m (execute-sql-query userToken sql ps)]
-        (cond (map? m) (MyGson/groupObjToLine m)
+        (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
               (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
               :else (str m)
               ))
