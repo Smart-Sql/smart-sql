@@ -61,7 +61,7 @@
                                                                                                                                      ))
                   ; drop dataset
                   (and (string? (first f)) (my-lexical/is-eq? (first f) "DROP") (my-lexical/is-eq? (second f) "schema")) (let [rs (my-drop-dataset/drop-data-set-lst ignite group_id (my-super-sql/cull-semicolon f))]
-                                                                                                                               (if-not (nil? rs)
+                                                                                                                               (if (nil? rs)
                                                                                                                                    (recur ignite group_id r (conj lst-rs "true") ps)
                                                                                                                                    (recur ignite group_id r (conj lst-rs "false") ps)))
                   ; create table
@@ -124,11 +124,7 @@
 (defn execute-sql-query [^String userToken ^String sql ^String ps]
     (if-let [lst (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment sql))]
         (if (my-lexical/is-str-empty? userToken)
-            (do
-                (println (my-user-group/get_user_group (Ignition/ignite) (.getRoot_token (.configuration (Ignition/ignite)))))
-                (println (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) (.getRoot_token (.configuration (Ignition/ignite)))) lst [] ps))
-                (println (.getRoot_token (.configuration (Ignition/ignite))))
-                (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) (.getRoot_token (.configuration (Ignition/ignite)))) lst [] ps))
+            (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) (.getRoot_token (.configuration (Ignition/ignite)))) lst [] ps)
             (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) userToken) lst [] ps))))
 
 

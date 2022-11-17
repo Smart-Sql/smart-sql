@@ -215,16 +215,18 @@
         (if (some? f)
             (if (contains? f :sql_obj)
                 (if (nil? (-> f :sql_obj :limit))
-                    (recur r (conj lst (assoc (-> f :sql_obj) :limit (rpc-limit start size))))
+                    (recur r (conj lst (assoc f :sql_obj (assoc (-> f :sql_obj) :limit (rpc-limit start size)))))
                     (recur r (conj lst f)))
-                (recur r (conj lst f))))))
+                (recur r (conj lst f)))
+            lst)))
 
 (defn rpc-ast-count [ast]
     (loop [[f & r] ast lst []]
         (if (some? f)
             (if (contains? f :sql_obj)
-                (recur r (conj lst (assoc (-> f :sql_obj) :query-items [{:func-name "count", :lst_ps ({:operation_symbol "*"})}])))
-                (recur r (conj lst f))))))
+                (recur r (conj lst (assoc f :sql_obj (assoc (-> f :sql_obj) :query-items [{:func-name "count", :lst_ps [{:operation_symbol "*"}]}]))))
+                (recur r (conj lst f)))
+            lst)))
 
 ;(defn rpc_select-authority [ignite group_id lst ps]
 ;    (if-let [ast (my-select-plus/sql-to-ast lst)]
@@ -235,34 +237,59 @@
 ;        ;(-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
 ;        ))
 
+(defn re-rpc-select [ignite group_id lst ps]
+    (let [ast (my-select-plus/sql-to-ast lst) limit-size (MyGson/getHashtable ps)]
+        (let [ast-limit (rpc-ast-limit ast (get limit-size "start") (get limit-size "size")) ast-count (rpc-ast-count ast)]
+            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-count) :sql) sql (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-limit) :sql)]
+                (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql))) ht (MyColumnMeta/getColumnMeta sql)]
+                    (doto (Hashtable.) (.put "totalProperty" totalProperty) (.put "root" (MyColumnMeta/getColumnRow ht root))))))))
+
 (defn rpc_select-authority [ignite group_id lst ps]
-    (if-let [ast (my-select-plus/sql-to-ast lst)]
-        (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
-            (if (my-lexical/null-or-empty? ps)
-                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))
-                (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta sql)
-                      (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite sql)
-                      ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
-                      :else
-                      (let [ht (MyGson/getHashtable ps)]
-                          (cond (.containsKey ht "row") (MyColumnMeta/getColumnRow ignite sql ht)))
-                      )))
-        ;(-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
-        ))
+    (if (my-lexical/null-or-empty? ps)
+        (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql)))
+        (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast lst)))
+              (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast lst)))
+              ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
+              :else
+              (let [ht (MyGson/getHashtable ps)]
+                  (cond (.containsKey ht "row") (MyColumnMeta/getColumnRow ignite (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast lst)) ht)
+                        (.containsKey ht "select") (re-rpc-select ignite group_id lst ps)
+                        ))
+              )))
+
+(defn re-rpc-select-no-authority [ignite group_id lst ps]
+    (let [ast (my-select-plus/sql-to-ast lst) limit-size (MyGson/getHashtable ps)]
+        (let [ast-limit (rpc-ast-limit ast (get limit-size "start") (get limit-size "size")) ast-count (rpc-ast-count ast)]
+            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-count) :sql) sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-limit) :sql)]
+                (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql))) ht (MyColumnMeta/getColumnMeta sql)]
+                    (doto (Hashtable.) (.put "totalProperty" totalProperty) (.put "root" (MyColumnMeta/getColumnRow ht root))))))))
 
 (defn rpc_select-no-authority [ignite group_id lst ps]
-    (if-let [ast (my-select-plus/sql-to-ast lst)]
-        (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
-            (if (my-lexical/null-or-empty? ps)
-                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))
-                (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta sql)
-                      (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite sql)
-                      ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
-                      :else
-                      (let [ht (MyGson/getHashtable ps)]
-                          (cond (.containsKey ht "row") (MyColumnMeta/getColumnRow ignite sql ht)))
-                      )))
-        ))
+    (if (my-lexical/null-or-empty? ps)
+        (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql)))
+        (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil (my-select-plus/sql-to-ast lst)))
+              (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil (my-select-plus/sql-to-ast lst)))
+              ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
+              :else
+              (let [ht (MyGson/getHashtable ps)]
+                  (cond (.containsKey ht "row") (MyColumnMeta/getColumnRow ignite (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil (my-select-plus/sql-to-ast lst)) ht)
+                        (.containsKey ht "select") (re-rpc-select-no-authority ignite group_id lst ps)
+                        ))
+              )))
+
+;(defn rpc_select-no-authority [ignite group_id lst ps]
+;    (if-let [ast (my-select-plus/sql-to-ast lst)]
+;        (let [sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql)]
+;            (if (my-lexical/null-or-empty? ps)
+;                (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql)))
+;                (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta sql)
+;                      (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite sql)
+;                      ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
+;                      :else
+;                      (let [ht (MyGson/getHashtable ps)]
+;                          (cond (.containsKey ht "row") (MyColumnMeta/getColumnRow ignite sql ht)))
+;                      )))
+;        ))
 
 (defn rpc_select_sql [ignite group_id lst ps]
     (if (.isMultiUserGroup (.configuration ignite))

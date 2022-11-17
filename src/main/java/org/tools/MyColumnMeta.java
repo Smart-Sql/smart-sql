@@ -49,4 +49,19 @@ public class MyColumnMeta {
 
         return MyGson.groupObjToLine(rs);
     }
+
+    public static List<HashMap<String, String>> getColumnRow(Map<String, Integer> ht,  List<List<?>> lst)
+    {
+        List<HashMap<String, String>> rs = new ArrayList<>();
+        for (List<?> row : lst)
+        {
+            HashMap<String, String> map = new HashMap<>();
+            for (String key : ht.keySet())
+            {
+                map.put(key, row.get(ht.get(key)).toString());
+            }
+            rs.add(map);
+        }
+        return rs;
+    }
 }
