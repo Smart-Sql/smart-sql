@@ -30,6 +30,7 @@
     '[org.gridgain.plus.tools.my-cache :as my-cache]
     '[org.gridgain.plus.tools.smart-init-func :as smart-init-func]
     '[org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
+    '[org.gridgain.plus.rpc.my-rpc :as my-rpc]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
     '[clojure.walk :as w])

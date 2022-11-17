@@ -20,8 +20,8 @@
 
 (defn get-dataset-name [^String sql]
     (let [lst (my-lexical/to-back (str/lower-case sql))]
-        (cond (and (= (count lst) 6) (= '("create" "schema" "if" "not" "exists") (take 5 lst))) (last lst)
-              (and (= (count lst) 3) (= '("create" "schema") (take 2 lst))) (last lst)
+        (cond (and (= (count lst) 6) (= '("create" "schema" "if" "not" "exists") (map str/lower-case (take 5 lst)))) (last lst)
+              (and (= (count lst) 3) (= '("create" "schema") (map str/lower-case (take 2 lst)))) (last lst)
               :else
               (throw (Exception. "输入字符串错误！"))
               )))
