@@ -127,9 +127,7 @@
             (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) (.getRoot_token (.configuration (Ignition/ignite)))) lst [] ps)
             (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) userToken) lst [] ps))))
 
-
-
-(defn -executeSqlQuery [this ^String userToken ^String sql ^String ps]
+(defn my-executeSqlQuery [^String userToken ^String sql ^String ps]
     (if (and (my-lexical/is-str-empty? userToken) (my-lexical/is-eq? "my_meta" ps))
         (cond (re-find #"^(?i)SELECT\s+m.id\s+FROM\s+MY_META.MY_USERS_GROUP\s+m\s+WHERE\s+m.GROUP_NAME\s+=\s+'\w+'$" sql) (let [m (execute-sql-query "" sql nil)]
                                                                                                                               (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
@@ -145,8 +143,13 @@
             (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
                   (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
                   :else (str m)
-                  )))
-    )
+                  ))))
+
+(defn -executeSqlQuery [this ^String userToken ^String sql ^String ps]
+    (try
+        (my-executeSqlQuery userToken sql ps)
+        (catch Exception e
+            (format "{\"err\": \"%s\"}" (.getMessage e)))))
 
 
 
