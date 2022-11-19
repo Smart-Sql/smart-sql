@@ -145,13 +145,14 @@
                   :else (str m)
                   ))))
 
+;(defn -executeSqlQuery [this ^String userToken ^String sql ^String ps]
+;    (try
+;        (my-executeSqlQuery userToken sql ps)
+;        (catch Exception e
+;            (format "{\"err\": \"%s\"}" (.getMessage e)))))
+
 (defn -executeSqlQuery [this ^String userToken ^String sql ^String ps]
-    (try
-        (my-executeSqlQuery userToken sql ps)
-        (catch Exception e
-            (format "{\"err\": \"%s\"}" (.getMessage e)))))
-
-
+    (my-executeSqlQuery userToken sql ps))
 
 
 

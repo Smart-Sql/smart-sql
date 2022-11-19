@@ -205,12 +205,22 @@
         (my-log-no-authority ignite group_id lst)
         ))
 
-(defn rpc-limit [start size]
+(defn lst-to-sql [lst]
+    (loop [[f & r] lst sb (StringBuilder.)]
+        (if (some? f)
+            (cond (and (= f ".") (some? (first r))) (recur (rest r) (doto (StringBuilder.) (.append (.trim (.toString sb))) (.append ".") (.append (first r)) (.append " ")))
+                  (and (= f "(") (some? (first r))) (recur (rest r) (doto (StringBuilder.) (.append (.trim (.toString sb))) (.append "(") (.append (first r)) (.append " ")))
+                  (and (contains? #{"select" "from" "where" "by" "limit" "having" "on" "join" "left" "inner" "right" "outer" "cross"} (str/lower-case f)) (= (first r) "(")) (recur (rest r) (doto sb (.append f) (.append " (")))
+                  ;(and (= f ")") (some? (first r))) (recur (rest r) (doto (StringBuilder.) (.append (.trim (.toString sb))) (.append ")") (.append (first r)) (.append " ")))
+                  :else (recur r (doto sb (.append f) (.append " "))))
+            (.trim (.toString sb)))))
+
+(defn rpc-limit [^Integer start ^Integer size]
     [{:table_alias "", :item_name (format "%s" start), :item_type "", :java_item_type java.lang.Integer, :const true}
      {:comma_symbol ","}
      {:table_alias "", :item_name (format "%s" size), :item_type "", :java_item_type java.lang.Integer, :const true}])
 
-(defn rpc-ast-limit [ast start size]
+(defn rpc-ast-limit [ast ^Integer start ^Integer size]
     (loop [[f & r] ast lst []]
         (if (some? f)
             (if (contains? f :sql_obj)
@@ -240,19 +250,24 @@
 (defn re-rpc-select [ignite group_id lst ps]
     (let [ast (my-select-plus/sql-to-ast lst) limit-size (MyGson/getHashtable ps)]
         (let [ast-limit (rpc-ast-limit ast (get limit-size "start") (get limit-size "limit")) ast-count (rpc-ast-count ast)]
-            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-count) :sql) sql (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-limit) :sql)]
+            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-count) :sql) sql (lst-to-sql lst)]
                 (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql))) ht (MyColumnMeta/getColumnMeta sql)]
                     (doto (Hashtable.) (.put "totalProperty" totalProperty) (.put "root" (MyColumnMeta/getColumnRow ht root))))))))
 
 (defn rpc_select-authority [ignite group_id lst ps]
     (if (my-lexical/null-or-empty? ps)
         (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql))))
-        (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql))
+        (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta (lst-to-sql lst))
               (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql))
               (my-lexical/is-eq? ps "schema") (let [lst-small (map str/lower-case lst)]
                                                   (cond (= '("select" "schema_name" "from" "sys" "." "schemas") lst-small) (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. "SELECT SCHEMA_NAME FROM sys.SCHEMAS")))
                                                         (= '("select" "table_name" "from" "sys" "." "tables" "where" "schema_name" "=") (drop-last lst-small)) (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT TABLE_NAME FROM sys.TABLES WHERE SCHEMA_NAME = %s" (last lst)))))
-                                                        (= '("select" "m" "." "id" "from" "my_meta" "." "my_users_group" "m" "where" "m" "." "group_name" "=") (drop-last lst-small)) (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT TABLE_NAME FROM sys.TABLES WHERE SCHEMA_NAME = %s" (last lst)))))
+                                                        (= '("select" "m" "." "id" "from" "my_meta" "." "my_users_group" "m" "where" "m" "." "group_name" "=") (drop-last lst-small)) (if (my-lexical/is-eq? (format "'%s'" (.getRoot_token (.configuration ignite))) (last lst))
+                                                                                                                                                                                          (ArrayList.)
+                                                                                                                                                                                          (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT m.id FROM MY_META.MY_USERS_GROUP m WHERE m.GROUP_NAME = %s" (last lst))))))
+                                                        (= '("select" "m" "." "id" "from" "my_meta" "." "my_users_group" "m" "where" "m" "." "user_token" "=") (drop-last lst-small)) (if (my-lexical/is-eq? (format "'%s'" (.getRoot_token (.configuration ignite))) (last lst))
+                                                                                                                                                                                          (doto (ArrayList.) (.add (doto (ArrayList.) (.add 0))))
+                                                                                                                                                                                          (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT m.id FROM MY_META.MY_USERS_GROUP m WHERE m.USER_TOKEN = %s" (last lst))))))
                                                         ))
               ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
               :else
@@ -265,19 +280,24 @@
 (defn re-rpc-select-no-authority [ignite group_id lst ps]
     (let [ast (my-select-plus/sql-to-ast lst) limit-size (MyGson/getHashtable ps)]
         (let [ast-limit (rpc-ast-limit ast (get limit-size "start") (get limit-size "limit")) ast-count (rpc-ast-count ast)]
-            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-count) :sql) sql (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-limit) :sql)]
+            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-count) :sql) sql (lst-to-sql lst)]
                 (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql))) ht (MyColumnMeta/getColumnMeta sql)]
                     (doto (Hashtable.) (.put "totalProperty" totalProperty) (.put "root" (MyColumnMeta/getColumnRow ht root))))))))
 
 (defn rpc_select-no-authority [ignite group_id lst ps]
     (if (my-lexical/null-or-empty? ps)
         (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql))))
-        (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql))
+        (cond (my-lexical/is-eq? ps "meta") (MyColumnMeta/getColumnMeta (lst-to-sql lst))
               (my-lexical/is-eq? ps "count") (MyColumnMeta/getColumnCount ignite (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil (my-select-plus/sql-to-ast lst)) :sql))
               (my-lexical/is-eq? ps "schema") (let [lst-small (map str/lower-case lst)]
                                                   (cond (= '("select" "schema_name" "from" "sys" "." "schemas") lst-small) (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. "SELECT SCHEMA_NAME FROM sys.SCHEMAS")))
                                                         (= '("select" "table_name" "from" "sys" "." "tables" "where" "schema_name" "=") (drop-last lst-small)) (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT TABLE_NAME FROM sys.TABLES WHERE SCHEMA_NAME = %s" (last lst)))))
-                                                        (= '("select" "m" "." "id" "from" "my_meta" "." "my_users_group" "m" "where" "m" "." "group_name" "=") (drop-last lst-small)) (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT TABLE_NAME FROM sys.TABLES WHERE SCHEMA_NAME = %s" (last lst)))))
+                                                        (= '("select" "m" "." "id" "from" "my_meta" "." "my_users_group" "m" "where" "m" "." "group_name" "=") (drop-last lst-small)) (if (my-lexical/is-eq? (format "'%s'" (.getRoot_token (.configuration ignite))) (last lst))
+                                                                                                                                                                                          (ArrayList.)
+                                                                                                                                                                                          (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT m.id FROM MY_META.MY_USERS_GROUP m WHERE m.GROUP_NAME = %s" (last lst))))))
+                                                        (= '("select" "m" "." "id" "from" "my_meta" "." "my_users_group" "m" "where" "m" "." "user_token" "=") (drop-last lst-small)) (if (my-lexical/is-eq? (format "'%s'" (.getRoot_token (.configuration ignite))) (last lst))
+                                                                                                                                                                                          (doto (ArrayList.) (.add (doto (ArrayList.) (.add 0))))
+                                                                                                                                                                                          (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "SELECT m.id FROM MY_META.MY_USERS_GROUP m WHERE m.USER_TOKEN = %s" (last lst))))))
                                                         ))
               ;(my-lexical/is-eq? ps "row") (MyColumnMeta/getColumnRow ignite sql)
               :else

@@ -1479,6 +1479,10 @@
         (if-let [m (arithmetic lst)]
             (if (> (count m) 1) true false) false) false))
 
+(defn is-float-int [lst]
+    (if (and (= (count lst) 3) (re-find #"^\d+$" (first lst)) (= (second lst) ".") (= (last lst) "0"))
+        true false))
+
 (defn is-express [lst]
     (if (some? lst)
         (cond (= (count lst) 1) true
@@ -1486,6 +1490,7 @@
               (true? (is-arithmetic? lst)) true
               (not (nil? (is-operate? (rest lst)))) true
               (true? (is-arithmetic? (rest lst))) true
+              (true? (is-float-int lst)) true
               :else
               false
               ) false))
