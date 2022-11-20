@@ -162,7 +162,7 @@
         (if (re-find my-matcher)
             (let [start (.start my-matcher) end (.end my-matcher)]
                 (let [[my-notes my-descript] (get-forward-code (reverse (subs code 0 (+ start 1)))) func-code (get-func-code (subs code end))]
-                    [(str/join [my-notes (subs code (+ start 1) end) func-code]) my-descript])
+                    [(str/join [my-notes (subs code start end) func-code]) my-descript])
                 ))))
 
 ; 添加 scenes

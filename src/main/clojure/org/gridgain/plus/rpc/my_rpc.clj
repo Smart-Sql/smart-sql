@@ -19,6 +19,7 @@
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
         [org.gridgain.plus.tools.my-user-group :as my-user-group]
         [org.gridgain.plus.sql.my-super-sql :as my-super-sql]
+        [org.gridgain.plus.dml.my-load-smart-sql :as my-load-smart-sql]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
@@ -128,22 +129,26 @@
             (execute-sql-query-lst (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) userToken) lst [] ps))))
 
 (defn my-executeSqlQuery [^String userToken ^String sql ^String ps]
-    (if (and (my-lexical/is-str-empty? userToken) (my-lexical/is-eq? "my_meta" ps))
-        (cond (re-find #"^(?i)SELECT\s+m.id\s+FROM\s+MY_META.MY_USERS_GROUP\s+m\s+WHERE\s+m.GROUP_NAME\s+=\s+'\w+'$" sql) (let [m (execute-sql-query "" sql nil)]
-                                                                                                                              (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
-                                                                                                                                    (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
-                                                                                                                                    :else (str m)
-                                                                                                                                    ))
-              (re-find #"^(?i)create\s+schema\s+{0}\s*;\s*add_user_group('{0}', '{1}', 'all', '{0}');$" sql) (let [m (execute-sql-query "" sql nil)]
-                                                                                                                 (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
-                                                                                                                       (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
-                                                                                                                       :else (str m)
-                                                                                                                       )))
-        (let [m (execute-sql-query userToken sql ps)]
-            (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
-                  (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
-                  :else (str m)
-                  ))))
+    (cond (and (my-lexical/is-str-empty? userToken) (my-lexical/is-eq? "my_meta" ps)) (cond (re-find #"^(?i)SELECT\s+m.id\s+FROM\s+MY_META.MY_USERS_GROUP\s+m\s+WHERE\s+m.GROUP_NAME\s+=\s+'\w+'$" sql) (let [m (execute-sql-query "" sql nil)]
+                                                                                                                                                                                                            (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
+                                                                                                                                                                                                                  (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
+                                                                                                                                                                                                                  :else (str m)
+                                                                                                                                                                                                                  ))
+                                                                                            (re-find #"^(?i)create\s+schema\s+{0}\s*;\s*add_user_group('{0}', '{1}', 'all', '{0}');$" sql) (let [m (execute-sql-query "" sql nil)]
+                                                                                                                                                                                               (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
+                                                                                                                                                                                                     (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
+                                                                                                                                                                                                     :else (str m)
+                                                                                                                                                                                                     )))
+          (my-lexical/is-eq? "load" ps) (if (my-lexical/is-str-empty? userToken)
+                                            (my-load-smart-sql/load-smart-sql (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) (.getRoot_token (.configuration (Ignition/ignite)))) sql)
+                                            (my-load-smart-sql/load-smart-sql (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) userToken) sql))
+          :else
+          (let [m (execute-sql-query userToken sql ps)]
+              (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
+                    (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
+                    :else (str m)
+                    ))
+        ))
 
 ;(defn -executeSqlQuery [this ^String userToken ^String sql ^String ps]
 ;    (try

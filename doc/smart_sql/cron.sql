@@ -1,3 +1,10 @@
+-- 显示当前时间
+-- 打印当前时间
+function get_now()
+{
+   println("吴大富！");
+}
+
 -- 调用方法获取当前时间
 function get_corn_now()
 {
