@@ -250,8 +250,8 @@
 (defn re-rpc-select [ignite group_id lst ps]
     (let [ast (my-select-plus/sql-to-ast lst) limit-size (MyGson/getHashtable ps)]
         (let [ast-limit (rpc-ast-limit ast (get limit-size "start") (get limit-size "limit")) ast-count (rpc-ast-count ast)]
-            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-count) :sql) sql (lst-to-sql lst)]
-                (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql))) ht (MyColumnMeta/getColumnMeta sql)]
+            (let [sql-limit (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-limit) :sql) sql-count (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast-count) :sql) sql (lst-to-sql lst)]
+                (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-limit))) ht (MyColumnMeta/getColumnMeta sql)]
                     (doto (Hashtable.) (.put "totalProperty" totalProperty) (.put "root" (MyColumnMeta/getColumnRow ht root))))))))
 
 (defn rpc_select-authority [ignite group_id lst ps]
@@ -280,8 +280,8 @@
 (defn re-rpc-select-no-authority [ignite group_id lst ps]
     (let [ast (my-select-plus/sql-to-ast lst) limit-size (MyGson/getHashtable ps)]
         (let [ast-limit (rpc-ast-limit ast (get limit-size "start") (get limit-size "limit")) ast-count (rpc-ast-count ast)]
-            (let [sql-count (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-count) :sql) sql (lst-to-sql lst)]
-                (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql))) ht (MyColumnMeta/getColumnMeta sql)]
+            (let [sql-limit (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-limit) :sql) sql-count (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast-count) :sql) sql (lst-to-sql lst)]
+                (let [totalProperty (first (first (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-count))))) root (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. sql-limit))) ht (MyColumnMeta/getColumnMeta sql)]
                     (doto (Hashtable.) (.put "totalProperty" totalProperty) (.put "root" (MyColumnMeta/getColumnRow ht root))))))))
 
 (defn rpc_select-no-authority [ignite group_id lst ps]
