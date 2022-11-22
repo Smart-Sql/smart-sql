@@ -50,9 +50,9 @@
 (defn execute-sql-query-lst [^Ignite ignite group_id [f & r] lst-rs ps]
     (if (some? f)
         (if-not (nil? (first f))
-            (cond (and (string? (first f)) (my-lexical/is-eq? (first f) "insert")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (my-super-sql/cull-semicolon f))) ps)
-                  (and (string? (first f)) (my-lexical/is-eq? (first f) "update")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (my-super-sql/cull-semicolon f))) ps)
-                  (and (string? (first f)) (my-lexical/is-eq? (first f) "delete")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/query_sql ignite group_id (my-super-sql/cull-semicolon f))) ps)
+            (cond (and (string? (first f)) (my-lexical/is-eq? (first f) "insert")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/rpc-query_sql ignite group_id (my-super-sql/cull-semicolon f))) ps)
+                  (and (string? (first f)) (my-lexical/is-eq? (first f) "update")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/rpc-query_sql ignite group_id (my-super-sql/cull-semicolon f))) ps)
+                  (and (string? (first f)) (my-lexical/is-eq? (first f) "delete")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/rpc-query_sql ignite group_id (my-super-sql/cull-semicolon f))) ps)
                   (and (string? (first f)) (my-lexical/is-eq? (first f) "select")) (recur ignite group_id r (conj lst-rs (my-smart-db-line/rpc_select_sql ignite group_id (my-super-sql/cull-semicolon f) ps)) ps)
                   ; create dataset
                   (and (string? (first f)) (my-lexical/is-eq? (first f) "create") (my-lexical/is-eq? (second f) "schema")) (let [rs (my-create-dataset/create_data_set ignite group_id (str/join " " (my-super-sql/cull-semicolon f)))]
@@ -101,7 +101,7 @@
                                                                                                                                                 (recur ignite group_id r (conj lst-rs (str (eval (read-string my-code)))) ps)
                                                                                                                                                 )
                   (and (string? (first f)) (my-lexical/is-eq? (first f) "show_train_data")) (if-let [show-sql (my-super-sql/call-show-train-data ignite group_id (my-super-sql/cull-semicolon f))]
-                                                                                                (recur ignite group_id r (conj lst-rs (format "select show_train_data(%s) as tip;" show-sql)) ps))
+                                                                                                (recur ignite group_id r (conj lst-rs (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. (format "select show_train_data(%s) as tip;" show-sql))))) ps))
                   :else
                   (if (string? (first f))
                       (let [smart-sql-obj (my-super-sql/my-smart-sql ignite group_id f)]

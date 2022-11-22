@@ -205,12 +205,73 @@
         (my-log-no-authority ignite group_id lst)
         ))
 
+(defn rpc-query-sql-no-args [ignite group_id lst]
+    (cond (my-lexical/is-eq? "select" (first lst)) (if-let [ast (my-select-plus/sql-to-ast lst)]
+                                                       (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql))
+          (my-lexical/is-eq? "insert" (first lst)) (let [logCache (insert-to-cache ignite group_id lst)]
+                                                       (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
+                                                           "true"
+                                                           "false"))
+          (my-lexical/is-eq? "update" (first lst)) (let [logCache (update-to-cache ignite group_id lst)]
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "true"
+                                                               "false")
+                                                           (throw (Exception. "要更新的数据为空！或者没有权限！"))))
+          (my-lexical/is-eq? "delete" (first lst)) (let [logCache (delete-to-cache ignite group_id lst)]
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "true"
+                                                               "false")
+                                                           (throw (Exception. "要删除的数据为空！或者没有权限！")))
+                                                       )
+          :else
+          (throw (Exception. "query_sql 只能执行 DML 语句！"))
+          ))
+
+(defn rpc-query-sql-no-args-log-no-authority [ignite group_id lst]
+    (cond (my-lexical/is-eq? "select" (first lst)) (if-let [ast (my-select-plus/sql-to-ast lst)]
+                                                       (-> (my-select-plus-args/my-ast-to-sql-no-authority ignite group_id nil ast) :sql))
+          (my-lexical/is-eq? "insert" (first lst)) (let [logCache (insert-to-cache-no-authority ignite group_id lst)]
+                                                       (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
+                                                           "true"
+                                                           "false"))
+          (my-lexical/is-eq? "update" (first lst)) (let [logCache (update-to-cache-no-authority ignite group_id lst)]
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "true"
+                                                               "false")
+                                                           (throw (Exception. "要更新的数据为空！或者没有权限！")))
+                                                       )
+          (my-lexical/is-eq? "delete" (first lst)) (let [logCache (delete-to-cache-no-authority ignite group_id lst)]
+                                                       (if-not (empty? logCache)
+                                                           (if (nil? (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+                                                               "true"
+                                                               "false")
+                                                           (throw (Exception. "要删除的数据为空！或者没有权限！"))))
+          :else
+          (throw (Exception. "query_sql 只能执行 DML 语句！"))
+          ))
+
+(defn rpc-my-log-authority [ignite group_id lst]
+    (rpc-query-sql-no-args ignite group_id lst))
+
+; 2、有 my log, 没有权限
+(defn rpc-my-log-no-authority [ignite group_id lst]
+    (rpc-query-sql-no-args-log-no-authority ignite group_id lst))
+
+(defn rpc-query_sql [ignite group_id lst]
+    (if (.isMultiUserGroup (.configuration ignite))
+        (rpc-my-log-authority ignite group_id lst)
+        (rpc-my-log-no-authority ignite group_id lst)
+        ))
+
 (defn lst-to-sql [lst]
     (loop [[f & r] lst sb (StringBuilder.)]
         (if (some? f)
             (cond (and (= f ".") (some? (first r))) (recur (rest r) (doto (StringBuilder.) (.append (.trim (.toString sb))) (.append ".") (.append (first r)) (.append " ")))
-                  (and (= f "(") (some? (first r))) (recur (rest r) (doto (StringBuilder.) (.append (.trim (.toString sb))) (.append "(") (.append (first r)) (.append " ")))
-                  (and (contains? #{"select" "from" "where" "by" "limit" "having" "on" "join" "left" "inner" "right" "outer" "cross"} (str/lower-case f)) (= (first r) "(")) (recur (rest r) (doto sb (.append f) (.append " (")))
+                  ;(and (= f "(") (some? (first r))) (recur (rest r) (doto (StringBuilder.) (.append (.trim (.toString sb))) (.append "(") (.append (first r)) (.append " ")))
+                  ;(and (contains? #{"select" "from" "where" "by" "limit" "having" "on" "join" "left" "inner" "right" "outer" "cross"} (str/lower-case f)) (= (first r) "(")) (recur (rest r) (doto sb (.append f) (.append " (")))
                   ;(and (= f ")") (some? (first r))) (recur (rest r) (doto (StringBuilder.) (.append (.trim (.toString sb))) (.append ")") (.append (first r)) (.append " ")))
                   :else (recur r (doto sb (.append f) (.append " "))))
             (.trim (.toString sb)))))

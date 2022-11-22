@@ -889,7 +889,7 @@
         (format "f_%s_%s" (str/lower-case schema_name) (str/lower-case table_name))))
 
 (defn not-empty? [lst]
-    (not (empty? lst)))
+    (and (is-seq? lst) (not (empty? lst))))
 
 (defn not-null? [m]
     (not (nil? m)))
@@ -899,7 +899,7 @@
     (if (instance? String m)
         (Strings/isNullOrEmpty m)
         (cond (nil? m) true
-              (empty? m) true
+              (and (is-seq? m) (empty? m)) true
               :else false
               )))
 
