@@ -285,7 +285,9 @@
                                                                                                      (if (some? f)
                                                                                                          (recur r (conj lst (token-to-clj ignite group_id f my-context)))
                                                                                                          (str/join " " lst)))
-          (and (> (count (filter #(and (map? %) (contains? % :comparison_symbol)) (-> m :parenthesis))) 0) (= (count (-> m :parenthesis)) 3)) (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> (second (-> m :parenthesis)) :comparison_symbol) (token-to-clj ignite group_id (first (-> m :parenthesis)) my-context) (token-to-clj ignite group_id (last (-> m :parenthesis)) my-context))
+          (and (> (count (filter #(and (map? %) (contains? % :comparison_symbol)) (-> m :parenthesis))) 0) (= (count (-> m :parenthesis)) 3)) (if (= (-> (second (-> m :parenthesis)) :comparison_symbol) "==")
+                                                                                                                                                  (format "(= (my-lexical/get-value %s) (my-lexical/get-value %s))" (token-to-clj ignite group_id (first (-> m :parenthesis)) my-context) (token-to-clj ignite group_id (last (-> m :parenthesis)) my-context))
+                                                                                                                                                  (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> (second (-> m :parenthesis)) :comparison_symbol) (token-to-clj ignite group_id (first (-> m :parenthesis)) my-context) (token-to-clj ignite group_id (last (-> m :parenthesis)) my-context)))
           (and (>= (count (-> m :parenthesis)) 3) (contains? (second (-> m :parenthesis)) :and_or_symbol)) (judge ignite group_id (-> m :parenthesis) my-context)
           :else
           (calculate ignite group_id (reverse (-> m :parenthesis)) my-context)))
@@ -293,6 +295,7 @@
 (defn token-lst-to-clj [ignite group_id m my-context]
     (cond (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= (-> (second m) :comparison_symbol) "=")) (contains? (first m) :item_name)) (format "(.setVar %s %s)" (-> (first m) :item_name) (token-to-clj ignite group_id (last m) my-context))
           (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (contains? #{">" ">=" "<" "<="} (-> (second m) :comparison_symbol))) (contains? (first m) :item_name)) (format "(%s %s %s)" (-> (second m) :comparison_symbol) (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
+          (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= "==" (-> (second m) :comparison_symbol))) (contains? (first m) :item_name)) (format "(= %s %s)" (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
           (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= (-> (second m) :comparison_symbol) "<>")) (contains? (first m) :item_name)) (format "(not (= %s %s))" (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
           (and (>= (count m) 3) (contains? (second m) :and_or_symbol)) (judge ignite group_id m my-context)
           (and (= (count m) 3) (contains? (second m) :in_symbol)) (if (my-lexical/is-eq? (-> (second m) :comparison_symbol) "in")
@@ -328,7 +331,9 @@
               (contains? m :func-link) (func-link-to-clj ignite group_id (-> m :func-link) my-context)
               (contains? m :and_or_symbol) (get m :and_or_symbol)
               (contains? m :operation) (calculate ignite group_id (reverse (-> m :operation)) my-context)
-              (contains? m :comparison_symbol) (get m :comparison_symbol)
+              (contains? m :comparison_symbol) (if (= (get m :comparison_symbol) "==")
+                                                   "="
+                                                   (get m :comparison_symbol))
               (contains? m :operation_symbol) (get m :operation_symbol)
               ;(contains? m :comma_symbol) (get m :comma_symbol)
               (contains? m :item_name) (item-to-clj m my-context)

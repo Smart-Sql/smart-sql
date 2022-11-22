@@ -313,7 +313,16 @@
                 ([lst] (get-where-item-line lst [] [] []))
                 ([[f & rs] stack lst result-lst]
                  (if (some? f)
-                     (cond (and (contains? #{">=" "<=" "<>" ">" "<" "=" "!=" "like" "in" "exists"} (str/lower-case f)) (= (count stack) 0)) (if (> (count lst) 0) (recur rs stack [] (concat result-lst [lst f])) (recur rs stack [] result-lst))
+                     (cond (and (contains? #{">=" "<=" "<>" ">" "<" "!=" "like" "in" "exists"} (str/lower-case f)) (= (count stack) 0)) (if (> (count lst) 0) (recur rs stack [] (concat result-lst [lst f])) (recur rs stack [] result-lst))
+                           (and (= f "!") (= (first rs) "=") (= (count stack) 0)) (if (> (count lst) 0)
+                                                                                      (recur (rest rs) stack [] (concat result-lst [lst "<>"]))
+                                                                                      (recur (rest rs) stack [] result-lst))
+                           (and (= f "=") (= (first rs) "=") (= (count stack) 0)) (if (> (count lst) 0)
+                                                                                      (recur (rest rs) stack [] (concat result-lst [lst "=="]))
+                                                                                      (recur (rest rs) stack [] result-lst))
+                           (and (= f "=") (not (= (first rs) "=")) (= (count stack) 0)) (if (> (count lst) 0)
+                                                                                            (recur rs stack [] (concat result-lst [lst f]))
+                                                                                            (recur rs stack [] result-lst))
                            (and (my-lexical/is-eq? "not" f) (my-lexical/is-eq? "in" (first rs)) (= (count stack) 0)) (if (> (count lst) 0) (recur (rest rs) stack [] (concat result-lst [lst "not in"])) (recur rs stack [] result-lst))
                            (and (my-lexical/is-eq? "not" f) (my-lexical/is-eq? "exists" (first rs)) (= (count stack) 0)) (if (> (count lst) 0) (recur (rest rs) stack [] (concat result-lst [lst "not exists"])) (recur rs stack [] result-lst))
                            (and (my-lexical/is-eq? "is" f) (my-lexical/is-eq? "not" (first rs)) (= (count stack) 0)) (if (> (count lst) 0) (recur (rest rs) stack [] (concat result-lst [lst "is not"])) (recur rs stack [] result-lst))
@@ -374,7 +383,7 @@
                                 (cond
                                     (contains? #{"+" "-" "*" "/"} line) {:operation_symbol line}
                                     (contains? #{"(" ")" "[" "]"} line) {:parenthesis_symbol line}
-                                    (contains? #{">=" "<=" "<>" ">" "<" "=" "!=" "like"} line) {:comparison_symbol line}
+                                    (contains? #{">=" "<=" "<>" ">" "<" "=" "==" "!=" "like"} line) {:comparison_symbol line}
                                     (contains? #{"and" "or" "between"} (str/lower-case line)) {:and_or_symbol (str/lower-case line)}
                                     (contains? #{"in" "not in"} (str/lower-case line)) {:in_symbol (str/lower-case line)}
                                     (contains? #{"exists" "not exists"} (str/lower-case line)) {:exists_symbol (str/lower-case line)}

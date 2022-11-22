@@ -236,10 +236,12 @@
 (defn is-seq? [m]
     (or (vector? m) (seq? m) (list? m) (instance? java.util.List m)))
 
+(defn is-map? [m]
+    (or (map? m) (instance? java.util.Hashtable m) (instance? java.util.Map m)))
+
 ; 是否是字典
 (defn is-dic? [m]
-    (or (map? m) (instance? java.util.Hashtable m) (instance? java.util.HashMap m) (instance? java.util.Map m)))
-
+    (is-map? m))
 
 ; 是否已经存在
 (defn is-lst-contains?
