@@ -19,9 +19,12 @@
       let f_1 = lst_1.first();
       let f_2 = lst_2.first();
       match {
-         notNullOrEmpty?(f_1) and nullOrEmpty?(f_2): lst_1;
-         notNullOrEmpty?(f_2) and nullOrEmpty?(f_1): lst_2;
-         nullOrEmpty?(f_1) and nullOrEmpty?(f_2): [];
+         notNullOrEmpty?(f_1) and nullOrEmpty?(f_2) AND num == 0: lst_1;
+         notNullOrEmpty?(f_2) and nullOrEmpty?(f_1) AND num == 0: lst_2;
+         notNullOrEmpty?(f_1) and nullOrEmpty?(f_2) AND num <> 0: add_two_numbers(lst_1, [1], 0);
+         nullOrEmpty?(f_1) and notNullOrEmpty?(f_2) AND num <> 0: add_two_numbers([1], lst_2, 0);
+         nullOrEmpty?(f_1) and nullOrEmpty?(f_2) AND num == 0: [];
+         nullOrEmpty?(f_1) and nullOrEmpty?(f_2) AND num <> 0: [num];
          (f_1 + f_2 + num) < 10: concat([(f_1 + f_2 + num)], add_two_numbers(lst_1.rest(), lst_2.rest(), 0));
          (f_1 + f_2 + num) >= 10: concat([(f_1 + f_2 + num) - 10], add_two_numbers(lst_1.rest(), lst_2.rest(), 1));
       }

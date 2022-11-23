@@ -264,7 +264,7 @@
                                                   (let [pair-line (format "%s %s" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
                                                       (recur ignite group_id r-pair my-context (conj lst pair-line))))
                                               )
-               (contains? f-pair :else-vs) (recur ignite group_id r-pair my-context (conj lst (format ":else %s" (body-to-clj ignite group_id (-> f-pair :else-vs) my-context))))
+               (contains? f-pair :else-vs) (recur ignite group_id r-pair my-context (conj lst (format ":else (do %s)" (body-to-clj ignite group_id (-> f-pair :else-vs) my-context))))
                )
          (str/join "\n          " lst))))
 
