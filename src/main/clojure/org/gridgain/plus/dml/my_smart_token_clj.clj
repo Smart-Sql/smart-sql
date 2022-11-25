@@ -293,10 +293,10 @@
           (calculate ignite group_id (reverse (-> m :parenthesis)) my-context)))
 
 (defn token-lst-to-clj [ignite group_id m my-context]
-    (cond (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= (-> (second m) :comparison_symbol) "=")) (contains? (first m) :item_name)) (format "(.setVar %s %s)" (-> (first m) :item_name) (token-to-clj ignite group_id (last m) my-context))
-          (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (contains? #{">" ">=" "<" "<="} (-> (second m) :comparison_symbol))) (contains? (first m) :item_name)) (format "(%s %s %s)" (-> (second m) :comparison_symbol) (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
-          (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= "==" (-> (second m) :comparison_symbol))) (contains? (first m) :item_name)) (format "(= %s %s)" (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
-          (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= (-> (second m) :comparison_symbol) "<>")) (contains? (first m) :item_name)) (format "(not (= %s %s))" (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
+    (cond (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= (-> (second m) :comparison_symbol) "="))) (format "(.setVar %s %s)" (-> (first m) :item_name) (token-to-clj ignite group_id (last m) my-context))
+          (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (contains? #{">" ">=" "<" "<="} (-> (second m) :comparison_symbol)))) (format "(%s %s %s)" (-> (second m) :comparison_symbol) (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
+          (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= "==" (-> (second m) :comparison_symbol)))) (format "(= %s %s)" (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
+          (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= (-> (second m) :comparison_symbol) "<>"))) (format "(not (= %s %s))" (token-to-clj ignite group_id (first m) my-context) (token-to-clj ignite group_id (last m) my-context))
           (and (>= (count m) 3) (contains? (second m) :and_or_symbol)) (judge ignite group_id m my-context)
           (and (= (count m) 3) (contains? (second m) :in_symbol)) (if (my-lexical/is-eq? (-> (second m) :comparison_symbol) "in")
                                                                       (format "(contains? #{%s} %s)" (token-to-clj ignite group_id (last m) my-context) (token-to-clj ignite group_id (first m) my-context))
