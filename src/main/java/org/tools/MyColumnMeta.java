@@ -42,7 +42,13 @@ public class MyColumnMeta {
             HashMap<String, String> map = new HashMap<>();
             for (String key : ht.keySet())
             {
-                map.put(key, row.get(ht.get(key)).toString());
+                try {
+                    map.put(key, row.get(ht.get(key)).toString());
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
             }
             rs.add(map);
         }
@@ -58,7 +64,13 @@ public class MyColumnMeta {
             HashMap<String, String> map = new HashMap<>();
             for (String key : ht.keySet())
             {
-                map.put(key, row.get(ht.get(key)).toString());
+                try {
+                    map.put(key, row.get(ht.get(key)).toString());
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
             }
             rs.add(map);
         }

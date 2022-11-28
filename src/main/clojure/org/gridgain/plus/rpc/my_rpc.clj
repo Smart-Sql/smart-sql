@@ -132,6 +132,11 @@
 ;    (if-let [group_id (my-user-group/get_user_group (Ignition/ignite) userToken) lst (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment sql))]
 ;        (execute-sql-query-lst (Ignition/ignite) group_id lst [] ps)))
 
+(defn is-create-schema [sql]
+    (let [lst (my-smart-sql/get-smart-segment (my-lexical/to-back sql))]
+        (if (and (= (count lst) 2) (my-lexical/is-eq? (first (first lst)) "create") (my-lexical/is-eq? (second (first lst)) "schema") (my-lexical/is-eq? (first (second lst)) "add_user_group"))
+            true false)))
+
 (defn execute-sql-query [^String userToken ^String sql ^String ps]
     (if-let [lst (my-smart-sql/re-super-smart-segment (my-smart-sql/get-my-smart-segment sql))]
         (if (my-lexical/is-str-empty? userToken)
@@ -144,11 +149,11 @@
                                                                                                                                                                                                                   (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
                                                                                                                                                                                                                   :else (str m)
                                                                                                                                                                                                                   ))
-                                                                                            (re-find #"^(?i)create\s+schema\s+{0}\s*;\s*add_user_group('{0}', '{1}', 'all', '{0}');$" sql) (let [m (execute-sql-query "" sql nil)]
-                                                                                                                                                                                               (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
-                                                                                                                                                                                                     (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
-                                                                                                                                                                                                     :else (str m)
-                                                                                                                                                                                                     )))
+                                                                                            (is-create-schema sql) (let [m (execute-sql-query "" sql nil)]
+                                                                                                                       (cond (or (map? m) (instance? java.util.Map m)) (MyGson/groupObjToLine m)
+                                                                                                                             (my-lexical/is-seq? m) (MyGson/groupObjToLine m)
+                                                                                                                             :else (str m)
+                                                                                                                             )))
           (my-lexical/is-eq? "load" ps) (if (my-lexical/is-str-empty? userToken)
                                             (my-load-smart-sql/load-smart-sql (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) (.getRoot_token (.configuration (Ignition/ignite)))) sql)
                                             (my-load-smart-sql/load-smart-sql (Ignition/ignite) (my-user-group/get_user_group (Ignition/ignite) userToken) sql))
